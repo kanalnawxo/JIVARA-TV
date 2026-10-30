@@ -15,7 +15,6 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
@@ -87,7 +86,6 @@ public class MainActivity extends Activity {
         playerView.setPlayer(exoPlayer);
         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         playerView.setShutterBackgroundColor(Color.BLACK);
-        playerView.setSurfaceType(PlayerView.SURFACE_TYPE_TEXTURE_VIEW);
         playerView.setFocusable(false);
         playerView.setFocusableInTouchMode(false);
         playerView.setClickable(true);
@@ -108,7 +106,7 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onPlayerError(@NonNull PlaybackException error) {
+            public void onPlayerError(PlaybackException error) {
                 webView.evaluateJavascript(
                         "document.getElementById('idle').style.display='flex';"
                         + "if(window.toast)toast('پەخش نەکرا؛ لینک یان فۆرماتی کەناڵەکە پشکنە.');", null);
