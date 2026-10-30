@@ -956,8 +956,10 @@ async function refreshRemoteChannels(showMessage=false){
   });
   if(!response.ok) throw new Error('HTTP '+response.status);
   const data=await response.json();
-  const incoming=Array.isArray(data.channels)?data.channels:[];
-  const seen=new Set(builtInChannels.map(c=>String(c.url||'').trim()));
+  if(!Array.isArray(data.channels)) throw new Error('Invalid channel data');
+  const incoming=data.channels;
+  // Cloudflare is authoritative after a successful fetch, so dashboard deletions stay deleted.
+  const seen=new Set();
   const next=[];
   for(const item of incoming){
    const url=String(item?.url||'').trim();
@@ -973,7 +975,7 @@ async function refreshRemoteChannels(showMessage=false){
    });
   }
   remoteChannels=next;
-  channels=[...builtInChannels,...remoteChannels,...loadManualChannels()];
+  channels=[...remoteChannels,...loadManualChannels()];
   renderAll();
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
