@@ -51,6 +51,8 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.TRANSPARENT);
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
         WebSettings ws = webView.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
@@ -192,9 +194,17 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (webView != null && event.getAction() == KeyEvent.ACTION_DOWN) {
-            webView.requestFocus();
-            return webView.dispatchKeyEvent(event) || super.dispatchKeyEvent(event);
+        // Forward BOTH key-down and key-up events to the WebView.
+        // The HTML remote handler uses keyup to complete OK/select actions;
+        // dropping ACTION_UP leaves the remote focus and channel selection unstable.
+        if (webView != null && (event.getAction() == KeyEvent.ACTION_DOWN
+                || event.getAction() == KeyEvent.ACTION_UP)) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && !webView.hasFocus()) {
+                webView.requestFocus();
+            }
+            if (webView.dispatchKeyEvent(event)) {
+                return true;
+            }
         }
         return super.dispatchKeyEvent(event);
     }
