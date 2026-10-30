@@ -1616,12 +1616,12 @@ function settingsTab(tab){
  }else if(tab==='groups'){
   body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   groups.map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
  }else if(tab==='bulk'){
-  body.innerHTML=\`
+  body.innerHTML=`
    <div class="panel-head">سڕینەوەی بەکۆمەڵی کەناڵەکان</div>
    <div class="notice">چەند کەناڵ هەڵبژێرە و بەیەکەوە بیانسڕەوە. کەناڵەکانی Cloudflare لە سێرڤەرەکەش دەسڕدرێنەوە؛ بۆ ئەوە پێویستە ADMIN_TOKEN بنووسیت. TOKEN لە ئەپەکەدا هەڵناگیرێت.</div>
    <div class="form-grid">
     <label class="field">گرووپ
-     <select id="bulkGroup"><option value="all">هەموو گرووپەکان</option>\${groups.map(g=>\`<option value="\${safe(g.id)}">\${safe(g.name)}</option>\`).join('')}</select>
+     <select id="bulkGroup"><option value="all">هەموو گرووپەکان</option>${groups.map(g=>`<option value="${safe(g.id)}">${safe(g.name)}</option>`).join('')}</select>
     </label>
     <label class="field">گەڕان
      <input id="bulkSearch" type="search" placeholder="ناوی کەناڵ...">
@@ -1637,7 +1637,7 @@ function settingsTab(tab){
    </div>
    <div id="bulkList" class="channel-scroll" style="height:34vh;max-height:34vh;min-height:130px"></div>
    <button class="btn primary" id="bulkDeleteButton" type="button" style="width:100%;margin-top:10px">🗑 سڕینەوەی کەناڵە هەڵبژێردراوەکان</button>
-  \`;
+  `;
   const selected=new Set();
   const listBox=$('#bulkList'), countBox=$('#bulkCount');
   const isRemoteId=id=>remoteChannels.some(c=>c.id===id);
@@ -1650,12 +1650,12 @@ function settingsTab(tab){
    const groupValue=$('#bulkGroup').value;
    const query=$('#bulkSearch').value.trim().toLowerCase();
    const items=available().filter(c=>(groupValue==='all'||c.group===groupValue)&&(!query||c.name.toLowerCase().includes(query)));
-   listBox.innerHTML=items.length?items.map(c=>\`
+   listBox.innerHTML=items.length?items.map(c=>`
     <label style="display:flex;align-items:center;gap:10px;min-height:39px;padding:6px 9px;margin:3px 0;background:#061a2c;border:1px solid #163650;border-radius:7px;direction:rtl;cursor:pointer">
-     <input class="bulk-check" type="checkbox" data-id="\${safe(c.id)}" \${selected.has(c.id)?'checked':''} style="width:19px;height:19px;flex:0 0 19px">
-     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${safe(c.name)}</span>
-     <small style="color:#9cb1c8">\${safe(group(c.group).name)}</small>
-    </label>\`).join(''):'<div class="empty">هیچ کەناڵێک لەم گرووپەدا نییە.</div>';
+     <input class="bulk-check" type="checkbox" data-id="${safe(c.id)}" ${selected.has(c.id)?'checked':''} style="width:19px;height:19px;flex:0 0 19px">
+     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safe(c.name)}</span>
+     <small style="color:#9cb1c8">${safe(group(c.group).name)}</small>
+    </label>`).join(''):'<div class="empty">هیچ کەناڵێک لەم گرووپەدا نییە.</div>';
    listBox.querySelectorAll('.bulk-check').forEach(input=>input.addEventListener('change',()=>{
     if(input.checked)selected.add(input.dataset.id);else selected.delete(input.dataset.id);
     updateCount();
