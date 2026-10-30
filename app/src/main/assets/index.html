@@ -911,8 +911,80 @@ function persistManualChannels(){
  try{localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));}
  catch(_){toast('نەتوانرا کەناڵە دەستییەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.');}
 }
-// پاکێجە کۆنەکان، پاکێجە M3U ـەکان و کەناڵە دەستی هەڵگیراوەکان پێکەوە ئامادە دەکرێن.
-let channels = [...Object.values(channelPackages).flat(), ...Object.entries(m3uPackages).flatMap(([id, text])=>parseM3UPackage(text,id)), ...loadManualChannels()];
+
+// بنەمای کەناڵە ناوخۆییەکان و پاکێجە M3U ـەکان؛ دیزاینی ئەپەکە دەستکاری ناکرێت.
+const builtInChannels = [
+ ...Object.values(channelPackages).flat(),
+ ...Object.entries(m3uPackages).flatMap(([id, text])=>parseM3UPackage(text,id))
+];
+let remoteChannels = [];
+
+function normalizeRemoteGroup(value){
+ const key=String(value||'').trim().toLowerCase();
+ const aliases={
+  local:['local','ناوخۆ','local-ناوخۆ'],
+  kurdish:['kurdish','کوردی','kurdistan'],
+  arabic:['arabic','عەرەبی','عربي'],
+  foreign:['foreign','بیانی','فیلم','movies','movie','دراما','drama'],
+  news:['news','هەواڵ','اخبار'],
+  quran:['quran','قورئان','قرآن'],
+  kids:['kids','children','منداڵان','اطفال'],
+  sports:['sports','sport','وەرزش','رياضة'],
+  music:['music','موزیک','موسيقى'],
+  documentary:['documentary','دۆکۆمێنتاری']
+ };
+ for(const g of groups){
+  if(key===g.id.toLowerCase()) return g.id;
+  if((aliases[g.id]||[]).some(x=>x.toLowerCase()===key)) return g.id;
+ }
+ return 'kurdish';
+}
+
+function remoteChannelId(url){
+ let hash=2166136261;
+ for(let i=0;i<url.length;i++){
+  hash^=url.charCodeAt(i);
+  hash=Math.imul(hash,16777619);
+ }
+ return 'remote-'+(hash>>>0).toString(36);
+}
+
+async function refreshRemoteChannels(showMessage=false){
+ try{
+  const response=await fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/channels',{
+   method:'GET',cache:'no-store'
+  });
+  if(!response.ok) throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  const incoming=Array.isArray(data.channels)?data.channels:[];
+  const seen=new Set(builtInChannels.map(c=>String(c.url||'').trim()));
+  const next=[];
+  for(const item of incoming){
+   const url=String(item?.url||'').trim();
+   const name=String(item?.name||'').trim();
+   if(!name||!/^https?:\/\//i.test(url)||seen.has(url)) continue;
+   seen.add(url);
+   next.push({
+    id:remoteChannelId(url),
+    name,
+    logo:String(item.logo||'').trim(),
+    url,
+    group:normalizeRemoteGroup(item.group)
+   });
+  }
+  remoteChannels=next;
+  channels=[...builtInChannels,...remoteChannels,...loadManualChannels()];
+  renderAll();
+  if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
+  return true;
+ }catch(error){
+  if(showMessage) toast('پەیوەندی بە سێرڤەری کەناڵەکان نەکرا؛ کەناڵە ناوخۆییەکان بەردەوامن.');
+  return false;
+ }
+}
+
+// کەناڵە دەستییەکان لە بیرگەی ئەم ئامێرەدا دەمێننەوە.
+let channels = [...builtInChannels, ...loadManualChannels()];
 let currentGroup = 'kurdish';
 let currentChannel = null;
 let activePage = 'home';
@@ -1637,6 +1709,12 @@ document.addEventListener('keydown',e=>{
  e.preventDefault();
 });
 renderAll();
+// لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
+refreshRemoteChannels(false);
+setInterval(()=>refreshRemoteChannels(false),60000);
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden) refreshRemoteChannels(false);
+});
 settingsTab('manual');
 })();
 </script>
