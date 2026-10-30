@@ -346,6 +346,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
      <div class="panel settings-nav">
       <button class="btn primary" data-tab="manual">＋ زیادکردنی کەناڵ بە دەستی</button>
       <button class="btn" data-tab="groups">▦ گرووپەکان</button>
+      <button class="btn" data-tab="bulk">🗑 سڕینەوەی بەکۆمەڵ</button>
       <div class="channel-delete-help" role="note" aria-label="ڕێنمایی سڕینەوەی کەناڵ">
        بۆ سڕینەوەی کەناڵ، دوو کرتە لەسەر هەر کەناڵێک بکە.<br>
        کاتێک ڕەنگی کەناڵەکە سوور بوو، بە کرتەی سێهەم کەناڵەکە دەسڕدرێتەوە.
@@ -918,6 +919,7 @@ const builtInChannels = [
  ...Object.entries(m3uPackages).flatMap(([id, text])=>parseM3UPackage(text,id))
 ];
 let remoteChannels = [];
+let remoteChannelsLoaded = false;
 
 function normalizeRemoteGroup(value){
  const key=String(value||'').trim().toLowerCase();
@@ -975,6 +977,7 @@ async function refreshRemoteChannels(showMessage=false){
    });
   }
   remoteChannels=next;
+  remoteChannelsLoaded=true;
   channels=[...remoteChannels,...loadManualChannels()];
   renderAll();
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
@@ -1612,8 +1615,113 @@ function settingsTab(tab){
   const paint=()=>{const box=$('#editChannelRows');if(!box)return;box.innerHTML=channels.length?channels.map(c=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:7px;background:#071b2d;border:1px solid #163650;border-radius:8px"><input data-edit-name="${safe(c.id)}" value="${safe(c.name)}" style="flex:1;min-width:0;background:#031322;color:white;border:1px solid #17405e;border-radius:6px;padding:9px"><button class="btn" data-save-name="${safe(c.id)}">✓</button></div>`).join(''):'<div class="empty">هیچ کەناڵێک نییە.</div>';box.querySelectorAll('[data-save-name]').forEach(btn=>btn.onclick=()=>{const c=channels.find(x=>x.id===btn.dataset.saveName);const input=box.querySelector(`[data-edit-name="${btn.dataset.saveName}"]`);if(c&&input&&input.value.trim()){c.name=input.value.trim();persistManualChannels();renderAll();paint();toast('ناوی کەناڵ نوێکرایەوە.');}});};paint();
  }else if(tab==='groups'){
   body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   groups.map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
+ }else if(tab==='bulk'){
+  body.innerHTML=\`
+   <div class="panel-head">سڕینەوەی بەکۆمەڵی کەناڵەکان</div>
+   <div class="notice">چەند کەناڵ هەڵبژێرە و بەیەکەوە بیانسڕەوە. کەناڵەکانی Cloudflare لە سێرڤەرەکەش دەسڕدرێنەوە؛ بۆ ئەوە پێویستە ADMIN_TOKEN بنووسیت. TOKEN لە ئەپەکەدا هەڵناگیرێت.</div>
+   <div class="form-grid">
+    <label class="field">گرووپ
+     <select id="bulkGroup"><option value="all">هەموو گرووپەکان</option>\${groups.map(g=>\`<option value="\${safe(g.id)}">\${safe(g.name)}</option>\`).join('')}</select>
+    </label>
+    <label class="field">گەڕان
+     <input id="bulkSearch" type="search" placeholder="ناوی کەناڵ...">
+    </label>
+    <label class="field full">ADMIN_TOKEN ـی Cloudflare (تەنها بۆ سڕینەوەی کەناڵەکانی سێرڤەر)
+     <input id="bulkAdminToken" type="password" autocomplete="off" placeholder="TOKEN بنووسە">
+    </label>
+   </div>
+   <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:10px 0">
+    <button class="btn" id="bulkSelectAll" type="button">هەڵبژاردنی هەمووی دیاریکراو</button>
+    <button class="btn" id="bulkClear" type="button">لابردنی هەڵبژاردن</button>
+    <span class="muted" id="bulkCount" style="margin-right:auto">٠ کەناڵ هەڵبژێردراوە</span>
+   </div>
+   <div id="bulkList" class="channel-scroll" style="height:34vh;max-height:34vh;min-height:130px"></div>
+   <button class="btn primary" id="bulkDeleteButton" type="button" style="width:100%;margin-top:10px">🗑 سڕینەوەی کەناڵە هەڵبژێردراوەکان</button>
+  \`;
+  const selected=new Set();
+  const listBox=$('#bulkList'), countBox=$('#bulkCount');
+  const isRemoteId=id=>remoteChannels.some(c=>c.id===id);
+  const available=()=>channels.filter(c=>{
+   const manual=String(c.id).startsWith('manual-');
+   return manual || (remoteChannelsLoaded && isRemoteId(c.id));
+  });
+  const updateCount=()=>{countBox.textContent=selected.size+' کەناڵ هەڵبژێردراوە';};
+  const paint=()=>{
+   const groupValue=$('#bulkGroup').value;
+   const query=$('#bulkSearch').value.trim().toLowerCase();
+   const items=available().filter(c=>(groupValue==='all'||c.group===groupValue)&&(!query||c.name.toLowerCase().includes(query)));
+   listBox.innerHTML=items.length?items.map(c=>\`
+    <label style="display:flex;align-items:center;gap:10px;min-height:39px;padding:6px 9px;margin:3px 0;background:#061a2c;border:1px solid #163650;border-radius:7px;direction:rtl;cursor:pointer">
+     <input class="bulk-check" type="checkbox" data-id="\${safe(c.id)}" \${selected.has(c.id)?'checked':''} style="width:19px;height:19px;flex:0 0 19px">
+     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${safe(c.name)}</span>
+     <small style="color:#9cb1c8">\${safe(group(c.group).name)}</small>
+    </label>\`).join(''):'<div class="empty">هیچ کەناڵێک لەم گرووپەدا نییە.</div>';
+   listBox.querySelectorAll('.bulk-check').forEach(input=>input.addEventListener('change',()=>{
+    if(input.checked)selected.add(input.dataset.id);else selected.delete(input.dataset.id);
+    updateCount();
+   }));
+   updateCount();
+  };
+  $('#bulkGroup').addEventListener('change',paint);
+  $('#bulkSearch').addEventListener('input',paint);
+  $('#bulkSelectAll').onclick=()=>{
+   listBox.querySelectorAll('.bulk-check').forEach(input=>selected.add(input.dataset.id));
+   paint();
+  };
+  $('#bulkClear').onclick=()=>{selected.clear();paint();};
+  $('#bulkDeleteButton').onclick=async()=>{
+   const picked=available().filter(c=>selected.has(c.id));
+   if(!picked.length){toast('سەرەتا کەناڵ هەڵبژێرە.');return;}
+   const remotePicked=picked.filter(c=>isRemoteId(c.id));
+   if(!window.confirm('دڵنیایت لە سڕینەوەی '+picked.length+' کەناڵ؟'))return;
+   const button=$('#bulkDeleteButton');
+   button.disabled=true;
+   try{
+    if(remotePicked.length){
+     const token=$('#bulkAdminToken').value.trim();
+     if(!token){toast('بۆ سڕینەوەی کەناڵەکانی Cloudflare، ADMIN_TOKEN بنووسە.');button.disabled=false;return;}
+     const latestResponse=await fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/channels',{method:'GET',cache:'no-store'});
+     if(!latestResponse.ok)throw new Error('داتای سێرڤەر نەخوێندرایەوە');
+     const latest=await latestResponse.json();
+     if(!Array.isArray(latest.channels))throw new Error('فۆرماتی داتای سێرڤەر دروست نییە');
+     const urls=new Set(remotePicked.map(c=>String(c.url||'').trim()));
+     const remaining=latest.channels.filter(c=>!urls.has(String(c?.url||'').trim()));
+     const saveResponse=await fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/channels',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({channels:remaining})
+     });
+     if(!saveResponse.ok)throw new Error(saveResponse.status===401||saveResponse.status===403?'ADMIN_TOKEN هەڵەیە یان مۆڵەتی نییە':'نوێکردنەوەی سێرڤەر سەرکەوتوو نەبوو');
+     remoteChannels=remoteChannels.filter(c=>!urls.has(String(c.url||'').trim()));
+    }
+    channels=channels.filter(c=>!selected.has(c.id));
+    persistManualChannels();
+    if(currentChannel&&selected.has(currentChannel.id)){
+     cleanPlayer();currentChannel=null;
+     $('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';
+     $('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';
+    }
+    selected.clear();
+    $('#bulkAdminToken').value='';
+    renderAll();
+    settingsTab('bulk');
+    toast(picked.length+' کەناڵ بە سەرکەوتوویی سڕانەوە.');
+   }catch(error){
+    toast('سڕینەوە سەرکەوتوو نەبوو: '+String(error.message||error));
+   }finally{
+    const currentButton=$('#bulkDeleteButton');
+    if(currentButton)currentButton.disabled=false;
+   }
+  };
+  if(!remoteChannelsLoaded){
+   const note=document.createElement('div');
+   note.className='notice';
+   note.textContent='لیستی Cloudflare هێشتا نەگەیشتووە؛ کەناڵەکانی سێرڤەر دوای پەیوەندی دەردەکەون.';
+   body.insertBefore(note,body.children[1]);
+  }
+  paint();
  }else{
-  body.innerHTML=`<div class="panel-head">زیادکردنی کەناڵ بە دەستی</div>
+  body.innerHTML=\`<div class="panel-head">زیادکردنی کەناڵ بە دەستی</div>
    <form id="manualChannelForm" class="form-grid">
     <label class="field full">ناوی کەناڵ
      <input id="manualChannelName" name="channelName" placeholder="ناوی کەناڵ بنووسە" required>
