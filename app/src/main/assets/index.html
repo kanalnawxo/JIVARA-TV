@@ -333,7 +333,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
      </div>
      <div class="radio-controls">
       <label class="field">ناوی ڕادیۆ<input id="radioName" type="text" placeholder="ناوی ڕادیۆ بنووسە"></label>
-      <label class="field">لینکی پەخشی ڕادیۆ (URL)<input id="radioUrl" type="password" inputmode="url" placeholder="لینکی نهێنی ڕادیۆ" autocomplete="off"></label>
+      <label class="field">لینکی پەخشی ڕادیۆ (URL)<input id="radioUrl" type="text" inputmode="url" placeholder="لینکی ڕادیۆ بنووسە" autocomplete="off"></label>
       <div class="radio-actions"><button class="btn primary" id="radioSave" type="button">＋ پاشەکەوتکردن</button><button class="btn" id="radioPlay" type="button">▶ پەخشکردن</button><button class="btn" id="radioStop" type="button">■ وەستاندن</button></div><div class="panel-head">ڕادیۆ پاشەکەوتکراوەکان</div><div id="radioSavedList" class="channel-scroll"></div>
       <div class="notice" id="radioStatus" role="status">لینکی پەخشی ڕادیۆ بنووسە، پاشان پەخشکردن دابگرە.</div>
       <audio id="radioAudio" preload="none"></audio>
@@ -1874,7 +1874,8 @@ async function playRadio(r){
 }
 function initRadio(){
  if(radioInitialized)return;radioInitialized=true;radioStations=loadRadioStations();
- $('#radioSave').onclick=()=>{const name=$('#radioName').value.trim(),url=$('#radioUrl').value.trim();if(!name||!/^https?:\/\//i.test(url)){setRadioState(false,'ناوی ڕادیۆ و لینکی دروست بنووسە.');return;}const old=radioStations.find(x=>x.name===name);if(old){old.url=url;}else radioStations.push({id:'radio-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name,url});saveRadioStations();renderRadioList();toast('ڕادیۆ پاشەکەوت کرا.');};
+ const radioUrlInput=$('#radioUrl');radioUrlInput.addEventListener('focus',()=>{radioUrlInput.type='text';});radioUrlInput.addEventListener('blur',()=>{radioUrlInput.type='password';});
+ $('#radioSave').onclick=()=>{const name=$('#radioName').value.trim(),url=$('#radioUrl').value.trim();if(!name||!/^https?:\/\//i.test(url)){setRadioState(false,'ناوی ڕادیۆ و لینکی دروست بنووسە.');return;}const old=radioStations.find(x=>x.name===name);if(old){old.url=url;}else radioStations.push({id:'radio-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name,url});saveRadioStations();radioUrlInput.type='password';renderRadioList();toast('ڕادیۆ پاشەکەوت کرا.');};
  $('#radioPlay').onclick=()=>{const url=$('#radioUrl').value.trim(),name=$('#radioName').value.trim();if(!url){setRadioState(false,'سەرەتا ڕادیۆیەک هەڵبژێرە یان پاشەکەوتی بکە.');return;}playRadio({name:name||'ڕادیۆ',url});};
  $('#radioStop').onclick=()=>{const audio=$('#radioAudio');audio.pause();audio.removeAttribute('src');audio.load();setRadioState(false,'پەخش وەستێنرا.');};
  $('#radioAudio').addEventListener('playing',()=>setRadioState(true,'ڕادیۆ لە پەخشدایە.'));
