@@ -65,6 +65,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .page-title{font-size:17px;font-weight:bold;flex:1}
 .page-title small{display:block;font-size:10px;font-weight:normal;color:var(--muted);margin-top:4px}
 .topbtn,.btn{background:#0a2239;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.live-viewers{display:flex;align-items:center;gap:6px;white-space:nowrap;color:#e4c477;font-size:14px;font-weight:700;direction:rtl}.live-viewers small{font-size:10px;color:var(--muted);font-weight:400}.live-dot{width:7px;height:7px;border-radius:50%;background:#39c979;box-shadow:0 0 8px #39c979;display:inline-block}@media(max-width:700px){.live-viewers{gap:4px;font-size:12px}.live-viewers small{font-size:9px}}
 .clock{direction:ltr;text-align:center;font-size:14px}
 .clock small{display:block;color:var(--muted);font-family:Arial,Tahoma,sans-serif;font-size:15px;font-weight:700;line-height:1.25;margin-top:4px;white-space:nowrap}
 .content{padding:0 12px 12px;overflow:auto;min-height:0;flex:1;scrollbar-width:thin;margin:0}
@@ -297,6 +298,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
   <header class="topbar">
    <div class="page-title" id="pageTitle">سەرەکی<small>پلەیەری Smart TV</small></div>
    <div class="verse-top" aria-label="ئایەتی قورئان">ئەم ئەپە بەردەوام نوێ دەکرێتەوە</div>
+   <div class="live-viewers" id="liveViewers" aria-label="بینەری ئێستا"><span class="live-dot"></span><span id="liveViewerCount">--</span><small>بینەری ئێستا</small></div>
    <div class="clock"><span id="clock">--:--</span><small id="weekday">---</small></div>
   </header>
   <section class="content">
@@ -1730,6 +1732,32 @@ function tick(){
  $('#weekday').textContent=weekdays[d.getDay()];
 }
 tick();setInterval(tick,30000);
+
+// ناسنامەیەکی نەناسراوی تایبەت بە هەر ئامێر؛ بۆ ژماردنی بینەری چالاک.
+const PRESENCE_API='https://late-paper-d34e.jivarakamal8.workers.dev/api/presence';
+function getPresenceDeviceId(){
+ const key='jivara_tv_presence_device_id_v1';
+ let id='';
+ try{id=localStorage.getItem(key)||'';}catch{}
+ if(!/^[a-zA-Z0-9-]{20,80}$/.test(id)){
+  id=(globalThis.crypto?.randomUUID?.()||('jivara-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)));
+  try{localStorage.setItem(key,id);}catch{}
+ }
+ return id;
+}
+const presenceDeviceId=getPresenceDeviceId();
+async function updateLiveViewerCount(){
+ try{
+  await fetch(PRESENCE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:presenceDeviceId}),cache:'no-store'});
+  const response=await fetch(PRESENCE_API,{method:'GET',cache:'no-store'});
+  if(!response.ok)throw new Error('presence unavailable');
+  const data=await response.json();
+  if(Number.isFinite(data.active))$('#liveViewerCount').textContent=String(data.active);
+ }catch{}
+}
+updateLiveViewerCount();
+setInterval(updateLiveViewerCount,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLiveViewerCount();});
 document.addEventListener('keydown',e=>{
  const tag=(e.target.tagName||'').toLowerCase();
  // In fullscreen, remote arrows switch streams directly and keep the player fullscreen.
