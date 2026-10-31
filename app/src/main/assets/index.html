@@ -203,22 +203,21 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .footer{border-top:1px solid var(--line);padding-top:9px;margin-top:14px;
  display:flex;justify-content:space-between;gap:10px;color:#6e8ba6;font-size:9px}
 
-/* Visible autumn wind and natural golden leaves in both page banners */
-.movie-strip{position:relative!important;display:block!important;width:calc(100% + 24px);height:clamp(112px,18vh,190px);min-height:112px;flex:0 0 clamp(112px,18vh,190px);margin:auto -12px 0!important;padding:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:linear-gradient(180deg,#344d55 0%,#69715b 42%,#9c8054 100%);isolation:isolate;contain:paint;}
-.movie-strip:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#09152170,transparent 20%,transparent 80%,#09152170),linear-gradient(0deg,#241b1250,transparent 55%);}
-.movie-strip:after{content:"";position:absolute;inset:-20%;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 22% 22%,#f8d99b55,transparent 34%),radial-gradient(ellipse at 78% 76%,#d8a65b42,transparent 42%);animation:autumnLight 10s ease-in-out infinite alternate;}
+/* Transparent autumn gust: leaves travel right-to-left, no added backdrop. */
+.movie-strip{position:relative!important;display:block!important;width:calc(100% + 24px);height:clamp(112px,18vh,190px);min-height:112px;flex:0 0 clamp(112px,18vh,190px);margin:auto -12px 0!important;padding:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:transparent!important;isolation:isolate;contain:paint;}
+.movie-strip:before,.movie-strip:after{content:none!important;display:none!important;}
 .movie-strip-head{display:none!important;}
-.movie-track{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;z-index:2!important;pointer-events:none!important;}
-.autumn-leaf{position:absolute;display:block;z-index:2;top:-32px;left:var(--leaf-x);width:var(--leaf-w);height:calc(var(--leaf-w)*1.48);opacity:0;will-change:transform;transform-origin:50% 50%;background:linear-gradient(135deg,#fff0a0 0%,#e8c34e 34%,#bd842b 72%,#87501f 100%);clip-path:polygon(50% 0%,64% 12%,82% 22%,100% 34%,82% 48%,72% 66%,58% 84%,50% 100%,42% 84%,28% 66%,18% 48%,0% 34%,18% 22%,36% 12%);filter:drop-shadow(0 2px 3px #24180c88);animation:autumnDrift var(--leaf-time) linear var(--leaf-delay) infinite;}
-.autumn-leaf:after{content:"";position:absolute;left:49%;top:8%;height:84%;width:1.5px;background:#77501d99;transform:rotate(0deg);border-radius:50%;}
-@keyframes autumnDrift{0%{opacity:0;transform:translate3d(0,-35px,0) rotate(0deg) scale(.72)}7%{opacity:.96}24%{transform:translate3d(calc(var(--leaf-wind)*.22),28px,0) rotate(115deg) scale(1)}50%{opacity:.92;transform:translate3d(calc(var(--leaf-wind)*.55),86px,0) rotate(285deg) scale(.9)}78%{opacity:.82}100%{opacity:0;transform:translate3d(var(--leaf-wind),210px,0) rotate(590deg) scale(.78)}}
-@keyframes autumnLight{from{opacity:.48;transform:translateX(-2%)}to{opacity:.95;transform:translateX(2%)}}
+.movie-track{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;z-index:2!important;pointer-events:none!important;background:transparent!important;}
+.autumn-leaf{position:absolute;display:block;z-index:2;top:var(--leaf-y);left:calc(100% + var(--leaf-w));width:var(--leaf-w);height:calc(var(--leaf-w)*1.48);opacity:0;will-change:transform;transform-origin:50% 50%;background:linear-gradient(135deg,#f5df91 0%,#d9b85f 42%,#a9823e 100%);clip-path:polygon(50% 0%,64% 12%,82% 22%,100% 34%,82% 48%,72% 66%,58% 84%,50% 100%,42% 84%,28% 66%,18% 48%,0% 34%,18% 22%,36% 12%);filter:drop-shadow(0 1px 2px #0005);animation:autumnGust var(--leaf-time) linear var(--leaf-delay) infinite;}
+.autumn-leaf:after{content:"";position:absolute;left:49%;top:8%;height:84%;width:1.2px;background:#70562b99;border-radius:50%;}
+@keyframes autumnGust{0%{opacity:0;transform:translate3d(0,0,0) rotate(-18deg) scale(.78)}6%{opacity:.78}24%{transform:translate3d(-25vw,var(--leaf-drop),0) rotate(105deg) scale(1)}48%{opacity:.72;transform:translate3d(-55vw,calc(var(--leaf-drop)*-.55),0) rotate(245deg) scale(.9)}76%{opacity:.66}100%{opacity:0;transform:translate3d(calc(-100vw - var(--leaf-w) - 30px),var(--leaf-drop),0) rotate(560deg) scale(.74)}}
 #page-home,#page-groups{padding-bottom:0;min-height:100%;}
 #page-home.active,#page-groups.active{display:flex;flex-direction:column;}
 #page-home .movie-strip,#page-groups .movie-strip{margin-top:auto!important;}
 #page-home .footer{margin-top:0;flex:0 0 auto;}
 @media(max-width:700px){.movie-strip{width:calc(100% + 16px);margin-left:-8px!important;margin-right:-8px!important;height:clamp(90px,14vh,135px);flex-basis:clamp(90px,14vh,135px)}}
 @media(prefers-reduced-motion:reduce){.autumn-leaf{animation-duration:90s;}}
+
 
 .toast{display:none;position:fixed;z-index:1000;bottom:20px;left:50%;
  transform:translateX(-50%);padding:11px 16px;background:#0c3151;border:1px solid #2788d8;
@@ -1054,12 +1053,12 @@ function renderMovieStrips(){
  ['#homeMovieTrack','#groupsMovieTrack'].forEach(sel=>{
   const track=$(sel);if(!track)return;
   track.innerHTML=leaves.map(i=>{
-   const x=(i*43+5)%100;
-   const width=12+(i*11)%17;
-   const time=6+(i*7)%10;
-   const delay=-((i*19)%150)/10;
-   const wind=(i%2?1:-1)*(55+(i*31)%190);
-   return '<span class="autumn-leaf" aria-hidden="true" style="--leaf-x:'+x+'%;--leaf-w:'+width+'px;--leaf-time:'+time+'s;--leaf-delay:'+delay+'s;--leaf-wind:'+wind+'px"></span>';
+   const y=(i*37+7)%88;
+   const width=11+(i*11)%17;
+   const time=8+(i*7)%11;
+   const delay=-((i*19)%170)/10;
+   const drop=((i*29)%56)-28;
+   return '<span class="autumn-leaf" aria-hidden="true" style="--leaf-y:'+y+'%;--leaf-w:'+width+'px;--leaf-time:'+time+'s;--leaf-delay:'+delay+'s;--leaf-drop:'+drop+'px"></span>';
   }).join('');
  });
 }
