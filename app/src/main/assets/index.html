@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JIVARA TV+ | Smart TV</title>
 <style>
+@font-face{font-family:'Rabar 043';src:url('https://pub-308a8f64471b4557b3566e6ca09f2b95.r2.dev/fonts/rabar-043/Rabar_043.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
 :root{
  --bg:#020b16;--panel:#06192b;--panel2:#0a2239;
  --line:#163650;--blue:#0878f9;--text:#f4f8ff;
@@ -13,7 +14,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:100%;height:100%;min-height:100%;overflow:hidden}
-body{background:radial-gradient(ellipse at top,#0c2943 0%,#071a2b 42%,#020b16 100%);color:var(--text);font-family:Tahoma,Arial,sans-serif}
+body{background:radial-gradient(ellipse at top,#0c2943 0%,#071a2b 42%,#020b16 100%);color:var(--text);font-family:"Rabar 043",Tahoma,Arial,sans-serif}
 button,input,textarea,select{font:inherit}
 button{color:inherit;cursor:pointer}
 html,body,.app,.main,.content,.page,.panel,.player-screen{cursor:default}
@@ -58,7 +59,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .main{min-width:0;min-height:0;display:flex;flex-direction:column}
 .topbar{height:58px;min-height:58px;flex-shrink:0;margin:0;border-top:0;border-bottom:1px solid var(--line);
  display:flex;align-items:center;padding:0 18px;gap:13px;position:relative}
-.verse-top{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:64%;text-align:center;color:#f0d79a;font-family:"Amiri Quran","Amiri","Noto Naskh Arabic","Traditional Arabic",serif;font-size:clamp(20px,2vw,30px);font-weight:700;line-height:1.55;text-shadow:0 0 12px #d5a84a35;pointer-events:none;white-space:normal}
+.verse-top{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:64%;text-align:center;color:#f0d79a;font-family:"Rabar 043",Tahoma,Arial,sans-serif;font-size:clamp(20px,2vw,30px);font-weight:700;line-height:1.55;text-shadow:0 0 12px #d5a84a35;pointer-events:none;white-space:normal}
 @media(max-width:700px){.verse-top{position:static;transform:none;flex:1;width:auto;max-width:none;font-size:clamp(15px,3.2vw,21px)}.page-title{display:none}.topbar{gap:7px;padding:0 8px}.clock{flex-shrink:0}}
 .page-title{font-size:17px;font-weight:bold;flex:1}
 .page-title small{display:block;font-size:10px;font-weight:normal;color:var(--muted);margin-top:4px}
