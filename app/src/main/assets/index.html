@@ -129,7 +129,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .group-btn.active,.group-btn:focus{background:#075bb8}
 .count{margin-right:auto;color:#a6c4df;font-size:10px}
 .group-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-content:start}
-.group-card{border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b2740,#06172a);
+.radio-panel{display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1fr);gap:18px;align-items:center;max-width:980px;margin:12px auto;padding:18px}.radio-visual{min-height:260px;border:1px solid #ffffff24;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:hidden;position:relative;background:radial-gradient(circle at 50% 40%,#6b1d91 0%,#143d79 38%,#07172f 75%);box-shadow:inset 0 0 45px #00d9ff25}.radio-visual:before,.radio-visual:after{content:"";position:absolute;width:210px;height:210px;border:2px solid #58e9ff55;border-radius:50%;animation:radioPulse 3s ease-out infinite}.radio-visual:after{animation-delay:1.5s}.radio-orb{font-size:55px;z-index:1;filter:drop-shadow(0 0 18px #ff4fd8)}.radio-visual strong,.radio-visual small{z-index:1}.radio-visual strong{letter-spacing:4px;color:#fff;text-shadow:0 0 14px #ff4fd8}.radio-visual small{color:#d6edff}.radio-waves{height:54px;display:flex;align-items:center;gap:5px;z-index:1}.radio-waves i{display:block;width:5px;height:12px;border-radius:5px;background:linear-gradient(180deg,#ffe45e,#ff4ac8,#37eaff);animation:radioWave .8s ease-in-out infinite alternate;animation-play-state:paused}.radio-waves i:nth-child(3n){animation-delay:-.3s}.radio-waves i:nth-child(3n+1){animation-delay:-.55s}.radio-visual.playing .radio-waves i{animation-play-state:running}.radio-controls{display:flex;flex-direction:column;gap:12px;min-width:0}.radio-actions{display:flex;gap:9px}.radio-actions .btn{flex:1}.radio-controls input{direction:ltr;text-align:left;unicode-bidi:plaintext}.radio-visual.playing{filter:saturate(1.2)}@keyframes radioWave{to{height:48px;filter:hue-rotate(100deg);box-shadow:0 0 12px #38eaff}}@keyframes radioPulse{0%{transform:scale(.45);opacity:.8}100%{transform:scale(1.6);opacity:0}}@media(max-width:700px){.radio-panel{grid-template-columns:1fr}.radio-visual{min-height:190px}}\n.group-card{border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b2740,#06172a);
  min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .group-card .art{font-size:32px}
 .group-card b{font-size:12px}
@@ -321,6 +321,23 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
      <div class="group-cards" id="groupCards"></div>
     </div>
     <div class="movie-strip" aria-label="هەوای پاییزی و گەڵای زەرد"><div class="movie-strip-head"></div><div class="movie-track" id="groupsMovieTrack"></div></div>
+   </section>
+
+   <section class="page" id="page-radio">
+    <div class="section-title"><span>ڕادیۆ</span><small>پەخشی ڕاستەوخۆی دەنگ</small></div>
+    <div class="radio-panel panel">
+     <div class="radio-visual" id="radioVisual" aria-label="وێنەی جوڵاوی پەخشی ڕادیۆ">
+      <div class="radio-orb">📻</div><div class="radio-waves"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <strong>JIVARA RADIO</strong><small id="radioVisualStatus">ئامادەی پەخشە</small>
+     </div>
+     <div class="radio-controls">
+      <label class="field">ناوی ڕادیۆ<input id="radioName" type="text" placeholder="ناوی ڕادیۆ بنووسە"></label>
+      <label class="field">لینکی پەخشی ڕادیۆ (URL)<input id="radioUrl" type="text" inputmode="url" placeholder="https://..." autocomplete="url"></label>
+      <div class="radio-actions"><button class="btn primary" id="radioPlay" type="button">▶ پەخشکردن</button><button class="btn" id="radioStop" type="button">■ وەستاندن</button></div>
+      <div class="notice" id="radioStatus" role="status">لینکی پەخشی ڕادیۆ بنووسە، پاشان پەخشکردن دابگرە.</div>
+      <audio id="radioAudio" preload="none"></audio>
+     </div>
+    </div>
    </section>
 
    <section class="page active" id="page-browse">
@@ -1115,6 +1132,7 @@ function renderHome(){
  `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
  <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span></button>`).join('');
  $('#homeCategories').innerHTML=makeTiles(mainGroups);
+ $('#homeCategories').insertAdjacentHTML('beforeend','<button class="category" data-open-radio style="--c1:#7434a8;--c2:#075d8d"><span class="symbol-wrap"><span class="symbol">📻</span></span><b>ڕادیۆ</b><span class="channel-badge">LIVE</span></button>');
  let countrySection=$('#homeCountryCategories');
  if(!countrySection){
   const heading=document.createElement('div');
@@ -1137,9 +1155,11 @@ function renderGroups(){
  `<button class="group-card" data-group="${g.id}">
  <span class="art">${g.art}</span><b>${g.name}</b>
  <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
+ $('#groupCards').insertAdjacentHTML('beforeend','<button class="group-card" data-open-radio><span class="art">📻</span><b>ڕادیۆ</b><small>پەخشی دەنگ</small></button>');
 
  $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
  b.onclick=()=>openGroup(b.dataset.group));
+ document.querySelectorAll('[data-open-radio]').forEach(b=>b.onclick=()=>switchPage('radio'));
 }
 function renderChannels(){
  const list=groupChannels(currentGroup);
@@ -1174,7 +1194,7 @@ function switchPage(name){
  $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
  const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',
- search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری'};
+ search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
  if(name==='browse')renderChannels();
  if(name==='groups')renderGroups();
@@ -1821,6 +1841,24 @@ document.addEventListener('keydown',e=>{
  }
  e.preventDefault();e.stopPropagation();
 },true);
+let radioInitialized=false;
+function initRadio(){
+ if(radioInitialized)return;radioInitialized=true;
+ const audio=$('#radioAudio'),visual=$('#radioVisual'),status=$('#radioStatus'),visualStatus=$('#radioVisualStatus');
+ const setState=(playing,message)=>{visual.classList.toggle('playing',playing);visualStatus.textContent=playing?'لە پەخشدایە':'ئامادەی پەخشە';status.textContent=message;};
+ $('#radioPlay').onclick=async()=>{
+  const url=$('#radioUrl').value.trim(),name=$('#radioName').value.trim();
+  if(!/^https?:\/\//i.test(url)){setState(false,'تکایە لینکی دروستی پەخش بە https:// یان http:// بنووسە.');return;}
+  try{audio.pause();audio.src=url;audio.load();await audio.play();try{localStorage.setItem('jivara-radio',JSON.stringify({name,url}));}catch{}setState(true,(name||'ڕادیۆ')+' لە پەخشدایە.');}
+  catch(e){setState(false,'پەخش دەست پێ ناکات؛ لینکەکە بپشکنە یان فۆرماتی پەخش لەلایەن TV ـەکەتەوە پشتگیری بکرێت.');}
+ };
+ $('#radioStop').onclick=()=>{audio.pause();audio.removeAttribute('src');audio.load();setState(false,'پەخش وەستێنرا.');};
+ audio.addEventListener('playing',()=>setState(true,($('#radioName').value.trim()||'ڕادیۆ')+' لە پەخشدایە.'));
+ audio.addEventListener('pause',()=>{if(audio.ended||!audio.src||audio.currentTime===0)setState(false,'پەخش وەستاوە.');});
+ audio.addEventListener('error',()=>setState(false,'هەڵە لە کردنەوەی لینک؛ لینکێکی تر تاقی بکەرەوە.'));
+ try{const saved=JSON.parse(localStorage.getItem('jivara-radio')||'null');if(saved){$('#radioName').value=saved.name||'';$('#radioUrl').value=saved.url||'';}}catch{}
+}
+initRadio();
 renderAll();
 // لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
 refreshRemoteChannels(false);
