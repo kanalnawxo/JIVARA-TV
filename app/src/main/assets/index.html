@@ -1761,6 +1761,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLive
 document.addEventListener('keydown',e=>{
  const keys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  if(!keys.includes(e.key))return;
+ // Ignore OS/browser key-repeat events: each physical remote press moves one cell.
+ if(e.repeat){e.preventDefault();e.stopImmediatePropagation();return;}
  // During channel reordering, let the channel-list handler receive Up/Down.
  // This document-level capture handler otherwise intercepts arrows first.
  if((e.key==='ArrowUp'||e.key==='ArrowDown') && document.activeElement?.closest('.channel.hold-selected'))return;
@@ -1798,7 +1800,8 @@ document.addEventListener('keydown',e=>{
   const primary=vx*dx+vy*dy;
   if(primary<=0)continue;
   const cross=Math.abs(vx*dy-vy*dx);
-  const score=primary+cross*0.55+(cross*cross)/(Math.max(primary,1))*0.025;
+  // Prefer the same visual row/column to avoid diagonal focus jumps.
+  const score=primary+cross*1.35+(cross*cross)/(Math.max(primary,1))*0.04;
   if(score<bestScore){best=el;bestScore=score;}
  }
  // If no item lies strictly in the requested direction, choose the nearest
