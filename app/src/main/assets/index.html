@@ -1760,17 +1760,9 @@ setInterval(updateLiveViewerCount,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLiveViewerCount();});
 document.addEventListener('keydown',e=>{
  const tag=(e.target.tagName||'').toLowerCase();
- // In fullscreen, remote arrows switch streams directly and keep the player fullscreen.
+ // In fullscreen, directional keys never switch channels automatically.
  const playerIsFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen'));
  if(playerIsFullscreen && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
-  if(channels.length && currentChannel){
-   const idx=channels.findIndex(c=>c.id===currentChannel.id);
-   if(idx>=0){
-    const forward=(e.key==='ArrowRight'||e.key==='ArrowDown');
-    const nextIndex=idx+(forward?1:-1);
-    if(nextIndex>=0 && nextIndex<channels.length) playChannel(channels[nextIndex].id);
-   }
-  }
   e.preventDefault();return;
  }
  if(['input','textarea','select'].includes(tag)&&e.key!=='Escape')return;
@@ -1779,8 +1771,13 @@ document.addEventListener('keydown',e=>{
   if(playerScreen.classList.contains('is-fullscreen')){playerScreen.classList.remove('is-fullscreen');e.preventDefault();return;}
  }
  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;
- const selector='.sidebar .nav,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
- const items=[...new Set($$(selector))].filter(el=>el.getClientRects().length>0 && getComputedStyle(el).visibility!=='hidden' && getComputedStyle(el).display!=='none');
+ // While browsing channels, keep remote focus inside this channel list only.
+ // Do not let geometric navigation jump to another list, category, or sidebar item.
+ const insideChannelList=!!e.target.closest?.('#channelList .channel[data-id]');
+ const selector=insideChannelList
+  ? '#channelList .channel[data-id]'
+  : '.sidebar .nav,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
+ const items=[...new Set($(selector))].filter(el=>el.getClientRects().length>0 && getComputedStyle(el).visibility!=='hidden' && getComputedStyle(el).display!=='none');
  if(!items.length)return;
  const current=document.activeElement;
  if(!items.includes(current)){
