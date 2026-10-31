@@ -921,6 +921,39 @@ function parseM3UPackage(source, groupId){
 
 // کەناڵە دەستی زیادکراوەکان لە هەمان وێبگەڕدا هەمیشە دەمێننەوە.
 const MANUAL_CHANNELS_STORAGE_KEY = 'jivara_tv_manual_channels_v1';
+const CHANNEL_OVERRIDES_STORAGE_KEY = 'jivara_tv_channel_overrides_v1';
+function channelStableKey(channel){return String(channel?.url||'').trim();}
+function loadChannelOverrides(){
+ try{
+  const data=JSON.parse(localStorage.getItem(CHANNEL_OVERRIDES_STORAGE_KEY)||'{}');
+  return {deleted:Array.isArray(data.deleted)?data.deleted.filter(x=>typeof x==='string'):[],order:data.order&&typeof data.order==='object'?data.order:{}};
+ }catch(_){return {deleted:[],order:{}};}
+}
+let channelOverrides=loadChannelOverrides();
+function applyChannelOverrides(source){
+ const deleted=new Set(channelOverrides.deleted);
+ let result=source.filter(c=>!deleted.has(channelStableKey(c)));
+ for(const g of groups){
+  const order=channelOverrides.order[g.id];
+  if(!Array.isArray(order)||!order.length)continue;
+  const rank=new Map(order.map((url,index)=>[url,index]));
+  const inGroup=result.filter(c=>c.group===g.id);
+  const elsewhere=result.filter(c=>c.group!==g.id);
+  inGroup.sort((a,b)=>{
+   const ai=rank.has(channelStableKey(a))?rank.get(channelStableKey(a)):Number.MAX_SAFE_INTEGER;
+   const bi=rank.has(channelStableKey(b))?rank.get(channelStableKey(b)):Number.MAX_SAFE_INTEGER;
+   return ai-bi;
+  });
+  result=[...elsewhere,...inGroup];
+ }
+ return result;
+}
+function rememberChannelDeletion(channel){
+ const key=channelStableKey(channel);if(!key)return;
+ if(!channelOverrides.deleted.includes(key))channelOverrides.deleted.push(key);
+ try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));}
+ catch(_){toast('نەتوانرا سڕینەوە هەڵبگیرێت؛ بیرگەی ئامێر پڕە.');}
+}
 function loadManualChannels(){
  try{
   const saved=JSON.parse(localStorage.getItem(MANUAL_CHANNELS_STORAGE_KEY)||'[]');
@@ -930,8 +963,11 @@ function loadManualChannels(){
  }catch(_){return [];}
 }
 function persistManualChannels(){
- try{localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));}
- catch(_){toast('نەتوانرا کەناڵە دەستییەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.');}
+ try{
+  localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));
+  for(const g of groups)channelOverrides.order[g.id]=channels.filter(c=>c.group===g.id).map(channelStableKey).filter(Boolean);
+  localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));
+ }catch(_){toast('نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.');}
 }
 
 // بنەمای کەناڵە ناوخۆییەکان و پاکێجە M3U ـەکان؛ دیزاینی ئەپەکە دەستکاری ناکرێت.
@@ -999,7 +1035,7 @@ async function refreshRemoteChannels(showMessage=false){
   }
   remoteChannels=next;
   remoteChannelsLoaded=true;
-  channels=[...remoteChannels,...loadManualChannels()];
+  channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
   renderAll();
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
@@ -1010,7 +1046,7 @@ async function refreshRemoteChannels(showMessage=false){
 }
 
 // کەناڵە دەستییەکان لە بیرگەی ئەم ئامێرەدا دەمێننەوە.
-let channels = [...builtInChannels, ...loadManualChannels()];
+let channels = applyChannelOverrides([...builtInChannels, ...loadManualChannels()]);
 let currentGroup = 'kurdish';
 let currentChannel = null;
 let activePage = 'home';
@@ -1444,6 +1480,7 @@ if(channelListEl){
   if(row.classList.contains('delete-selected')){
    if(remoteTapPending){clearTimeout(remoteTapPending.timer);remoteTapPending=null;}
    const deletingCurrent=!!currentChannel&&currentChannel.id===id;
+   const deletedChannel=channels.find(c=>c.id===id);if(deletedChannel)rememberChannelDeletion(deletedChannel);
    channels=channels.filter(c=>c.id!==id);
    persistManualChannels();
    if(deletingCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
@@ -1475,6 +1512,7 @@ if(channelListEl){
      const placedId=remoteHoldRow?.dataset.id;
      channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
      remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;remoteOkDown=false;
+     persistManualChannels();
      // Restore normal channel interaction immediately after placing the channel.
      renderAll();
      const placedRow=channelListEl.querySelector('.channel[data-id="'+placedId+'"]');
@@ -1549,6 +1587,7 @@ if(channelListForDelete){
   if(row.classList.contains('delete-selected')){
    e.preventDefault();
    const deletedCurrent=!!currentChannel&&currentChannel.id===id;
+   const deletedChannel=channels.find(c=>c.id===id);if(deletedChannel)rememberChannelDeletion(deletedChannel);
    channels=channels.filter(c=>c.id!==id);
    persistManualChannels();
    if(deletedCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
