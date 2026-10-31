@@ -66,7 +66,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .page-title small{display:block;font-size:10px;font-weight:normal;color:var(--muted);margin-top:4px}
 .topbtn,.btn{background:#0a2239;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
 .clock{direction:ltr;text-align:center;font-size:14px}
-.clock small{display:block;color:var(--muted);font-size:clamp(14px,1.35vw,20px);font-weight:700;line-height:1.25;margin-top:4px;white-space:nowrap}
+.clock small{display:block;color:var(--muted);font-family:Arial,Tahoma,sans-serif;font-size:15px;font-weight:700;line-height:1.25;margin-top:4px;white-space:nowrap}
 .content{padding:0 12px 12px;overflow:auto;min-height:0;flex:1;scrollbar-width:thin;margin:0}
 .page{display:none;min-height:100%}
 .page.active{display:block}
@@ -203,26 +203,20 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .footer{border-top:1px solid var(--line);padding-top:9px;margin-top:14px;
  display:flex;justify-content:space-between;gap:10px;color:#6e8ba6;font-size:9px}
 
-/* Seamless cinematic movie ribbon at the bottom of Home and Groups */
-.movie-strip{position:relative;width:calc(100% + 24px);margin:auto -12px 0;padding:0;height:clamp(96px,16vh,178px);flex:0 0 clamp(96px,16vh,178px);overflow:hidden;border:0;border-radius:0;background:#020914;isolation:isolate;}
-.movie-strip:before,.movie-strip:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;}
-.movie-strip:before{background:linear-gradient(90deg,#020b16 0%,#020b1630 9%,transparent 25%,transparent 75%,#020b1630 91%,#020b16 100%),linear-gradient(0deg,#020b16a8,transparent 38%,#020b1633);}
-.movie-strip:after{background:linear-gradient(0deg,rgba(3,13,26,.12),rgba(34,64,94,.13));mix-blend-mode:screen;opacity:.45;}
-.movie-strip-head{display:none;}
-.movie-track{position:absolute;inset:0 auto 0 0;display:flex;gap:0;width:max-content;height:100%;animation:movieMarquee 90s linear infinite;direction:ltr;padding:0;margin:0;will-change:transform;}
-.movie-strip:hover .movie-track{animation-play-state:running;}
-.movie-poster{position:relative;flex:0 0 clamp(170px,22vw,330px);height:100%;overflow:hidden;border:0;border-radius:0;background:#071727;box-shadow:none;}
-.movie-poster:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,5,14,.68),transparent 56%),linear-gradient(110deg,rgba(4,14,30,.16),transparent 55%);pointer-events:none;}
-.movie-poster img{width:100%;height:100%;display:block;object-fit:cover;filter:saturate(.9) contrast(1.04);transform:scale(1.035);transition:opacity 1.2s ease,filter 1.2s ease;}
-.movie-poster:hover img{filter:saturate(1.12) contrast(1.06);}
-.movie-poster span{position:absolute;z-index:1;left:12px;right:12px;bottom:9px;padding:0;text-align:left;font-size:clamp(9px,.85vw,12px);font-weight:700;letter-spacing:.3px;color:#fff;background:none;text-shadow:0 2px 9px #000;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8;}
-@keyframes movieMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* Continuous autumn breeze with drifting golden leaves on Home and Groups */
+.movie-strip{position:relative;width:calc(100% + 24px);margin:auto -12px 0;padding:0;height:clamp(96px,16vh,178px);flex:0 0 clamp(96px,16vh,178px);overflow:hidden;border:0;border-radius:0;background:linear-gradient(180deg,#243b4a 0%,#52604f 48%,#9b7950 100%);isolation:isolate;}
+.movie-strip:before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(90deg,#020b16b8 0%,transparent 18%,transparent 82%,#020b16b8 100%),linear-gradient(0deg,#020b1655,transparent 45%,#172a3844);}
+.movie-strip:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 18% 20%,#f5d58b38,transparent 36%),radial-gradient(ellipse at 78% 75%,#e9b75a30,transparent 42%);animation:autumnLight 12s ease-in-out infinite alternate;}
+.movie-strip-head,.movie-track,.movie-poster{display:none!important;}
+.autumn-leaf{position:absolute;z-index:2;top:-35px;left:var(--leaf-x);font-size:var(--leaf-size);line-height:1;opacity:0;filter:drop-shadow(0 2px 3px #2a1b0d88);will-change:transform;animation:autumnDrift var(--leaf-time) linear var(--leaf-delay) infinite;}
+@keyframes autumnDrift{0%{opacity:0;transform:translate3d(0,-24px,0) rotate(0deg) scale(.72)}8%{opacity:.95}45%{opacity:.9;transform:translate3d(calc(var(--leaf-wind)*.48),75px,0) rotate(260deg) scale(1)}82%{opacity:.78}100%{opacity:0;transform:translate3d(var(--leaf-wind),190px,0) rotate(620deg) scale(.82)}}
+@keyframes autumnLight{from{opacity:.45;transform:translateX(-2%)}to{opacity:.9;transform:translateX(2%)}}
 #page-home,#page-groups{padding-bottom:0;min-height:100%;}
 #page-home.active,#page-groups.active{display:flex;flex-direction:column;}
 #page-home .movie-strip,#page-groups .movie-strip{margin-top:auto;}
 #page-home .footer{margin-top:0;flex:0 0 auto;}
-@media(max-width:700px){.movie-strip{width:calc(100% + 16px);margin-left:-8px;margin-right:-8px;height:clamp(80px,13vh,125px);flex-basis:clamp(80px,13vh,125px)}.movie-poster{flex-basis:clamp(145px,43vw,220px)}.movie-poster span{font-size:9px;left:8px;right:8px;bottom:6px}.movie-track{animation-duration:76s}}
-@media(prefers-reduced-motion:reduce){.movie-track{animation-duration:180s}}
+@media(max-width:700px){.movie-strip{width:calc(100% + 16px);margin-left:-8px;margin-right:-8px;height:clamp(80px,13vh,125px);flex-basis:clamp(80px,13vh,125px)}}
+@media(prefers-reduced-motion:reduce){.autumn-leaf{animation-duration:90s;}}
 
 .toast{display:none;position:fixed;z-index:1000;bottom:20px;left:50%;
  transform:translateX(-50%);padding:11px 16px;background:#0c3151;border:1px solid #2788d8;
@@ -312,7 +306,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     </div>
     <div class="section-title">گرووپەکان <small>کلیک بکە بۆ کردنەوە</small></div>
     <div class="categories" id="homeCategories"></div>
-    <div class="movie-strip" aria-label="وێنەکانی فیلمە جیهانییەکان"><div class="movie-track" id="homeMovieTrack"></div></div>
+    <div class="movie-strip" aria-label="هەوای پاییزی و گەڵای زەرد"><div class="movie-track" id="homeMovieTrack"></div></div>
    </section>
 
    <section class="page" id="page-groups">
@@ -320,7 +314,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     <div class="group-layout">
      <div class="group-cards" id="groupCards"></div>
     </div>
-    <div class="movie-strip" aria-label="وێنەکانی فیلمە جیهانییەکان"><div class="movie-strip-head"><span>🎬 فیلمە جیهانییەکان</span><small>بە شێوەیەکی خودکار نوێ دەبنەوە</small></div><div class="movie-track" id="groupsMovieTrack"></div></div>
+    <div class="movie-strip" aria-label="هەوای پاییزی و گەڵای زەرد"><div class="movie-strip-head"></div><div class="movie-track" id="groupsMovieTrack"></div></div>
    </section>
 
    <section class="page active" id="page-browse">
@@ -1053,23 +1047,20 @@ const worldMoviePosters = [
  {title:'The Lord of the Rings',src:'https://image.tmdb.org/t/p/w780/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg'},
  {title:'The Matrix Resurrections',src:'https://image.tmdb.org/t/p/w780/8c4a8kE7PizaGQQnditMmI1xbRp.jpg'}
 ];
-let movieRotationIndex=0;
 function renderMovieStrips(){
- const makeCards=()=>[...worldMoviePosters,...worldMoviePosters].map(m=>`<div class="movie-poster"><img src="${safe(m.src)}" alt="${safe(m.title)}" loading="eager" onerror="this.style.opacity='.25'"><span>${safe(m.title)}</span></div>`).join('');
- ['#homeMovieTrack','#groupsMovieTrack'].forEach(sel=>{const el=$(sel);if(el)el.innerHTML=makeCards();});
- // Refresh the movie selection periodically without stopping the continuous ribbon.
- if(!window.movieRibbonRefresh){window.movieRibbonRefresh=setInterval(()=>{
-  movieRotationIndex=(movieRotationIndex+5)%worldMoviePosters.length;
-  ['#homeMovieTrack','#groupsMovieTrack'].forEach(sel=>{
-   const track=$(sel);if(!track)return;
-   [...track.querySelectorAll('.movie-poster')].forEach((card,i)=>{
-    const movie=worldMoviePosters[(i+movieRotationIndex)%worldMoviePosters.length];
-    const img=card.querySelector('img'),label=card.querySelector('span');
-    if(img){img.style.opacity='.35';const next=movie.src;const preloader=new Image();preloader.onload=()=>{img.src=next;img.alt=movie.title;img.style.opacity='1';};preloader.onerror=()=>{img.style.opacity='.25';};preloader.src=next;}
-    if(label)label.textContent=movie.title;
-   });
-  });
- },45000);}
+ const leaves=['🍂','🍁','🍂','🍃','🍁','🍂'];
+ ['#homeMovieTrack','#groupsMovieTrack'].forEach(sel=>{
+  const track=$(sel);if(!track||track.dataset.autumnReady==='1')return;
+  track.dataset.autumnReady='1';
+  track.innerHTML=Array.from({length:30},(_,i)=>{
+   const x=(i*37+7)%100;
+   const size=15+(i*7)%17;
+   const time=7+(i*13)%12;
+   const delay=-((i*17)%190)/10;
+   const wind=70+(i*29)%210;
+   return '<span class="autumn-leaf" aria-hidden="true" style="--leaf-x:'+x+'%;--leaf-size:'+size+'px;--leaf-time:'+time+'s;--leaf-delay:'+delay+'s;--leaf-wind:'+wind+'px">'+leaves[i%leaves.length]+'</span>';
+  }).join('');
+ });
 }
 
 function renderHome(){
