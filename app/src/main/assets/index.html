@@ -1759,49 +1759,62 @@ updateLiveViewerCount();
 setInterval(updateLiveViewerCount,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLiveViewerCount();});
 document.addEventListener('keydown',e=>{
+ const keys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+ if(!keys.includes(e.key))return;
  const tag=(e.target.tagName||'').toLowerCase();
- // In fullscreen, directional keys never switch channels automatically.
- const playerIsFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen'));
- if(playerIsFullscreen && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
-  e.preventDefault();return;
- }
  if(['input','textarea','select'].includes(tag)&&e.key!=='Escape')return;
+ const playerIsFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen'));
+ if(playerIsFullscreen){e.preventDefault();e.stopPropagation();return;}
  if(e.key==='Escape'){
   if(document.fullscreenElement){document.exitFullscreen?.();e.preventDefault();return;}
   if(playerScreen.classList.contains('is-fullscreen')){playerScreen.classList.remove('is-fullscreen');e.preventDefault();return;}
  }
- if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;
- // Unified TV-remote navigation: allow movement between the sidebar and the active page.
- // Do not trap focus inside the channel list or any single column.
- const selector='.sidebar .nav,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
- const items=[...new Set($(selector))].filter(el=>el.getClientRects().length>0 && getComputedStyle(el).visibility!=='hidden' && getComputedStyle(el).display!=='none');
+ // Android TV remotes sometimes report RTL horizontal directions inconsistently.
+ // Build one navigation map from every visible interactive control in the whole app.
+ const selector='.sidebar button,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
+ const items=[...new Set(document.querySelectorAll(selector))].filter(el=>{
+  const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
+  return r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&el.getAttribute('aria-hidden')!=='true';
+ });
  if(!items.length)return;
- const current=document.activeElement;
+ let current=document.activeElement;
  if(!items.includes(current)){
-  const first=items.find(el=>el.closest('.page.active'))||items[0];first.focus({preventScroll:true});first.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});e.preventDefault();return;
+  const first=items.find(el=>el.closest('.page.active'))||items[0];
+  first.focus({preventScroll:true});e.preventDefault();e.stopPropagation();return;
  }
- const a=current.getBoundingClientRect();
+ const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;
  let dx=0,dy=0;
  if(e.key==='ArrowUp')dy=-1;
  if(e.key==='ArrowDown')dy=1;
  if(e.key==='ArrowLeft')dx=-1;
  if(e.key==='ArrowRight')dx=1;
- const ax=a.left+a.width/2, ay=a.top+a.height/2;
  let best=null,bestScore=Infinity;
  for(const el of items){
   if(el===current)continue;
-  const r=el.getBoundingClientRect(), bx=r.left+r.width/2, by=r.top+r.height/2;
-  const vx=bx-ax, vy=by-ay, primary=vx*dx+vy*dy;
-  if(primary<=1)continue;
+  const r=el.getBoundingClientRect(),vx=(r.left+r.width/2)-ax,vy=(r.top+r.height/2)-ay;
+  const primary=vx*dx+vy*dy;
+  if(primary<=0)continue;
   const cross=Math.abs(vx*dy-vy*dx);
-  // Fast geometric navigation: strongly prefer the closest item along the pressed direction.
-  const score=primary + cross*1.35 + cross*cross/Math.max(primary,1)*0.08;
-  if(score<bestScore){bestScore=score;best=el;}
+  const score=primary+cross*0.55+(cross*cross)/(Math.max(primary,1))*0.025;
+  if(score<bestScore){best=el;bestScore=score;}
  }
- // No automatic wrap: at the edge, keep focus on the current item.
- if(best){best.focus({preventScroll:true});best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}
- e.preventDefault();
-});
+ // If no item lies strictly in the requested direction, choose the nearest
+ // visible control on the requested axis. This prevents a dead-end focus trap.
+ if(!best){
+  for(const el of items){
+   if(el===current)continue;
+   const r=el.getBoundingClientRect(),vx=(r.left+r.width/2)-ax,vy=(r.top+r.height/2)-ay;
+   const axis=dx?Math.abs(vx):Math.abs(vy),cross=dx?Math.abs(vy):Math.abs(vx);
+   const score=axis+cross*1.8;
+   if(score<bestScore){best=el;bestScore=score;}
+  }
+ }
+ if(best){
+  best.focus({preventScroll:true});
+  best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+ }
+ e.preventDefault();e.stopPropagation();
+},true);
 renderAll();
 // لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
 refreshRemoteChannels(false);
