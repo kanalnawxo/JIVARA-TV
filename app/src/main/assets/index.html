@@ -203,19 +203,21 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .footer{border-top:1px solid var(--line);padding-top:9px;margin-top:14px;
  display:flex;justify-content:space-between;gap:10px;color:#6e8ba6;font-size:9px}
 
-/* Continuous autumn breeze with drifting golden leaves on Home and Groups */
-.movie-strip{position:relative;width:calc(100% + 24px);margin:auto -12px 0;padding:0;height:clamp(96px,16vh,178px);flex:0 0 clamp(96px,16vh,178px);overflow:hidden;border:0;border-radius:0;background:linear-gradient(180deg,#243b4a 0%,#52604f 48%,#9b7950 100%);isolation:isolate;}
-.movie-strip:before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(90deg,#020b16b8 0%,transparent 18%,transparent 82%,#020b16b8 100%),linear-gradient(0deg,#020b1655,transparent 45%,#172a3844);}
-.movie-strip:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 18% 20%,#f5d58b38,transparent 36%),radial-gradient(ellipse at 78% 75%,#e9b75a30,transparent 42%);animation:autumnLight 12s ease-in-out infinite alternate;}
-.movie-strip-head,.movie-track,.movie-poster{display:none!important;}
-.autumn-leaf{position:absolute;z-index:2;top:-35px;left:var(--leaf-x);font-size:var(--leaf-size);line-height:1;opacity:0;filter:drop-shadow(0 2px 3px #2a1b0d88);will-change:transform;animation:autumnDrift var(--leaf-time) linear var(--leaf-delay) infinite;}
-@keyframes autumnDrift{0%{opacity:0;transform:translate3d(0,-24px,0) rotate(0deg) scale(.72)}8%{opacity:.95}45%{opacity:.9;transform:translate3d(calc(var(--leaf-wind)*.48),75px,0) rotate(260deg) scale(1)}82%{opacity:.78}100%{opacity:0;transform:translate3d(var(--leaf-wind),190px,0) rotate(620deg) scale(.82)}}
-@keyframes autumnLight{from{opacity:.45;transform:translateX(-2%)}to{opacity:.9;transform:translateX(2%)}}
+/* Visible autumn wind and natural golden leaves in both page banners */
+.movie-strip{position:relative!important;display:block!important;width:calc(100% + 24px);height:clamp(112px,18vh,190px);min-height:112px;flex:0 0 clamp(112px,18vh,190px);margin:auto -12px 0!important;padding:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:linear-gradient(180deg,#344d55 0%,#69715b 42%,#9c8054 100%);isolation:isolate;contain:paint;}
+.movie-strip:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#09152170,transparent 20%,transparent 80%,#09152170),linear-gradient(0deg,#241b1250,transparent 55%);}
+.movie-strip:after{content:"";position:absolute;inset:-20%;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 22% 22%,#f8d99b55,transparent 34%),radial-gradient(ellipse at 78% 76%,#d8a65b42,transparent 42%);animation:autumnLight 10s ease-in-out infinite alternate;}
+.movie-strip-head{display:none!important;}
+.movie-track{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;z-index:2!important;pointer-events:none!important;}
+.autumn-leaf{position:absolute;display:block;z-index:2;top:-32px;left:var(--leaf-x);width:var(--leaf-w);height:calc(var(--leaf-w)*1.48);opacity:0;will-change:transform;transform-origin:50% 50%;background:linear-gradient(135deg,#fff0a0 0%,#e8c34e 34%,#bd842b 72%,#87501f 100%);clip-path:polygon(50% 0%,64% 12%,82% 22%,100% 34%,82% 48%,72% 66%,58% 84%,50% 100%,42% 84%,28% 66%,18% 48%,0% 34%,18% 22%,36% 12%);filter:drop-shadow(0 2px 3px #24180c88);animation:autumnDrift var(--leaf-time) linear var(--leaf-delay) infinite;}
+.autumn-leaf:after{content:"";position:absolute;left:49%;top:8%;height:84%;width:1.5px;background:#77501d99;transform:rotate(0deg);border-radius:50%;}
+@keyframes autumnDrift{0%{opacity:0;transform:translate3d(0,-35px,0) rotate(0deg) scale(.72)}7%{opacity:.96}24%{transform:translate3d(calc(var(--leaf-wind)*.22),28px,0) rotate(115deg) scale(1)}50%{opacity:.92;transform:translate3d(calc(var(--leaf-wind)*.55),86px,0) rotate(285deg) scale(.9)}78%{opacity:.82}100%{opacity:0;transform:translate3d(var(--leaf-wind),210px,0) rotate(590deg) scale(.78)}}
+@keyframes autumnLight{from{opacity:.48;transform:translateX(-2%)}to{opacity:.95;transform:translateX(2%)}}
 #page-home,#page-groups{padding-bottom:0;min-height:100%;}
 #page-home.active,#page-groups.active{display:flex;flex-direction:column;}
-#page-home .movie-strip,#page-groups .movie-strip{margin-top:auto;}
+#page-home .movie-strip,#page-groups .movie-strip{margin-top:auto!important;}
 #page-home .footer{margin-top:0;flex:0 0 auto;}
-@media(max-width:700px){.movie-strip{width:calc(100% + 16px);margin-left:-8px;margin-right:-8px;height:clamp(80px,13vh,125px);flex-basis:clamp(80px,13vh,125px)}}
+@media(max-width:700px){.movie-strip{width:calc(100% + 16px);margin-left:-8px!important;margin-right:-8px!important;height:clamp(90px,14vh,135px);flex-basis:clamp(90px,14vh,135px)}}
 @media(prefers-reduced-motion:reduce){.autumn-leaf{animation-duration:90s;}}
 
 .toast{display:none;position:fixed;z-index:1000;bottom:20px;left:50%;
@@ -1048,17 +1050,16 @@ const worldMoviePosters = [
  {title:'The Matrix Resurrections',src:'https://image.tmdb.org/t/p/w780/8c4a8kE7PizaGQQnditMmI1xbRp.jpg'}
 ];
 function renderMovieStrips(){
- const leaves=['🍂','🍁','🍂','🍃','🍁','🍂'];
+ const leaves=Array.from({length:38},(_,i)=>i);
  ['#homeMovieTrack','#groupsMovieTrack'].forEach(sel=>{
-  const track=$(sel);if(!track||track.dataset.autumnReady==='1')return;
-  track.dataset.autumnReady='1';
-  track.innerHTML=Array.from({length:30},(_,i)=>{
-   const x=(i*37+7)%100;
-   const size=15+(i*7)%17;
-   const time=7+(i*13)%12;
-   const delay=-((i*17)%190)/10;
-   const wind=70+(i*29)%210;
-   return '<span class="autumn-leaf" aria-hidden="true" style="--leaf-x:'+x+'%;--leaf-size:'+size+'px;--leaf-time:'+time+'s;--leaf-delay:'+delay+'s;--leaf-wind:'+wind+'px">'+leaves[i%leaves.length]+'</span>';
+  const track=$(sel);if(!track)return;
+  track.innerHTML=leaves.map(i=>{
+   const x=(i*43+5)%100;
+   const width=12+(i*11)%17;
+   const time=6+(i*7)%10;
+   const delay=-((i*19)%150)/10;
+   const wind=(i%2?1:-1)*(55+(i*31)%190);
+   return '<span class="autumn-leaf" aria-hidden="true" style="--leaf-x:'+x+'%;--leaf-w:'+width+'px;--leaf-time:'+time+'s;--leaf-delay:'+delay+'s;--leaf-wind:'+wind+'px"></span>';
   }).join('');
  });
 }
