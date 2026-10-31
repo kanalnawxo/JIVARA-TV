@@ -1771,12 +1771,9 @@ document.addEventListener('keydown',e=>{
   if(playerScreen.classList.contains('is-fullscreen')){playerScreen.classList.remove('is-fullscreen');e.preventDefault();return;}
  }
  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;
- // While browsing channels, keep remote focus inside this channel list only.
- // Do not let geometric navigation jump to another list, category, or sidebar item.
- const insideChannelList=!!e.target.closest?.('#channelList .channel[data-id]');
- const selector=insideChannelList
-  ? '#channelList .channel[data-id]'
-  : '.sidebar .nav,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
+ // Unified TV-remote navigation: allow movement between the sidebar and the active page.
+ // Do not trap focus inside the channel list or any single column.
+ const selector='.sidebar .nav,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
  const items=[...new Set($(selector))].filter(el=>el.getClientRects().length>0 && getComputedStyle(el).visibility!=='hidden' && getComputedStyle(el).display!=='none');
  if(!items.length)return;
  const current=document.activeElement;
