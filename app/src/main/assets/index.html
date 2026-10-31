@@ -1761,6 +1761,9 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLive
 document.addEventListener('keydown',e=>{
  const keys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  if(!keys.includes(e.key))return;
+ // During channel reordering, let the channel-list handler receive Up/Down.
+ // This document-level capture handler otherwise intercepts arrows first.
+ if((e.key==='ArrowUp'||e.key==='ArrowDown') && document.activeElement?.closest('.channel.hold-selected'))return;
  const tag=(e.target.tagName||'').toLowerCase();
  if(['input','textarea','select'].includes(tag)&&e.key!=='Escape')return;
  const playerIsFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen'));
