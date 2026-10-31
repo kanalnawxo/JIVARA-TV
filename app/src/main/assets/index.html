@@ -1786,67 +1786,58 @@ updateLiveViewerCount();
 setInterval(updateLiveViewerCount,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLiveViewerCount();});
 document.addEventListener('keydown',e=>{
- const keys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
- if(!keys.includes(e.key))return;
- // Ignore OS/browser key-repeat events: each physical remote press moves one cell.
- if(e.repeat){e.preventDefault();e.stopImmediatePropagation();return;}
- // During channel reordering, let the channel-list handler receive Up/Down.
- // This document-level capture handler otherwise intercepts arrows first.
- if((e.key==='ArrowUp'||e.key==='ArrowDown') && document.activeElement?.closest('.channel.hold-selected'))return;
- const tag=(e.target.tagName||'').toLowerCase();
- if(['input','textarea','select'].includes(tag)&&e.key!=='Escape')return;
- const playerIsFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen'));
- if(playerIsFullscreen){e.preventDefault();e.stopPropagation();return;}
- if(e.key==='Escape'){
-  if(document.fullscreenElement){document.exitFullscreen?.();e.preventDefault();return;}
-  if(playerScreen.classList.contains('is-fullscreen')){playerScreen.classList.remove('is-fullscreen');e.preventDefault();return;}
+ const keyMap={37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',13:'Enter',23:'Enter',66:'Enter'};
+ const key=keyMap[e.keyCode]||e.key;
+ const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+ const current=document.activeElement;
+ if(key==='Enter' || key===' '){
+  if(current && current!==document.body && current!==document.documentElement){
+   const tag=(current.tagName||'').toLowerCase();
+   if(['button','a','input','select','textarea'].includes(tag) || current.matches('[role="button"],.channel,.group-card,.group-btn,.category')){
+    if(tag==='input' || tag==='textarea' || tag==='select')return;
+    e.preventDefault();e.stopPropagation();
+    current.click();
+   }
+  }
+  return;
  }
- // Android TV remotes sometimes report RTL horizontal directions inconsistently.
- // Build one navigation map from every visible interactive control in the whole app.
+ if(!arrows.includes(key))return;
+ if(e.repeat){e.preventDefault();return;}
+ if((key==='ArrowUp'||key==='ArrowDown') && current?.closest('.channel.hold-selected'))return;
+ const tag=(e.target.tagName||'').toLowerCase();
+ if(['input','textarea','select'].includes(tag))return;
+ if(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen')){e.preventDefault();return;}
  const selector='.sidebar button,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
  const items=[...new Set(document.querySelectorAll(selector))].filter(el=>{
   const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
   return r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&el.getAttribute('aria-hidden')!=='true';
  });
  if(!items.length)return;
- let current=document.activeElement;
  if(!items.includes(current)){
-  const first=items.find(el=>el.closest('.page.active'))||items[0];
-  first.focus({preventScroll:true});e.preventDefault();e.stopPropagation();return;
+  const first=items.find(el=>el.classList.contains('nav'))||items[0];
+  first.focus({preventScroll:true});e.preventDefault();return;
  }
- const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;
  let dx=0,dy=0;
- if(e.key==='ArrowUp')dy=-1;
- if(e.key==='ArrowDown')dy=1;
- if(e.key==='ArrowLeft')dx=-1;
- if(e.key==='ArrowRight')dx=1;
+ if(key==='ArrowUp')dy=-1;
+ if(key==='ArrowDown')dy=1;
+ if(key==='ArrowLeft')dx=-1;
+ if(key==='ArrowRight')dx=1;
+ const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;
  let best=null,bestScore=Infinity;
  for(const el of items){
   if(el===current)continue;
-  const r=el.getBoundingClientRect(),vx=(r.left+r.width/2)-ax,vy=(r.top+r.height/2)-ay;
+  const r=el.getBoundingClientRect(),vx=r.left+r.width/2-ax,vy=r.top+r.height/2-ay;
   const primary=vx*dx+vy*dy;
   if(primary<=0)continue;
   const cross=Math.abs(vx*dy-vy*dx);
-  // Prefer the same visual row/column to avoid diagonal focus jumps.
-  const score=primary+cross*1.35+(cross*cross)/(Math.max(primary,1))*0.04;
+  const score=primary+cross*2.2+(cross*cross)/(Math.max(primary,1))*0.025;
   if(score<bestScore){best=el;bestScore=score;}
- }
- // If no item lies strictly in the requested direction, choose the nearest
- // visible control on the requested axis. This prevents a dead-end focus trap.
- if(!best){
-  for(const el of items){
-   if(el===current)continue;
-   const r=el.getBoundingClientRect(),vx=(r.left+r.width/2)-ax,vy=(r.top+r.height/2)-ay;
-   const axis=dx?Math.abs(vx):Math.abs(vy),cross=dx?Math.abs(vy):Math.abs(vx);
-   const score=axis+cross*1.8;
-   if(score<bestScore){best=el;bestScore=score;}
-  }
  }
  if(best){
   best.focus({preventScroll:true});
   best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
- e.preventDefault();e.stopPropagation();
+ e.preventDefault();
 },true);
 const RADIO_STORAGE_KEY='jivara-radio-list-v1';
 let radioInitialized=false;
