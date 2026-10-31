@@ -1,8 +1,9 @@
 <div class="radio-controls">
-      <label class="field">ناوی ڕادیۆ<input id="radioName" type="text" placeholder="ناوی ڕادیۆ بنووسە"></label>
-      <label class="field">لینکی پەخشی ڕادیۆ (URL)<input id="radioUrl" type="text" inputmode="url" placeholder="لینکی ڕادیۆ بنووسە" autocomplete="off"></label>
-      <div id="radioAuthPanel"></div><div class="panel-head">ڕادیۆ پاشەکەوتکراوەکان</div><div id="radioSavedList" class="channel-scroll"></div>
-      <div class="notice" id="radioStatus" role="status">لینکی پەخشی ڕادیۆ بنووسە، پاشان پەخشکردن دابگرە.</div>
+      <div class="radio-visual" id="radioVisual"><div id="radioVisualStatus">ئامادەی پەخشە</div></div>
+      <div class="panel-head">ڕادیۆ پاشەکەوتکراوەکان</div>
+      <div id="radioSavedList" class="channel-scroll"></div>
+      <button class="btn" id="radioStop" type="button">وەستاندن</button>
+      <div class="notice" id="radioStatus" role="status">ڕادیۆیەک هەڵبژێرە بۆ گوێگرتن.</div>
       <audio id="radioAudio" preload="none"></audio>
      </div>
     </div>
@@ -1560,14 +1561,13 @@ function setRadioState(playing,message){$('#radioVisual').classList.toggle('play
 async function playRadio(r){const audio=$('#radioAudio');try{audio.pause();audio.src=r.url;audio.load();await audio.play();setRadioState(true,r.name+' لە پەخشدایە.');}catch(e){setRadioState(false,'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.');}}
 function initRadio(){
  if(radioInitialized)return;radioInitialized=true;
- $('#radioPlay').onclick=()=>{const url=$('#radioUrl').value.trim(),name=$('#radioName').value.trim();if(!url){setRadioState(false,'سەرەتا ڕادیۆیەک هەڵبژێرە.');return;}playRadio({name:name||'ڕادیۆ',url});};
  $('#radioStop').onclick=()=>{const a=$('#radioAudio');a.pause();a.removeAttribute('src');a.load();setRadioState(false,'پەخش وەستێنرا.');};
  $('#radioAudio').addEventListener('playing',()=>setRadioState(true,'ڕادیۆ لە پەخشدایە.'));
  $('#radioAudio').addEventListener('error',()=>setRadioState(false,'هەڵە لە لینک یان فۆرماتی پەخش.'));
  try{
-  if(!window.firebase||!firebase.apps.length)throw new Error('Firebase SDK unavailable');
-  const firebaseConfig={apiKey:"AIzaSyCUSZkhM... (public config; don't unnecessarily repeat)",authDomain:"jivara-tv.firebaseapp.com",projectId:"jivara-tv",storageBucket:"jivara-tv.firebasestorage.app",messagingSenderId:"926151932523",appId:"1:926151932:web:01d96465abf6f865c98f2e",measurementId:"G-BK1BTZ1V2J"};
-  firebase.initializeApp(firebaseConfig);radioAuth=firebase.auth();radioDb=firebase.firestore();radioFirebaseReady=true;
+  if(!window.firebase)throw new Error('Firebase SDK unavailable');
+  const firebaseConfig={apiKey:"AIzaSyCUSZkhmBvjuev0BGj_XfBWEHc_HBDZ-bk",authDomain:"jivara-tv.firebaseapp.com",projectId:"jivara-tv",storageBucket:"jivara-tv.firebasestorage.app",messagingSenderId:"926151932523",appId:"1:926151932:web:01d96465abf6f865c98f2e",measurementId:"G-BK1BTZ1V2J"};
+  if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);radioAuth=firebase.auth();radioDb=firebase.firestore();radioFirebaseReady=true;
   radioDb.collection('radioStations').onSnapshot(snap=>{radioStations=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.name&&r.url);renderRadioList();renderRadioAdminList();},()=>{$('#radioStatus').textContent='نەتوانرا لیستی ڕادیۆکان باربکرێت.';});
   radioAuth.onAuthStateChanged(user=>{radioCurrentUser=user;renderRadioAuth();});
  }catch(e){$('#radioStatus').textContent='پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.';}
