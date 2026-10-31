@@ -185,9 +185,14 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 #manualChannelUrl,#manualChannelLogo{direction:ltr;text-align:left;unicode-bidi:plaintext;}
 .notice{padding:11px;background:#09233a;border:1px solid #174465;border-radius:8px;
  color:#adc8e0;font-size:11px;line-height:1.8;margin-bottom:12px}
-.settings-layout{display:grid;grid-template-columns:175px 1fr;gap:12px}
-.settings-nav{display:flex;flex-direction:column;gap:7px}
-.settings-nav button{text-align:right}
+/* Settings: keep the right-side tab boxes compact and their labels centered. */
+.settings-layout{display:grid;grid-template-columns:148px minmax(0,1fr);gap:10px;align-items:start}
+.settings-nav{display:flex;flex-direction:column;gap:6px;padding:9px;min-width:0}
+.settings-nav button{text-align:center;justify-content:center;padding:8px 6px;font-size:11px;line-height:1.45;min-height:38px;white-space:normal}
+.settings-nav .channel-delete-help{padding:8px 6px;font-size:9px;line-height:1.65;margin-top:2px}
+#settingsBody{min-width:0;overflow:hidden}
+#settingsBody .panel-head{text-align:center}
+#settingsBody .form-grid{align-items:start}
 .footer{border-top:1px solid var(--line);padding-top:9px;margin-top:14px;
  display:flex;justify-content:space-between;gap:10px;color:#6e8ba6;font-size:9px}
 
@@ -249,6 +254,13 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
  .content{padding:0 8px 8px}.hero{height:100px;margin-bottom:9px}.hero-main{padding:12px 16px 18px}.hero h2{font-size:19px;margin:5px 0}.section-title{margin:8px 0 6px;font-size:12px}.categories{gap:6px}.category{height:58px;gap:3px}.category .symbol{font-size:21px}.category b{font-size:10px}.project-message{margin-top:12px;padding:8px 10px;font-size:12px;line-height:1.6}.lower{gap:8px;margin-top:9px}.panel{padding:9px}.group-cards{gap:7px}.group-card{min-height:88px}.channel-scroll{max-height:46vh}
 }
 @media (max-height:800px) and (min-width:701px){
+ .settings-layout{grid-template-columns:132px minmax(0,1fr);gap:8px}
+ .settings-nav{padding:7px;gap:5px}
+ .settings-nav button{padding:6px 5px;font-size:10px;min-height:33px;line-height:1.35}
+ .settings-nav .channel-delete-help{padding:6px 5px;font-size:8px;line-height:1.5}
+ #settingsBody{padding:8px}
+ #settingsBody .field{gap:5px}
+ #settingsBody .field input,#settingsBody .field select,#settingsBody .field textarea{padding:8px}
  .topbar{height:42px;min-height:42px}.verse-top{font-size:clamp(16px,1.65vw,22px);line-height:1.2}.sidebar{padding-top:6px;padding-bottom:5px;gap:3px}.logo{margin:2px 0 8px}.nav{padding-top:6px;padding-bottom:6px}.nav-bottom{padding:5px 0;font-size:9px}
  .hero{height:82px;margin-bottom:7px}.hero-main{padding:8px 13px 14px}.hero h2{font-size:17px;margin:4px 0}.section-title{margin:6px 0 5px}.category{height:48px}.category .symbol{font-size:18px}.project-message{margin-top:18px;padding:5px 8px;font-size:11px;line-height:1.5}.lower{margin-top:7px;gap:7px}.panel{padding:7px}.panel-head{margin-bottom:6px}.group-card{min-height:70px}.group-card .art{font-size:24px}.channel-scroll{max-height:40vh}.footer{margin-top:7px;padding-top:5px}
 }
