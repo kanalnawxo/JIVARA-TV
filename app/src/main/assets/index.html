@@ -1398,6 +1398,14 @@ function playChannel(id){
  if(!keepPlayerFullscreen){switchPage('browse');renderChannels();focusSelectedChannel(c.id);}else{renderGroups();}
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
+ // A single channel selection opens the player full-screen. Keep the selected
+ // channel focused underneath so it is restored when the viewer exits full-screen.
+ if(!keepPlayerFullscreen){
+  requestAnimationFrame(()=>{
+   fullscreen();
+   focusSelectedChannel(c.id);
+  });
+ }
 }
 video.addEventListener('playing',()=>idle.style.display='none');
 video.addEventListener('error',()=>{if(video.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
@@ -1424,10 +1432,16 @@ async function fullscreen(){
 }
 const playerScreen=$('#playerScreen');
 playerScreen.addEventListener('click',e=>{
- // In full screen, one click anywhere on the video surface returns to the channel list view.
+ // One click on the video toggles full-screen; after exiting, restore focus to
+ // the exact channel row that was playing.
  if(e.target===playerScreen || e.target===idle || idle.contains(e.target) || e.target===video || playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen){
+  const wasFullscreen=playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
   playerScreen.focus({preventScroll:true});
-  fullscreen();
+  fullscreen().then(()=>{
+   if(wasFullscreen && currentChannel){
+    requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));
+   }
+  });
  }
 });
 playerScreen.addEventListener('keydown',e=>{
