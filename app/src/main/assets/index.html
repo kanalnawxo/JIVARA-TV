@@ -1865,7 +1865,7 @@ function renderRadioAuth(){
   $('#radioSave').onclick=saveRadioStation;renderRadioAdminList();
  }else{
   box.innerHTML='<div class="radio-login-form"><div class="panel-head">چوونەژوورەوەی بەڕێوەبەر</div><label class="field">ئیمەیڵ<input id="radioAdminEmail" type="email" autocomplete="username" placeholder="ئیمەیڵ"></label><label class="field">وشەی نهێنی<input id="radioAdminPassword" type="password" autocomplete="current-password" placeholder="وشەی نهێنی"></label><button class="btn primary" id="radioLogin" type="button">چوونەژوورەوە</button><div class="notice" style="margin-top:10px">تەنها بەڕێوەبەری ڕێگەپێدراو دەتوانێت ڕادیۆ زیاد بکات یان دەستکاری و بسڕێتەوە.</div></div>';
-  $('#radioLogin').onclick=async()=>{const email=$('#radioAdminEmail').value.trim(),password=$('#radioAdminPassword').value;if(!email||!password)return toast('ئیمەیڵ و وشەی نهێنی بنووسە.');try{await radioAuth.signInWithEmailAndPassword(email,password);$('#radioAdminPassword').value='';}catch(e){toast('چوونەژوورەوە سەرکەوتوو نەبوو؛ زانیارییەکان بپشکنە.');}};
+  $('#radioLogin').onclick=async()=>{const email=$('#radioAdminEmail').value.trim(),password=$('#radioAdminPassword').value;if(!email||!password)return toast('ئیمەیڵ و وشەی نهێنی بنووسە.');try{await radioAuth.signInWithEmailAndPassword(email,password);$('#radioAdminPassword').value='';}catch(e){console.error('JIVARA radio admin login error:',e);const code=(e&&e.code)?String(e.code):'unknown-error';toast('هەڵەی چوونەژوورەوە: '+code);}};
  }
 }
 async function saveRadioStation(){
