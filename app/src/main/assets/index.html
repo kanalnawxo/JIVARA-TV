@@ -383,9 +383,9 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
       <button class="btn primary" data-tab="manual">＋ زیادکردنی کەناڵ بە دەستی</button>
       <button class="btn" data-tab="groups">▦ گرووپەکان</button>
       <button class="btn" data-tab="radio">📻 بەڕێوەبردنی ڕادیۆ</button>
-      <div class="channel-delete-help" role="note" aria-label="ڕێنمایی سڕینەوەی کەناڵ">
-       بۆ سڕینەوەی کەناڵ، دوو کرتە لەسەر هەر کەناڵێک بکە.<br>
-       کاتێک ڕەنگی کەناڵەکە سوور بوو، بە کرتەیەکی تر تەنها هەمان کەناڵ دەسڕدرێتەوە.
+      <div class="channel-delete-help" role="note" aria-label="ڕێنمایی پەخش و سڕینەوەی کەناڵ">
+       کرتەی یەکەم: پەخشکردن لە قەبارەی ئاسایی. کرتەی دووەم لەسەر هەمان کەناڵ: پڕشاشە.<br>
+       بۆ سڕینەوە، لە بەشی دەستکاری ناوی کەناڵەکان دوو کرتە لەسەر دوگمەی سڕینەوە بکە.
       </div>
      </div>
      <div class="panel" id="settingsBody"></div>
@@ -1423,11 +1423,15 @@ async function fullscreen(){
  }finally{fullscreenBusy=false;}
 }
 const playerScreen=$('#playerScreen');
+const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
 playerScreen.addEventListener('click',e=>{
- // In full screen, one click anywhere on the video surface returns to the channel list view.
- if(e.target===playerScreen || e.target===idle || idle.contains(e.target) || e.target===video || playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen){
+ // A single click exits fullscreen; a click in normal size leaves the player unchanged.
+ if(isPlayerFullscreen()){
+  e.preventDefault();
   playerScreen.focus({preventScroll:true});
-  fullscreen();
+  fullscreen().then(()=>{
+   if(currentChannel)requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));
+  });
  }
 });
 playerScreen.addEventListener('keydown',e=>{
@@ -1508,26 +1512,24 @@ if(channelListEl){
  function handleRemoteChannelTap(row){
   if(!row)return;
   const id=row.dataset.id;
-  if(row.classList.contains('delete-selected')){
-   if(remoteTapPending){clearTimeout(remoteTapPending.timer);remoteTapPending=null;}
-   const deletingCurrent=!!currentChannel&&currentChannel.id===id;
-   const deletedChannel=channels.find(c=>c.id===id);if(deletedChannel)rememberChannelDeletion(deletedChannel);
-   channels=channels.filter(c=>c.id!==id);
-   persistManualChannels();
-   if(deletingCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
-   renderAll();toast('کەناڵەکە سڕایەوە.');return;
-  }
   if(remoteTapPending){
-   const prev=remoteTapPending;clearTimeout(prev.timer);remoteTapPending=null;
+   const prev=remoteTapPending;
+   clearTimeout(prev.timer);
+   remoteTapPending=null;
    if(prev.id===id){
-    channelListEl.querySelectorAll('.channel.delete-selected').forEach(x=>x.classList.remove('delete-selected'));
-    row.classList.add('delete-selected');
-    toast('کەناڵەکە سوور بوو؛ OK دووبارە دابگرە بۆ سڕینەوە.');
+    if(currentChannel?.id!==id)playChannel(id);
+    const selected=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+    if(selected)selected.focus({preventScroll:true});
+    fullscreen();
     return;
    }
-   playChannel(prev.id);
   }
-  const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id){remoteTapPending=null;playChannel(id);}},450);
+  // First OK press plays inline; a second OK press on the same channel enters fullscreen.
+  if(currentChannel?.id!==id)playChannel(id);
+  else row.focus({preventScroll:true});
+  const timer=setTimeout(()=>{
+   if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;
+  },450);
   remoteTapPending={id,timer};
  }
  channelListEl.addEventListener('keydown',e=>{
@@ -1605,46 +1607,28 @@ if(channelListEl){
  },true);
 }
 
-// Channel list: two clicks mark one channel red; the next click deletes only that channel.
-const channelClickTimers = new WeakMap();
-const channelPendingClicks = new WeakMap();
+// Channel list: first click plays inline; a second click on the same channel enters fullscreen.
 const channelListForDelete = $('#channelList');
 if(channelListForDelete){
  channelListForDelete.addEventListener('click',e=>{
   if(channelListForDelete.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
-  const row=e.target.closest('.channel[data-id]'); if(!row)return;
+  const row=e.target.closest('.channel[data-id]');
+  if(!row)return;
   const id=row.dataset.id;
-  // Third click deletes only this channel; other channels are never affected.
-  if(row.classList.contains('delete-selected')){
-   e.preventDefault();
-   const deletedCurrent=!!currentChannel&&currentChannel.id===id;
-   const deletedChannel=channels.find(c=>c.id===id);if(deletedChannel)rememberChannelDeletion(deletedChannel);
-   channels=channels.filter(c=>c.id!==id);
-   persistManualChannels();
-   if(deletedCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
-   renderAll();
-   toast('کەناڵەکە سڕایەوە.');
-   return;
-  }
-  const pending=channelPendingClicks.get(channelListForDelete);
-  if(pending){
-   clearTimeout(pending.timer);channelPendingClicks.delete(channelListForDelete);
-   if(pending.id===id){
-    channelListForDelete.querySelectorAll('.channel.delete-selected').forEach(x=>x.classList.remove('delete-selected'));
-    row.classList.add('delete-selected');
-    e.preventDefault();
-    toast('کەناڵەکە سوور بوو؛ بە کرتەیەکی تر دەسڕدرێتەوە.');
-    return;
-   }
-   playChannel(pending.id);
-  }
-  const timer=setTimeout(()=>{
-   const p=channelPendingClicks.get(channelListForDelete);
-   if(p&&p.id===id){channelPendingClicks.delete(channelListForDelete);playChannel(id);}
-  },360);
-  channelPendingClicks.set(channelListForDelete,{id,timer});
+  if(currentChannel?.id!==id)playChannel(id);
+  else row.focus({preventScroll:true});
  });
- channelListForDelete.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();});
+ channelListForDelete.addEventListener('dblclick',e=>{
+  const row=e.target.closest('.channel[data-id]');
+  if(!row)return;
+  e.preventDefault();
+  e.stopPropagation();
+  const id=row.dataset.id;
+  if(currentChannel?.id!==id)playChannel(id);
+  const selected=channelListForDelete.querySelector('.channel[data-id="'+id+'"]');
+  if(selected)selected.focus({preventScroll:true});
+  requestAnimationFrame(()=>fullscreen());
+ });
 }
 // Search results keep their ordinary single-click playback and double-click fullscreen behavior.
 const searchList=$('#searchResults');
@@ -1664,7 +1648,10 @@ if(searchList){
 }
 document.addEventListener('fullscreenchange',()=>{
  if(document.fullscreenElement===playerScreen) playerScreen.classList.add('is-fullscreen');
- else if(!document.fullscreenElement) playerScreen.classList.remove('is-fullscreen');
+ else if(!document.fullscreenElement){
+  playerScreen.classList.remove('is-fullscreen');
+  if(currentChannel)requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));
+ }
 });
 // Keep pointer interaction natural across the whole interface; hovering a control highlights it.
 document.addEventListener('pointermove',()=>{document.documentElement.classList.add('pointer-active');},{passive:true});
@@ -1713,7 +1700,7 @@ function settingsTab(tab){
   renderRadioAuth();
  }else if(tab==='edit'){
   body.innerHTML='<div class="panel-head">دەستکاری ناوی کەناڵەکان</div><div class="notice">دەتوانیت ناوی کەناڵەکان بگۆڕیت. ئەم گۆڕانکارییانە لە کاتی بەکارهێنانی ئەم پەڕگەیەدا دەمێننەوە.</div><div id="editChannelRows" class="channel-scroll" style="height:55vh;max-height:55vh"></div>';
-  const paint=()=>{const box=$('#editChannelRows');if(!box)return;box.innerHTML=channels.length?channels.map(c=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:7px;background:#071b2d;border:1px solid #163650;border-radius:8px"><input data-edit-name="${safe(c.id)}" value="${safe(c.name)}" style="flex:1;min-width:0;background:#031322;color:white;border:1px solid #17405e;border-radius:6px;padding:9px"><button class="btn" data-save-name="${safe(c.id)}">✓</button></div>`).join(''):'<div class="empty">هیچ کەناڵێک نییە.</div>';box.querySelectorAll('[data-save-name]').forEach(btn=>btn.onclick=()=>{const c=channels.find(x=>x.id===btn.dataset.saveName);const input=box.querySelector(`[data-edit-name="${btn.dataset.saveName}"]`);if(c&&input&&input.value.trim()){c.name=input.value.trim();persistManualChannels();renderAll();paint();toast('ناوی کەناڵ نوێکرایەوە.');}});};paint();
+  const paint=()=>{const box=$('#editChannelRows');if(!box)return;box.innerHTML=channels.length?channels.map(c=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:7px;background:#071b2d;border:1px solid #163650;border-radius:8px"><input data-edit-name="${safe(c.id)}" value="${safe(c.name)}" style="flex:1;min-width:0;background:#031322;color:white;border:1px solid #17405e;border-radius:6px;padding:9px"><button class="btn" data-save-name="${safe(c.id)}">✓</button><button class="btn" data-delete-name="${safe(c.id)}">سڕینەوە</button></div>`).join(''):'<div class="empty">هیچ کەناڵێک نییە.</div>';box.querySelectorAll('[data-save-name]').forEach(btn=>btn.onclick=()=>{const c=channels.find(x=>x.id===btn.dataset.saveName);const input=box.querySelector(`[data-edit-name="${btn.dataset.saveName}"]`);if(c&&input&&input.value.trim()){c.name=input.value.trim();persistManualChannels();renderAll();paint();toast('ناوی کەناڵ نوێکرایەوە.');}});box.querySelectorAll('[data-delete-name]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.deleteName;const channel=channels.find(x=>x.id===id);if(!channel)return;if(btn.dataset.armed!=='1'){btn.dataset.armed='1';btn.textContent='دڵنیایت؟';return;}const deletingCurrent=!!currentChannel&&currentChannel.id===id;rememberChannelDeletion(channel);channels=channels.filter(x=>x.id!==id);persistManualChannels();if(deletingCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}renderAll();paint();toast('کەناڵەکە سڕایەوە.');});};paint();
  }else if(tab==='groups'){
   body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   groups.map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
  }else{
