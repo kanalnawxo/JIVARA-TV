@@ -1469,7 +1469,7 @@ if(channelListEl){
   const row=e.target.closest('.channel[data-id]');
   if(!row || (e.button!==0&&e.pointerType!=='touch'))return;
   clearHoldState();holdActivated=false;heldRow=row;holdStartX=e.clientX;holdStartY=e.clientY;
-  holdTimer=setTimeout(()=>{holdTimer=null;holdActivated=true;row.classList.add('hold-selected');toast('کەناڵەکە زەرد بوو؛ ئێستا بیگوازەوە بۆ شوێنی نوێ.');},650);
+  holdTimer=setTimeout(()=>{holdTimer=null;holdActivated=true;row.classList.add('hold-selected');row.style.touchAction='none';try{if(e.pointerId!==undefined)row.setPointerCapture(e.pointerId);}catch{}toast('کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.');},650);
  });
  document.addEventListener('pointermove',e=>{
   if(!heldRow)return;
@@ -1505,6 +1505,7 @@ if(channelListEl){
    channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
    if(dragRow)dragRow.classList.remove('dragging');
    if(dropRow)dropRow.classList.remove('drop-target');
+   channelListEl.querySelectorAll('.channel').forEach(x=>{x.style.touchAction='';});
    dragRow=null;dropRow=null;heldRow=null;holdActivated=false;
    channelListEl.dataset.suppressClick='1';setTimeout(()=>delete channelListEl.dataset.suppressClick,350);
   }else{heldRow=null;}
@@ -1541,8 +1542,9 @@ if(channelListEl){
   remoteTapPending={id,timer};
  }
  channelListEl.addEventListener('keydown',e=>{
+  const remoteKey=({13:'Enter',23:'Enter',66:'Enter',19:'ArrowUp',20:'ArrowDown',21:'ArrowLeft',22:'ArrowRight'}[e.keyCode]||e.key);
   const row=e.target.closest('.channel[data-id]');
-  const okKey=e.key==='Enter'||e.key===' ';
+  const okKey=remoteKey==='Enter'||remoteKey===' ';
   if(!row && !remoteReorder)return;
   if(okKey){
    e.preventDefault();e.stopPropagation();
@@ -1572,12 +1574,12 @@ if(channelListEl){
    }
    return;
   }
-  if(remoteReorder && (e.key==='ArrowUp'||e.key==='ArrowDown')){
+  if(remoteReorder && (remoteKey==='ArrowUp'||remoteKey==='ArrowDown')){
    e.preventDefault();e.stopPropagation();
    const from=channels.findIndex(c=>c.id===remoteHoldRow?.dataset.id);
    if(from<0)return;
    const current=channels[from], groupRows=channels.filter(c=>c.group===current.group);
-   const at=groupRows.findIndex(c=>c.id===current.id), next=at+(e.key==='ArrowUp'?-1:1);
+   const at=groupRows.findIndex(c=>c.id===current.id), next=at+(remoteKey==='ArrowUp'?-1:1);
    if(next<0||next>=groupRows.length)return;
    const other=groupRows[next], to=channels.findIndex(c=>c.id===other.id);
    [channels[from],channels[to]]=[channels[to],channels[from]];
@@ -1586,14 +1588,15 @@ if(channelListEl){
    if(remoteHoldRow){remoteHoldRow.classList.add('hold-selected');remoteHoldRow.focus({preventScroll:true});remoteHoldRow.scrollIntoView({block:'nearest'});}
    return;
   }
-  if(e.key==='Escape' && remoteReorder){
+  if(remoteKey==='Escape' && remoteReorder){
    e.preventDefault();e.stopPropagation();
    channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
    remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
   }
  },true);
  channelListEl.addEventListener('keyup',e=>{
-  if(e.key==='Enter'||e.key===' '){
+  const remoteKey=({13:'Enter',23:'Enter',66:'Enter'}[e.keyCode]||e.key);
+  if(remoteKey==='Enter'||remoteKey===' '){
    remoteOkDown=false;
    // A short OK press should still activate the focused channel on Android TV.
    // keydown is intercepted to detect a long press, so handle the short press here.
@@ -1813,6 +1816,15 @@ document.addEventListener('keydown',e=>{
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const current=document.activeElement;
+ // In fullscreen (or when the player itself is focused), LEFT/RIGHT adjust playback volume.
+ if((document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen') || current===playerScreen) && (key==='ArrowLeft'||key==='ArrowRight')){
+  e.preventDefault();e.stopPropagation();
+  const step=0.05, next=Math.max(0,Math.min(1,(Number(video.volume)||0)+(key==='ArrowRight'?step:-step)));
+  video.muted=false;video.volume=next;
+  const muteButton=$('#muteBtn');if(muteButton)muteButton.textContent=next===0?'🔇 بێدەنگ':'🔊 دەنگ';
+  toast('ئاستی دەنگ: '+Math.round(next*100)+'٪');
+  return;
+ }
  if(key==='Enter' || key===' '){
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
