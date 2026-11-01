@@ -39,6 +39,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         // Keep the TV display awake while JIVARA TV is in the foreground.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -181,7 +182,25 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void setKeyboardMode(boolean visible) {
+        runOnUiThread(() -> {
+            if (visible) {
+                getWindow().getDecorView().setSystemUiVisibility(0);
+                getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            } else {
+                getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            }
+        });
+    }
+
     private class NativeBridge {
+        @JavascriptInterface public void setKeyboardMode(boolean visible) { setKeyboardMode(visible); }
         @JavascriptInterface public void play(String url) { runOnUiThread(() -> playStream(url)); }
         @JavascriptInterface public void pause() { runOnUiThread(() -> { if (exoPlayer != null) exoPlayer.pause(); }); }
         @JavascriptInterface public void resume() { runOnUiThread(() -> { if (exoPlayer != null) exoPlayer.play(); }); }
