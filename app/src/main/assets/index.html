@@ -1149,7 +1149,7 @@ function renderHome(){
  `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
  <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span></button>`).join('');
  $('#homeCategories').innerHTML=makeTiles(mainGroups);
- $('#homeCategories').insertAdjacentHTML('beforeend','<button class="category" data-open-radio style="--c1:#7434a8;--c2:#075d8d"><span class="symbol-wrap"><span class="symbol">📻</span></span><b>ڕادیۆ</b><span class="channel-badge">LIVE</span></button>');
+ 
  let countrySection=$('#homeCountryCategories');
  if(!countrySection){
   const heading=document.createElement('div');
@@ -1165,7 +1165,6 @@ function renderHome(){
  countrySection.innerHTML=makeTiles(countries);
  $('#page-home').querySelectorAll('[data-group]').forEach(b=>
  b.onclick=()=>openGroup(b.dataset.group));
- $('#homeCategories').querySelectorAll('[data-open-radio]').forEach(b=>b.onclick=()=>switchPage('radio'));
 }
 function renderGroups(){
 
@@ -1173,11 +1172,10 @@ function renderGroups(){
  `<button class="group-card" data-group="${g.id}">
  <span class="art">${g.art}</span><b>${g.name}</b>
  <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
- $('#groupCards').insertAdjacentHTML('beforeend','<button class="group-card" data-open-radio><span class="art">📻</span><b>ڕادیۆ</b><small>پەخشی دەنگ</small></button>');
+ 
 
  $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
  b.onclick=()=>openGroup(b.dataset.group));
- document.querySelectorAll('[data-open-radio]').forEach(b=>b.onclick=()=>switchPage('radio'));
 }
 function renderChannels(){
  const list=groupChannels(currentGroup);
@@ -1208,6 +1206,8 @@ function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($
 
 function switchPage(name){
  if(!$('#page-'+name))name='home';
+ // Stop radio playback immediately when navigating away from its page.
+ if(activePage==='radio'&&name!=='radio')stopRadioPlayback('بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.');
  // Leaving the live channel page must stop the native Android player completely.
  if(activePage==='browse'&&name!=='browse')cleanPlayer();
  activePage=name;
@@ -1950,9 +1950,13 @@ async function saveRadioStation(){
 }
 function setRadioState(playing,message){$('#radioVisual').classList.toggle('playing',playing);$('#radioVisualStatus').textContent=playing?'لە پەخشدایە':'ئامادەی پەخشە';$('#radioStatus').textContent=message;}
 async function playRadio(r){const audio=$('#radioAudio');try{audio.pause();audio.src=r.url;audio.load();await audio.play();setRadioState(true,r.name+' لە پەخشدایە.');}catch(e){setRadioState(false,'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.');}}
+function stopRadioPlayback(message='پەخش وەستێنرا.'){
+ const a=$('#radioAudio');if(a){a.pause();a.removeAttribute('src');a.load();}
+ setRadioState(false,message);
+}
 function initRadio(){
  if(radioInitialized)return;radioInitialized=true;
- $('#radioStop').onclick=()=>{const a=$('#radioAudio');a.pause();a.removeAttribute('src');a.load();setRadioState(false,'پەخش وەستێنرا.');};
+ $('#radioStop').onclick=()=>stopRadioPlayback('پەخش وەستێنرا.');
  $('#radioAudio').addEventListener('playing',()=>setRadioState(true,'ڕادیۆ لە پەخشدایە.'));
  $('#radioAudio').addEventListener('error',()=>setRadioState(false,'هەڵە لە لینک یان فۆرماتی پەخش.'));
  try{
