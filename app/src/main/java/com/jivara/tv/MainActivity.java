@@ -16,6 +16,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import org.json.JSONObject;
 
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
@@ -114,10 +115,11 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPlayerError(PlaybackException error) {
+                final String detail = error.errorCodeName + ": " + String.valueOf(error.getMessage());
                 webView.evaluateJavascript(
                         "document.getElementById('idle').style.display='flex';"
                         + "document.getElementById('video').dispatchEvent(new Event('error'));"
-                        + "if(window.toast)toast('پەخش نەکرا؛ هەوڵی پلەیەری تر دەدرێت.');", null);
+                        + "if(window.toast)toast('هەڵەی پلەیەر: ' + " + JSONObject.quote(detail) + ");", null);
             }
         });
 
@@ -155,7 +157,8 @@ public class MainActivity extends Activity {
                 item.setMimeType(MimeTypes.APPLICATION_M3U8);
             } else if (lower.contains(".mpd")) {
                 item.setMimeType(MimeTypes.APPLICATION_MPD);
-            } else if (lower.matches(".*/(live|movie|series)/[^/?]+/[^/?]+/\\d+(?:\\?.*)?$")
+            } else if (lower.matches(".*\\.(ts|m2ts)(?:[?#].*)?$")
+                    || lower.matches(".*/(live|movie|series)/[^/?]+/[^/?]+/\\d+(?:\\?.*)?$")
                     || lower.matches(".*[?&](stream|channel|id)=\\d+(?:&.*)?$")) {
                 // Xtream-style numeric stream IDs commonly serve MPEG-TS without a .ts suffix.
                 item.setMimeType(MimeTypes.VIDEO_MP2T);
