@@ -1620,27 +1620,35 @@ if(channelListEl){
  },true);
 }
 
-// Channel list: first click plays inline; a second click on the same channel enters fullscreen.
+// Pointer: first click plays inline; a second click on the same channel enters fullscreen.
 const channelListForDelete = $('#channelList');
+let pointerChannelClick = null;
 if(channelListForDelete){
  channelListForDelete.addEventListener('click',e=>{
   if(channelListForDelete.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
   const row=e.target.closest('.channel[data-id]');
   if(!row)return;
   const id=row.dataset.id;
-  if(currentChannel?.id!==id)playChannel(id);
-  else row.focus({preventScroll:true});
- });
- channelListForDelete.addEventListener('dblclick',e=>{
-  const row=e.target.closest('.channel[data-id]');
-  if(!row)return;
-  e.preventDefault();
-  e.stopPropagation();
-  const id=row.dataset.id;
-  if(currentChannel?.id!==id)playChannel(id);
-  const selected=channelListForDelete.querySelector('.channel[data-id="'+id+'"]');
-  if(selected)selected.focus({preventScroll:true});
-  requestAnimationFrame(()=>fullscreen());
+  if(pointerChannelClick){
+   clearTimeout(pointerChannelClick.timer);
+   const previous=pointerChannelClick;
+   pointerChannelClick=null;
+   if(previous.id===id){
+    if(currentChannel?.id!==id)playChannel(id);
+    const selected=channelListForDelete.querySelector('.channel[data-id="'+id+'"]');
+    if(selected)selected.focus({preventScroll:true});
+    requestAnimationFrame(()=>fullscreen());
+    return;
+   }
+   if(currentChannel?.id!==previous.id)playChannel(previous.id);
+  }
+  const timer=setTimeout(()=>{
+   if(pointerChannelClick?.id!==id)return;
+   pointerChannelClick=null;
+   if(currentChannel?.id!==id)playChannel(id);
+   else row.focus({preventScroll:true});
+  },380);
+  pointerChannelClick={id,timer};
  });
 }
 // Search results keep their ordinary single-click playback and double-click fullscreen behavior.
