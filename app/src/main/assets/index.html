@@ -28,7 +28,7 @@ button:focus,input:focus,textarea:focus,select:focus,[tabindex]:focus{
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
  outline:3px solid var(--focus);outline-offset:3px;box-shadow:0 0 0 4px #71c2ff28
 }
-.category:focus,.group-card:focus,.channel:focus,.nav:focus,.btn:focus,.topbtn:focus{
+.category:focus,.group-card:focus,.channel:focus,.radio-nav{position:relative;isolation:isolate;overflow:visible}.radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}@keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}\n.nav:focus,.btn:focus,.topbtn:focus{
  box-shadow:0 0 0 3px #71c2ff35,0 0 16px #1682ff45
 }
 .pointer-active button:hover,.pointer-active .category:hover,.pointer-active .group-card:hover,.pointer-active .channel:hover{
@@ -286,7 +286,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
   <button class="nav active" data-page="home"><span class="ico">⌂</span>سەرەکی</button>
   <button class="nav" data-page="browse"><span class="ico">▣</span>کەناڵەکان</button>
   <button class="nav" data-page="groups"><span class="ico">▦</span>گرووپەکان</button>
-  <button class="nav" data-page="search"><span class="ico">⌕</span>گەڕان</button>
+  <button class="nav radio-nav" data-page="radio"><span class="ico">📻</span>ڕادیۆ</button>
   <button class="nav" data-page="settings"><span class="ico">⚙</span>ڕێکخستنەکان</button>
   <button class="nav" data-page="about"><span class="ico">ⓘ</span>زانیاری</button>
   <div class="incense-scene" aria-label="بوخوردان و دوکەڵی بۆنخۆش" role="img">
@@ -949,8 +949,8 @@ function channelStableKey(channel){return String(channel?.url||'').trim();}
 function loadChannelOverrides(){
  try{
   const data=JSON.parse(localStorage.getItem(CHANNEL_OVERRIDES_STORAGE_KEY)||'{}');
-  return {deleted:Array.isArray(data.deleted)?data.deleted.filter(x=>typeof x==='string'):[],order:data.order&&typeof data.order==='object'?data.order:{}};
- }catch(_){return {deleted:[],order:{}};}
+  return {deleted:Array.isArray(data.deleted)?data.deleted.filter(x=>typeof x==='string'):[],order:data.order&&typeof data.order==='object'?data.order:{},names:data.names&&typeof data.names==='object'?data.names:{}};
+ }catch(_){return {deleted:[],order:{},names:{}};}
 }
 let channelOverrides=loadChannelOverrides();
 function applyChannelOverrides(source){
@@ -985,7 +985,14 @@ function loadManualChannels(){
   return kept;
  }catch(_){return [];}
 }
-function persistManualChannels(){
+function persistChannelName(channel,newName){
+  const key=channelStableKey(channel);if(!key)return false;
+  channelOverrides.names=channelOverrides.names||{};channelOverrides.names[key]=newName;
+  channel.name=newName;
+  try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));return true;}
+  catch(_){toast('نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.');return false;}
+ }
+ function persistManualChannels(){
  try{
   localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));
   for(const g of groups)channelOverrides.order[g.id]=channels.filter(c=>c.group===g.id).map(channelStableKey).filter(Boolean);
