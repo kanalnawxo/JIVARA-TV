@@ -89,6 +89,8 @@ public class MainActivity extends Activity {
 
         playerView = new PlayerView(this);
         playerView.setUseController(false);
+        // TextureView avoids SurfaceView layering issues when the video is overlaid on WebView.
+        playerView.setUseTextureView(true);
         playerView.setPlayer(exoPlayer);
         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         playerView.setShutterBackgroundColor(Color.BLACK);
@@ -115,7 +117,8 @@ public class MainActivity extends Activity {
             public void onPlayerError(PlaybackException error) {
                 webView.evaluateJavascript(
                         "document.getElementById('idle').style.display='flex';"
-                        + "if(window.toast)toast('پەخش نەکرا؛ لینک یان فۆرماتی کەناڵەکە پشکنە.');", null);
+                        + "document.getElementById('video').dispatchEvent(new Event('error'));"
+                        + "if(window.toast)toast('پەخش نەکرا؛ هەوڵی پلەیەری تر دەدرێت.');", null);
             }
         });
 
@@ -169,6 +172,7 @@ public class MainActivity extends Activity {
 
     private void stopStream() {
         if (exoPlayer != null) {
+            exoPlayer.setPlayWhenReady(false);
             exoPlayer.stop();
             exoPlayer.clearMediaItems();
         }
