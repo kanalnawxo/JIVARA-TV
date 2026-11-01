@@ -1552,7 +1552,7 @@ if(channelListEl){
   const row=e.target.closest('.channel[data-id]');
   const okKey=e.key==='Enter'||e.key===' ';
   if(!row && !remoteReorder)return;
-  if(okKey){
+  if(okKey || e.keyCode===13 || e.keyCode===23 || e.keyCode===66){
    e.preventDefault();e.stopPropagation();
    if(e.repeat)return;
    remoteOkDown=true;
@@ -1601,7 +1601,7 @@ if(channelListEl){
   }
  },true);
  channelListEl.addEventListener('keyup',e=>{
-  if(e.key==='Enter'||e.key===' '){
+  if(e.key==='Enter'||e.key===' '||e.keyCode===13||e.keyCode===23||e.keyCode===66){
    remoteOkDown=false;
    // A short OK press should still activate the focused channel on Android TV.
    // keydown is intercepted to detect a long press, so handle the short press here.
@@ -1823,6 +1823,8 @@ document.addEventListener('keydown',e=>{
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const current=document.activeElement;
  if(key==='Enter' || key===' '){
+  // Channel rows handle remote OK keydown/keyup themselves; avoid a competing synthetic click.
+  if(current?.matches('.channel'))return;
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
    if(['button','a','input','select','textarea'].includes(tag) || current.matches('[role="button"],.channel,.group-card,.group-btn,.category')){
