@@ -1430,13 +1430,12 @@ let exitedBySingleClick=false;
 let exitClickResetTimer=null;
 const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
 playerScreen.addEventListener('click',e=>{
- // A single click exits fullscreen; in normal size clicks do not change the layout.
+ // One click exits fullscreen and restores focus to the channel that was playing.
  if(isPlayerFullscreen()){
-  playerScreen.focus({preventScroll:true});
   exitedBySingleClick=true;
   clearTimeout(exitClickResetTimer);
   exitClickResetTimer=setTimeout(()=>{exitedBySingleClick=false;},500);
-  fullscreen();
+  fullscreen().then(()=>{if(currentChannel)focusSelectedChannel(currentChannel.id);});
  }
 });
 playerScreen.addEventListener('dblclick',e=>{
@@ -1535,18 +1534,9 @@ if(channelListEl){
    if(deletingCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
    renderAll();toast('کەناڵەکە سڕایەوە.');return;
   }
-  if(remoteTapPending){
-   const prev=remoteTapPending;clearTimeout(prev.timer);remoteTapPending=null;
-   if(prev.id===id){
-    channelListEl.querySelectorAll('.channel.delete-selected').forEach(x=>x.classList.remove('delete-selected'));
-    row.classList.add('delete-selected');
-    toast('کەناڵەکە سوور بوو؛ OK دووبارە دابگرە بۆ سڕینەوە.');
-    return;
-   }
-   playChannel(prev.id);
-  }
-  const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id){remoteTapPending=null;playChannel(id);}},450);
-  remoteTapPending={id,timer};
+  if(remoteTapPending){clearTimeout(remoteTapPending.timer);remoteTapPending=null;}
+  playChannel(id);
+  requestAnimationFrame(()=>fullscreen());
  }
  channelListEl.addEventListener('keydown',e=>{
   const row=e.target.closest('.channel[data-id]');
@@ -1619,58 +1609,20 @@ if(channelListEl){
  channelListEl.addEventListener('click',e=>{
   if(channelListEl.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
   const row=e.target.closest('.channel[data-id]');
-  if(row)channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>{if(x!==row)x.classList.remove('hold-selected');});
- },true);
-}
-
-// Channel list: two clicks mark one channel red; the next click deletes only that channel.
-const channelClickTimers = new WeakMap();
-const channelPendingClicks = new WeakMap();
+  if(row)channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>{if(x!==row)x.classList.remove('hold-sel// One click on a channel starts it and expands the player; video click returns to the list.
 const channelListForDelete = $('#channelList');
 if(channelListForDelete){
  channelListForDelete.addEventListener('click',e=>{
   if(channelListForDelete.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
-  const row=e.target.closest('.channel[data-id]'); if(!row)return;
-  const id=row.dataset.id;
-  // Third click deletes only this channel; other channels are never affected.
-  if(row.classList.contains('delete-selected')){
-   e.preventDefault();
-   const deletedCurrent=!!currentChannel&&currentChannel.id===id;
-   const deletedChannel=channels.find(c=>c.id===id);if(deletedChannel)rememberChannelDeletion(deletedChannel);
-   channels=channels.filter(c=>c.id!==id);
-   persistManualChannels();
-   if(deletedCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
-   renderAll();
-   toast('کەناڵەکە سڕایەوە.');
-   return;
-  }
-  const pending=channelPendingClicks.get(channelListForDelete);
-  if(pending){
-   clearTimeout(pending.timer);channelPendingClicks.delete(channelListForDelete);
-   if(pending.id===id){
-    channelListForDelete.querySelectorAll('.channel.delete-selected').forEach(x=>x.classList.remove('delete-selected'));
-    row.classList.add('delete-selected');
-    e.preventDefault();
-    toast('کەناڵەکە سوور بوو؛ بە کرتەیەکی تر دەسڕدرێتەوە.');
-    return;
-   }
-   playChannel(pending.id);
-  }
-  const timer=setTimeout(()=>{
-   const p=channelPendingClicks.get(channelListForDelete);
-   if(p&&p.id===id){channelPendingClicks.delete(channelListForDelete);playChannel(id);}
-  },360);
-  channelPendingClicks.set(channelListForDelete,{id,timer});
- });
- channelListForDelete.addEventListener('dblclick',e=>{
   const row=e.target.closest('.channel[data-id]');if(!row)return;
-  e.preventDefault();e.stopPropagation();
-  const pending=channelPendingClicks.get(channelListForDelete);
-  if(pending){clearTimeout(pending.timer);channelPendingClicks.delete(channelListForDelete);}
-  // A double-click on a channel name starts that channel and expands its video.
+  e.preventDefault();
   channelListForDelete.querySelectorAll('.channel.delete-selected').forEach(x=>x.classList.remove('delete-selected'));
-  playChannel(row.dataset.id);
+  const id=row.dataset.id;
+  playChannel(id);
   requestAnimationFrame(()=>fullscreen());
+ });
+}
+)=>fullscreen());
  });
 }
 // Search results keep their ordinary single-click playback and double-click fullscreen behavior.
