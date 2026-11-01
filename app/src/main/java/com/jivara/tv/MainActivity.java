@@ -89,8 +89,6 @@ public class MainActivity extends Activity {
 
         playerView = new PlayerView(this);
         playerView.setUseController(false);
-        // TextureView avoids SurfaceView layering issues when the video is overlaid on WebView.
-        playerView.setUseTextureView(true);
         playerView.setPlayer(exoPlayer);
         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         playerView.setShutterBackgroundColor(Color.BLACK);
