@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
     }
 
     private class NativeBridge {
-        @JavascriptInterface public void setKeyboardMode(boolean visible) { setKeyboardMode(visible); }
+        @JavascriptInterface public void setKeyboardMode(boolean visible) { MainActivity.this.setKeyboardMode(visible); }
         @JavascriptInterface public void play(String url) { runOnUiThread(() -> playStream(url)); }
         @JavascriptInterface public void pause() { runOnUiThread(() -> { if (exoPlayer != null) exoPlayer.pause(); }); }
         @JavascriptInterface public void resume() { runOnUiThread(() -> { if (exoPlayer != null) exoPlayer.play(); }); }
