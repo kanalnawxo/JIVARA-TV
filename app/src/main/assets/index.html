@@ -1439,7 +1439,7 @@ const playerScreen=$('#playerScreen');
 const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
 playerScreen.addEventListener('click',e=>{
  // A single click exits fullscreen; keep channel switching controls responsive.
- if(isPlayerFullscreen() && (e.target===playerScreen || e.target===idle || idle.contains(e.target))){
+ if(isPlayerFullscreen() && (e.target===playerScreen || e.target===video || e.target===idle || idle.contains(e.target))){
   e.preventDefault();playerScreen.focus({preventScroll:true});
   fullscreen().then(()=>{if(currentChannel)requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));});
  }
