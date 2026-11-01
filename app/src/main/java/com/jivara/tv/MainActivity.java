@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
                 item.setMimeType(MimeTypes.APPLICATION_M3U8);
             } else if (lower.contains(".mpd")) {
                 item.setMimeType(MimeTypes.APPLICATION_MPD);
-            } else if (lower.matches(".*\\u002f(live|movie|series)\\u002f[^\\u002f?]+\\u002f[^\\u002f?]+\\u002f\\u002f?\\d+(?:\\?.*)?$")
+            } else if (lower.matches(".*/(live|movie|series)/[^/?]+/[^/?]+/\\d+(?:\\?.*)?$")
                     || lower.matches(".*[?&](stream|channel|id)=\\d+(?:&.*)?$")) {
                 // Xtream-style numeric stream IDs commonly serve MPEG-TS without a .ts suffix.
                 item.setMimeType(MimeTypes.VIDEO_MP2T);
