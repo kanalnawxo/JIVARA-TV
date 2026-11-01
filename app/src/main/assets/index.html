@@ -1256,10 +1256,10 @@ function streamKind(url){
 }
 let streamSession=0;
 async function startStream(rawUrl){
- const session=++streamSession;
  let url=(rawUrl||'').trim();
  if(!url)return;
  cleanPlayer();
+ const session=++streamSession;
  if(!/^https?:\/\//i.test(url)){
   toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;
  }
