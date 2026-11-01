@@ -141,7 +141,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .browse-layout>.panel:first-child{display:flex;flex-direction:column;min-height:0}
 .channel-scroll{display:flex;flex:1 1 auto;flex-direction:column;gap:4px;min-height:0;max-height:none;overflow:auto;padding:3px 4px 4px 3px;box-sizing:border-box}
 .channel-reorder-help{margin:15px 4px 3px;padding:9px 10px;border:1px solid #9a7717;border-radius:7px;background:rgba(255,216,77,.08);color:#ffd84d;font-size:11px;line-height:1.8;text-align:center;direction:rtl;flex:0 0 auto}
-.channel-delete-help{margin:4px 0 0;padding:10px 8px;border:1px solid #9a7717;border-radius:8px;background:rgba(255,216,77,.08);color:#ffd84d;font-size:11px;line-height:1.9;text-align:center;direction:rtl;font-weight:700;white-space:normal;flex:0 0 auto}
+
 .channel{width:100%;display:flex;align-items:center;gap:10px;text-align:left;direction:ltr;
  background:#061a2c;border:1px solid transparent;border-radius:6px;padding:5px 7px;font-size:10px;min-height:40px;transition:background .12s,border-color .12s,box-shadow .12s;box-sizing:border-box}
 .channel.active{background:#075bb8;border-color:#2b8cf1;box-shadow:inset 3px 0 0 #39baff}
@@ -198,7 +198,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .settings-layout{display:grid;grid-template-columns:148px minmax(0,1fr);gap:10px;align-items:start}
 .settings-nav{display:flex;flex-direction:column;gap:6px;padding:9px;min-width:0}
 .settings-nav button{text-align:center;justify-content:center;padding:8px 6px;font-size:11px;line-height:1.45;min-height:38px;white-space:normal}
-.settings-nav .channel-delete-help{padding:8px 6px;font-size:9px;line-height:1.65;margin-top:2px}
+.settings-nav 
 #settingsBody{min-width:0;overflow:hidden}
 #settingsBody .panel-head{text-align:center}
 #settingsBody .form-grid{align-items:start}
@@ -264,7 +264,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
  .settings-layout{grid-template-columns:132px minmax(0,1fr);gap:8px}
  .settings-nav{padding:7px;gap:5px}
  .settings-nav button{padding:6px 5px;font-size:10px;min-height:33px;line-height:1.35}
- .settings-nav .channel-delete-help{padding:6px 5px;font-size:8px;line-height:1.5}
+ .settings-nav 
  #settingsBody{padding:8px}
  #settingsBody .field{gap:5px}
  #settingsBody .field input,#settingsBody .field select,#settingsBody .field textarea{padding:8px}
@@ -274,6 +274,10 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 
 
 
+
+.radio-nav{position:relative;isolation:isolate;overflow:visible}
+.radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}
+@keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dashjs@4.7.4/dist/dash.all.min.js"></script>
@@ -381,12 +385,9 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     <div class="settings-layout">
      <div class="panel settings-nav">
       <button class="btn primary" data-tab="manual">＋ زیادکردنی کەناڵ بە دەستی</button>
-      <button class="btn" data-tab="groups">▦ گرووپەکان</button>
+      <button class="btn" data-tab="edit">✎ گۆڕینی ناوی کەناڵ</button>
       <button class="btn" data-tab="radio">📻 بەڕێوەبردنی ڕادیۆ</button>
       <button class="btn" data-tab="delete">✖ سڕینەوەی کەناڵ</button>
-      <div class="channel-delete-help" role="note" aria-label="ڕێنمایی پەخش و سڕینەوەی کەناڵ">
-       کرتەی یەکەم: پەخشکردن. کرتەی دووەم: پڕشاشە. لە پڕشاشەدا بە سەرەوە و خوارەوە کەناڵ بگۆڕە.
-      </div>
      </div>
      <div class="panel" id="settingsBody"></div>
     </div>
@@ -955,7 +956,7 @@ function loadChannelOverrides(){
 let channelOverrides=loadChannelOverrides();
 function applyChannelOverrides(source){
  const deleted=new Set(channelOverrides.deleted);
- let result=source.filter(c=>!deleted.has(channelStableKey(c)));
+ let result=source.filter(c=>!deleted.has(channelStableKey(c))).map(c=>({...c,name:typeof channelOverrides.names[channelStableKey(c)]==='string'?channelOverrides.names[channelStableKey(c)]:c.name}));
  for(const g of groups){
   const order=channelOverrides.order[g.id];
   if(!Array.isArray(order)||!order.length)continue;
@@ -992,7 +993,12 @@ function persistChannelName(channel,newName){
   try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));return true;}
   catch(_){toast('نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.');return false;}
  }
- function persistManualChannels(){
+ function persistChannelName(channel,newName){
+ const key=channelStableKey(channel);if(!key)return false;
+ channelOverrides.names=channelOverrides.names||{};channelOverrides.names[key]=newName;channel.name=newName;
+ try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));return true;}catch(_){toast('نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.');return false;}
+}
+function persistManualChannels(){
  try{
   localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));
   for(const g of groups)channelOverrides.order[g.id]=channels.filter(c=>c.group===g.id).map(channelStableKey).filter(Boolean);
@@ -1740,8 +1746,14 @@ function settingsTab(tab){
   body.innerHTML='<div class="panel-head">بەڕێوەبردنی ڕادیۆکان</div><div id="radioAuthPanel"></div>';
   renderRadioAuth();
  }else if(tab==='edit'){
-  body.innerHTML='<div class="panel-head">دەستکاری ناوی کەناڵەکان</div><div class="notice">دەتوانیت ناوی کەناڵەکان بگۆڕیت. ئەم گۆڕانکارییانە لە کاتی بەکارهێنانی ئەم پەڕگەیەدا دەمێننەوە.</div><div id="editChannelRows" class="channel-scroll" style="height:55vh;max-height:55vh"></div>';
-  const paint=()=>{const box=$('#editChannelRows');if(!box)return;box.innerHTML=channels.length?channels.map(c=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:7px;background:#071b2d;border:1px solid #163650;border-radius:8px"><input data-edit-name="${safe(c.id)}" value="${safe(c.name)}" style="flex:1;min-width:0;background:#031322;color:white;border:1px solid #17405e;border-radius:6px;padding:9px"><button class="btn" data-save-name="${safe(c.id)}">✓</button><button class="btn" data-delete-name="${safe(c.id)}">سڕینەوە</button></div>`).join(''):'<div class="empty">هیچ کەناڵێک نییە.</div>';box.querySelectorAll('[data-save-name]').forEach(btn=>btn.onclick=()=>{const c=channels.find(x=>x.id===btn.dataset.saveName);const input=box.querySelector(`[data-edit-name="${btn.dataset.saveName}"]`);if(c&&input&&input.value.trim()){c.name=input.value.trim();persistManualChannels();renderAll();paint();toast('ناوی کەناڵ نوێکرایەوە.');}});box.querySelectorAll('[data-delete-name]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.deleteName;const channel=channels.find(x=>x.id===id);if(!channel)return;if(btn.dataset.armed!=='1'){btn.dataset.armed='1';btn.textContent='دڵنیایت؟';return;}const deletingCurrent=!!currentChannel&&currentChannel.id===id;rememberChannelDeletion(channel);channels=channels.filter(x=>x.id!==id);persistManualChannels();if(deletingCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}renderAll();paint();toast('کەناڵەکە سڕایەوە.');});};paint();
+  body.innerHTML='<div class="panel-head">گۆڕینی ناوی کەناڵ</div><div class="form-grid"><label class="field full">گروپی کەناڵ<select id="renameGroupSelect"></select></label><label class="field full">کەناڵ<select id="renameChannelSelect"></select></label><label class="field full">ناوی نوێی کەناڵ<input id="renameChannelInput" type="text" placeholder="ناوی نوێ بنووسە"></label><button class="btn primary field full" id="saveChannelName" type="button">✓ پاشەکەوتکردنی ناو</button></div><div class="notice" id="renameChannelStatus">سەرەتا گروپ و کەناڵ دیاری بکە.</div>';
+  const groupSelect=$('#renameGroupSelect'),channelSelect=$('#renameChannelSelect'),nameInput=$('#renameChannelInput'),status=$('#renameChannelStatus');
+  groupSelect.innerHTML=groups.map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
+  const fillRenameChannels=()=>{const rows=groupChannels(groupSelect.value);channelSelect.innerHTML=rows.map(c=>'<option value="'+safe(c.id)+'">'+safe(c.name)+'</option>').join('');if(!rows.length){channelSelect.innerHTML='<option value="">ئەم گرووپە کەناڵی نییە</option>';nameInput.value='';return;}nameInput.value=rows[0].name;};
+  groupSelect.onchange=fillRenameChannels;
+  channelSelect.onchange=()=>{const c=channels.find(x=>x.id===channelSelect.value);nameInput.value=c?c.name:'';};
+  fillRenameChannels();
+  $('#saveChannelName').onclick=()=>{const c=channels.find(x=>x.id===channelSelect.value),newName=nameInput.value.trim();if(!c||!newName){status.textContent='گروپ و کەناڵ دیاری بکە و ناوی نوێ بنووسە.';return;}if(!persistChannelName(c,newName))return;renderAll();fillRenameChannels();channelSelect.value=c.id;nameInput.value=newName;status.textContent='ناوی کەناڵ گۆڕدرا و لە گروپی خۆیدا پاشەکەوت کرا.';toast('ناوی کەناڵ نوێکرایەوە.');};
  }else if(tab==='delete'){
   body.innerHTML='<div class="panel-head">سڕینەوەی کەناڵ</div><div class="notice">سەرەتا گرووپی کەناڵەکە هەڵبژێرە، پاشان کەناڵەکە دیاری بکە و دوگمەی سڕینەوە دابگرە.</div><div class="form-grid"><label class="field full">گرووپی کەناڵ<select id="deleteGroupSelect"></select></label><label class="field full">کەناڵی بۆ سڕینەوە<select id="deleteChannelSelect"></select></label><button class="btn danger field full" id="confirmDeleteChannel" type="button">✖ سڕینەوەی کەناڵی دیاریکراو</button></div><div class="notice" id="deleteChannelStatus">هیچ کەناڵێک نەسڕاوەتەوە.</div>';
   const groupSelect=$('#deleteGroupSelect'),channelSelect=$('#deleteChannelSelect'),status=$('#deleteChannelStatus');
