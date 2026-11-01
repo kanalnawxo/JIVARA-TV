@@ -2,7 +2,7 @@ name: Build JIVARA TV Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, v58-two-click-channel-fullscreen ]
   workflow_dispatch:
 
 permissions:
@@ -31,6 +31,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r'<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)</script>', html, re.I)
+          Path("/tmp/jivara-inline.js").write_text("\\n;\\n".join(scripts), encoding="utf-8")
+          PY
+          node --check /tmp/jivara-inline.js
 
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
