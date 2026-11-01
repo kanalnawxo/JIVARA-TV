@@ -1515,6 +1515,28 @@ if(channelListEl){
  // Android TV remote: hold OK for 1 second to select the channel in yellow.
  // Use Up/Down to move it; release OK, then press OK again to finish.
  let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteOkDown=false, remoteReadyToDrop=false;
+ // Keep remote reordering independent of which element currently owns focus.
+ document.addEventListener('keydown',e=>{
+  const k=({19:'ArrowUp',20:'ArrowDown'}[e.keyCode]||e.key);
+  if(!remoteReorder||(k!=='ArrowUp'&&k!=='ArrowDown'))return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  const id=remoteHoldRow?.dataset.id;
+  const from=channels.findIndex(c=>c.id===id);
+  if(from<0)return;
+  const current=channels[from], sameGroup=channels.filter(c=>c.group===current.group);
+  const pos=sameGroup.findIndex(c=>c.id===id), targetPos=pos+(k==='ArrowUp'?-1:1);
+  if(targetPos<0||targetPos>=sameGroup.length)return;
+  const other=sameGroup[targetPos], to=channels.findIndex(c=>c.id===other.id);
+  if(to<0)return;
+  [channels[from],channels[to]]=[channels[to],channels[from]];
+  renderAll();
+  remoteHoldRow=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+  if(remoteHoldRow){
+   remoteHoldRow.classList.add('hold-selected');
+   remoteHoldRow.focus({preventScroll:true});
+   remoteHoldRow.scrollIntoView({block:'nearest'});
+  }
+ },true);
  // TV remotes often suppress browser click/dblclick when Enter/OK is handled.
  // Handle short OK presses here so a second OK on the same channel enters fullscreen.
  let remoteTapPending=null;
@@ -1574,20 +1596,7 @@ if(channelListEl){
    }
    return;
   }
-  if(remoteReorder && (remoteKey==='ArrowUp'||remoteKey==='ArrowDown')){
-   e.preventDefault();e.stopPropagation();
-   const from=channels.findIndex(c=>c.id===remoteHoldRow?.dataset.id);
-   if(from<0)return;
-   const current=channels[from], groupRows=channels.filter(c=>c.group===current.group);
-   const at=groupRows.findIndex(c=>c.id===current.id), next=at+(remoteKey==='ArrowUp'?-1:1);
-   if(next<0||next>=groupRows.length)return;
-   const other=groupRows[next], to=channels.findIndex(c=>c.id===other.id);
-   [channels[from],channels[to]]=[channels[to],channels[from]];
-   renderAll();
-   remoteHoldRow=channelListEl.querySelector('.channel[data-id="'+current.id+'"]');
-   if(remoteHoldRow){remoteHoldRow.classList.add('hold-selected');remoteHoldRow.focus({preventScroll:true});remoteHoldRow.scrollIntoView({block:'nearest'});}
-   return;
-  }
+  if(remoteReorder && (remoteKey==='ArrowUp'||remoteKey==='ArrowDown')){e.preventDefault();e.stopPropagation();return;}
   if(remoteKey==='Escape' && remoteReorder){
    e.preventDefault();e.stopPropagation();
    channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
@@ -1816,15 +1825,6 @@ document.addEventListener('keydown',e=>{
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const current=document.activeElement;
- // In fullscreen (or when the player itself is focused), LEFT/RIGHT adjust playback volume.
- if((document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen') || current===playerScreen) && (key==='ArrowLeft'||key==='ArrowRight')){
-  e.preventDefault();e.stopPropagation();
-  const step=0.05, next=Math.max(0,Math.min(1,(Number(video.volume)||0)+(key==='ArrowRight'?step:-step)));
-  video.muted=false;video.volume=next;
-  const muteButton=$('#muteBtn');if(muteButton)muteButton.textContent=next===0?'🔇 بێدەنگ':'🔊 دەنگ';
-  toast('ئاستی دەنگ: '+Math.round(next*100)+'٪');
-  return;
- }
  if(key==='Enter' || key===' '){
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
