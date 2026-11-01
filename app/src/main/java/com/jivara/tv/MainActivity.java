@@ -203,6 +203,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setKeyboardMode(boolean visible) { MainActivity.this.setKeyboardMode(visible); }
         @JavascriptInterface public void play(String url) { runOnUiThread(() -> playStream(url)); }
         @JavascriptInterface public void pause() { runOnUiThread(() -> { if (exoPlayer != null) exoPlayer.pause(); }); }
+        @JavascriptInterface public void stop() { runOnUiThread(() -> stopStream()); }
         @JavascriptInterface public void resume() { runOnUiThread(() -> { if (exoPlayer != null) exoPlayer.play(); }); }
         @JavascriptInterface public boolean isPlaying() { return exoPlayer != null && exoPlayer.isPlaying(); }
         @JavascriptInterface public void setMuted(boolean value) {
@@ -244,7 +245,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (exoPlayer != null) exoPlayer.pause();
+        // Never leave live TV audio running when the app is backgrounded.
+        stopStream();
     }
 
     @Override
