@@ -115,7 +115,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPlayerError(PlaybackException error) {
-                final String detail = error.errorCodeName + ": " + String.valueOf(error.getMessage());
+                final String detail = String.valueOf(error.getMessage());
                 webView.evaluateJavascript(
                         "document.getElementById('idle').style.display='flex';"
                         + "document.getElementById('video').dispatchEvent(new Event('error'));"
