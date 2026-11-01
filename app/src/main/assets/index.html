@@ -1807,7 +1807,7 @@ function getPresenceDeviceId(){
 const presenceDeviceId=getPresenceDeviceId();
 async function updateLiveViewerCount(){
  try{
-  await fetch(PRESENCE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:presenceDeviceId}),cache:'no-store'});
+  await fetch(PRESENCE_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({deviceId:presenceDeviceId}),cache:'no-store'});
   const response=await fetch(PRESENCE_API,{method:'GET',cache:'no-store'});
   if(!response.ok)throw new Error('presence unavailable');
   const data=await response.json();
