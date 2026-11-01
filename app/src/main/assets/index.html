@@ -353,6 +353,9 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
       <div class="player-screen" id="playerScreen" tabindex="0" role="button" aria-label="کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە">
        <video id="video" playsinline preload="auto" fetchpriority="high"></video>
        <iframe id="webStreamFrame" title="پەخشی کەناڵ" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="display:none;width:100%;height:100%;border:0;background:#000"></iframe>
+       <div class="channel-switch-overlay" id="channelSwitchOverlay" aria-live="polite">
+        <div class="switch-item switch-current"><span class="switch-label">ئێستا پەخش دەبێت</span><span class="switch-name" id="switchCurrentName"></span></div>
+       </div>
        <div class="idle" id="idle"><div class="play">▶</div><strong>کەناڵێک هەڵبژێرە</strong><small>کەناڵێک هەڵبژێرە بۆ بینین</small></div>
       </div>
       <div class="program"><strong id="programTitle">ئامادەی پەخشکردن</strong><small id="programSub">لینکی کەناڵێک نییە.</small></div>
@@ -1423,9 +1426,24 @@ async function fullscreen(){
  }finally{fullscreenBusy=false;}
 }
 const playerScreen=$('#playerScreen');
+let exitedBySingleClick=false;
+let exitClickResetTimer=null;
+const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
 playerScreen.addEventListener('click',e=>{
- // In full screen, one click anywhere on the video surface returns to the channel list view.
- if(e.target===playerScreen || e.target===idle || idle.contains(e.target) || e.target===video || playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen){
+ // A single click exits fullscreen; in normal size clicks do not change the layout.
+ if(isPlayerFullscreen()){
+  playerScreen.focus({preventScroll:true});
+  exitedBySingleClick=true;
+  clearTimeout(exitClickResetTimer);
+  exitClickResetTimer=setTimeout(()=>{exitedBySingleClick=false;},500);
+  fullscreen();
+ }
+});
+playerScreen.addEventListener('dblclick',e=>{
+ // Two clicks enlarge the player. Ignore the dblclick generated after exiting with one click.
+ if(exitedBySingleClick){exitedBySingleClick=false;clearTimeout(exitClickResetTimer);return;}
+ if(!isPlayerFullscreen()){
+  e.preventDefault();
   playerScreen.focus({preventScroll:true});
   fullscreen();
  }
