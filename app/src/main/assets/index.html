@@ -1887,9 +1887,10 @@ function initRadio(){
  $('#radioAudio').addEventListener('playing',()=>setRadioState(true,'ڕادیۆ لە پەخشدایە.'));
  $('#radioAudio').addEventListener('error',()=>setRadioState(false,'هەڵە لە لینک یان فۆرماتی پەخش.'));
  try{
-  if(!window.firebase||!firebase.apps.length)throw new Error('Firebase SDK unavailable');
+  if(!window.firebase)throw new Error('Firebase SDK unavailable');
   const firebaseConfig={apiKey:"AIzaSyCUSZkhMbvjuev0BGjF_XBWEHc_HBDZ-bk",authDomain:"jivara-tv.firebaseapp.com",projectId:"jivara-tv",storageBucket:"jivara-tv.firebasestorage.app",messagingSenderId:"926151932523",appId:"1:926151932:web:01d96465abf6f865c98f2e",measurementId:"G-BK1BTZ1V2J"};
-  firebase.initializeApp(firebaseConfig);radioAuth=firebase.auth();radioDb=firebase.firestore();radioFirebaseReady=true;
+  if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+  radioAuth=firebase.auth();radioDb=firebase.firestore();radioFirebaseReady=true;
   radioDb.collection('radioStations').onSnapshot(snap=>{radioStations=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.name&&r.url);renderRadioList();renderRadioAdminList();},()=>{$('#radioStatus').textContent='نەتوانرا لیستی ڕادیۆکان باربکرێت.';});
   radioAuth.onAuthStateChanged(user=>{radioCurrentUser=user;renderRadioAuth();});
  }catch(e){$('#radioStatus').textContent='پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.';}
