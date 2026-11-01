@@ -1514,110 +1514,113 @@ if(channelListEl){
  document.addEventListener('pointercancel',()=>{clearHoldState();holdActivated=false;});
  // Android TV remote: hold OK for 1 second to select the channel in yellow.
  // Use Up/Down to move it; release OK, then press OK again to finish.
- let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteOkDown=false, remoteReadyToDrop=false;
- // Keep remote reordering independent of which element currently owns focus.
- document.addEventListener('keydown',e=>{
-  const k=({19:'ArrowUp',20:'ArrowDown'}[e.keyCode]||e.key);
-  if(!remoteReorder||(k!=='ArrowUp'&&k!=='ArrowDown'))return;
-  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-  const id=remoteHoldRow?.dataset.id;
-  const from=channels.findIndex(c=>c.id===id);
-  if(from<0)return;
-  const current=channels[from], sameGroup=channels.filter(c=>c.group===current.group);
-  const pos=sameGroup.findIndex(c=>c.id===id), targetPos=pos+(k==='ArrowUp'?-1:1);
-  if(targetPos<0||targetPos>=sameGroup.length)return;
-  const other=sameGroup[targetPos], to=channels.findIndex(c=>c.id===other.id);
-  if(to<0)return;
-  [channels[from],channels[to]]=[channels[to],channels[from]];
-  renderAll();
-  remoteHoldRow=channelListEl.querySelector('.channel[data-id="'+id+'"]');
-  if(remoteHoldRow){
-   remoteHoldRow.classList.add('hold-selected');
-   remoteHoldRow.focus({preventScroll:true});
-   remoteHoldRow.scrollIntoView({block:'nearest'});
-  }
- },true);
- // TV remotes often suppress browser click/dblclick when Enter/OK is handled.
- // Handle short OK presses here so a second OK on the same channel enters fullscreen.
+
+ // Remote reorder is handled at document capture level because some Android TV
+ // remotes deliver DPAD events to the focused view rather than the channel list.
+ let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteReadyToDrop=false;
  let remoteTapPending=null;
+ function remoteKeyName(e){
+  const code=e.keyCode||e.which||0;
+  if(code===13||code===23||code===66||code=== centerKeyCode)return 'Enter';
+  if(code===19||code===38)return 'ArrowUp';
+  if(code===20||code===40)return 'ArrowDown';
+  if(code===21||code===37)return 'ArrowLeft';
+  if(code===22||code===39)return 'ArrowRight';
+  return e.key;
+ }
  function handleRemoteChannelTap(row){
   if(!row)return;
   const id=row.dataset.id;
   if(remoteTapPending){
-   const prev=remoteTapPending;
-   clearTimeout(prev.timer);
-   remoteTapPending=null;
+   const prev=remoteTapPending;clearTimeout(prev.timer);remoteTapPending=null;
    if(prev.id===id){
     if(currentChannel?.id!==id)playChannel(id);
     const selected=channelListEl.querySelector('.channel[data-id="'+id+'"]');
     if(selected)selected.focus({preventScroll:true});
-    fullscreen();
-    return;
+    fullscreen();return;
    }
   }
-  // First OK press plays inline; a second OK press on the same channel enters fullscreen.
   if(currentChannel?.id!==id)playChannel(id);
   else row.focus({preventScroll:true});
-  const timer=setTimeout(()=>{
-   if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;
-  },450);
+  const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;},450);
   remoteTapPending={id,timer};
  }
- channelListEl.addEventListener('keydown',e=>{
-  const remoteKey=({13:'Enter',23:'Enter',66:'Enter',19:'ArrowUp',20:'ArrowDown',21:'ArrowLeft',22:'ArrowRight'}[e.keyCode]||e.key);
-  const row=e.target.closest('.channel[data-id]');
-  const okKey=remoteKey==='Enter'||remoteKey===' ';
-  if(!row && !remoteReorder)return;
-  if(okKey){
-   e.preventDefault();e.stopPropagation();
-   if(e.repeat)return;
-   remoteOkDown=true;
+ function finishRemoteReorder(){
+  if(!remoteReorder)return;
+  const id=remoteHoldRow?.dataset.id;
+  remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
+  channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
+  persistManualChannels();renderChannels();
+  const placed=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+  if(placed){placed.focus({preventScroll:true});placed.scrollIntoView({block:'nearest'});}
+  toast('شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.');
+ }
+ document.addEventListener('keydown',e=>{
+  const k=remoteKeyName(e);
+  const active=document.activeElement;
+  const row=active?.closest?.('#channelList .channel[data-id]') || remoteHoldRow;
+  const isOk=k==='Enter'||k===' ';
+  if(isOk){
    if(remoteReorder){
-    if(remoteReadyToDrop){
-     const placedId=remoteHoldRow?.dataset.id;
-     channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
-     remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;remoteOkDown=false;
-     persistManualChannels();
-     // Restore normal channel interaction immediately after placing the channel.
-     renderAll();
-     const placedRow=channelListEl.querySelector('.channel[data-id="'+placedId+'"]');
-     if(placedRow){placedRow.classList.remove('hold-selected','dragging','drop-target');placedRow.focus({preventScroll:true});placedRow.scrollIntoView({block:'nearest'});}
-     toast('شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.');
-    }
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    if(!e.repeat && remoteReadyToDrop)finishRemoteReorder();
     return;
    }
-   if(!remoteHoldTimer){
+   if(row && !remoteHoldTimer && !e.repeat){
     remoteHoldRow=row;
     remoteHoldTimer=setTimeout(()=>{
-     remoteHoldTimer=null;remoteReorder=true;remoteReadyToDrop=false;
-     remoteHoldRow?.classList.add('hold-selected');
-     toast('کەناڵەکە زەرد بوو؛ بە سەرەوە/خوارەوە شوێنەکەی بگۆڕە، پاشان OK دووبارە دابگرە.');
-    },1000);
+     remoteHoldTimer=null;
+     remoteReorder=true;remoteReadyToDrop=false;
+     const live=channelListEl.querySelector('.channel[data-id="'+row.dataset.id+'"]');
+     remoteHoldRow=live||row;
+     remoteHoldRow.classList.add('hold-selected');
+     remoteHoldRow.focus({preventScroll:true});
+     toast('کەناڵەکە زەرد بوو؛ بە تیرەکانی سەرەوە و خوارەوە شوێنەکەی بگۆڕە، پاشان OK دابگرە بۆ جێگیرکردن.');
+    },850);
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
    }
    return;
   }
-  if(remoteReorder && (remoteKey==='ArrowUp'||remoteKey==='ArrowDown')){e.preventDefault();e.stopPropagation();return;}
-  if(remoteKey==='Escape' && remoteReorder){
-   e.preventDefault();e.stopPropagation();
-   channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
+  if(remoteReorder && (k==='ArrowUp'||k==='ArrowDown')){
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+   if(e.repeat)return;
+   const id=remoteHoldRow?.dataset.id;
+   const from=channels.findIndex(c=>c.id===id);
+   if(from<0)return;
+   const current=channels[from],same=channels.filter(c=>c.group===current.group);
+   const pos=same.findIndex(c=>c.id===id),targetPos=pos+(k==='ArrowUp'?-1:1);
+   if(targetPos<0||targetPos>=same.length)return;
+   const other=same[targetPos],to=channels.findIndex(c=>c.id===other.id);
+   if(to<0)return;
+   [channels[from],channels[to]]=[channels[to],channels[from]];
+   persistManualChannels();
+   renderChannels();
+   remoteHoldRow=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+   if(remoteHoldRow){
+    remoteHoldRow.classList.add('hold-selected');
+    remoteHoldRow.focus({preventScroll:true});
+    remoteHoldRow.scrollIntoView({block:'nearest',inline:'nearest'});
+   }
+   return;
+  }
+  if(remoteReorder && k==='Escape'){
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
    remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
+   channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
   }
  },true);
- channelListEl.addEventListener('keyup',e=>{
-  const remoteKey=({13:'Enter',23:'Enter',66:'Enter'}[e.keyCode]||e.key);
-  if(remoteKey==='Enter'||remoteKey===' '){
-   remoteOkDown=false;
-   // A short OK press should still activate the focused channel on Android TV.
-   // keydown is intercepted to detect a long press, so handle the short press here.
-   if(remoteHoldTimer){
-    clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
-    const tappedId=remoteHoldRow?.dataset.id;
-    remoteHoldRow=null;
-    if(tappedId && !remoteReorder) handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+tappedId+'"]'));
-   }else if(remoteReorder){
-    remoteReadyToDrop=true;
-   }
-   e.preventDefault();e.stopPropagation();
+ document.addEventListener('keyup',e=>{
+  const k=remoteKeyName(e);
+  if(k!=='Enter'&&k!==' ')return;
+  if(remoteHoldTimer){
+   clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
+   const id=remoteHoldRow?.dataset.id;remoteHoldRow=null;
+   if(id&&!remoteReorder)handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+id+'"]'));
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return;
+  }
+  if(remoteReorder){
+   remoteReadyToDrop=true;
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
   }
  },true);
  channelListEl.addEventListener('click',e=>{
@@ -1626,7 +1629,6 @@ if(channelListEl){
   if(row)channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>{if(x!==row)x.classList.remove('hold-selected');});
  },true);
 }
-
 // Pointer: first click plays inline; a second click on the same channel enters fullscreen.
 const channelListForDelete = $('#channelList');
 let pointerChannelClick = null;
