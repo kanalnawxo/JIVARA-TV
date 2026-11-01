@@ -1391,11 +1391,24 @@ function playChannel(id){
  const c=channels.find(x=>x.id===id);if(!c)return;
  showChannelSwitch(c);
  const keepPlayerFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen?.classList.contains('is-fullscreen'));
+ const previousGroup=currentGroup;
  currentChannel=c;currentGroup=c.group;
  $('#nowTitle').textContent=c.name;
  $('#programTitle').textContent=c.name;
  $('#programSub').textContent=c.url?'ئامادەی پەخشکردن':'هیچ کەناڵێک ئامادە نییە.';
- if(!keepPlayerFullscreen){switchPage('browse');renderChannels();focusSelectedChannel(c.id);}else{renderGroups();}
+ if(!keepPlayerFullscreen){
+  if(activePage!=='browse')switchPage('browse');
+  else if(previousGroup!==c.group)renderChannels();
+  else{
+   const list=$('#channelList');
+   const selected=list?.querySelector('.channel[data-id="'+c.id+'"]');
+   if(selected){
+    list.querySelectorAll('.channel.active').forEach(x=>x.classList.remove('active'));
+    selected.classList.add('active');
+   }else renderChannels();
+  }
+  focusSelectedChannel(c.id);
+ }else{renderGroups();}
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
 }
@@ -1507,7 +1520,7 @@ if(channelListEl){
  // Use Up/Down to move it; release OK, then press OK again to finish.
  let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteOkDown=false, remoteReadyToDrop=false;
  // TV remotes often suppress browser click/dblclick when Enter/OK is handled.
- // Handle short OK presses here so double- and third-press deletion works on Android TV.
+ // Handle short OK presses here so a second OK on the same channel enters fullscreen.
  let remoteTapPending=null;
  function handleRemoteChannelTap(row){
   if(!row)return;
