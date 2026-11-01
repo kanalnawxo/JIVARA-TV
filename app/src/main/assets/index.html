@@ -1195,6 +1195,8 @@ function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($
 
 function switchPage(name){
  if(!$('#page-'+name))name='home';
+ // Leaving the live channel page must stop the native Android player completely.
+ if(activePage==='browse'&&name!=='browse')cleanPlayer();
  activePage=name;
  $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
@@ -1230,9 +1232,11 @@ function showChannelSwitch(c){
 let hlsPlayer=null, dashPlayer=null, mpegtsPlayer=null;
 const webStreamFrame=$('#webStreamFrame');
 function cleanPlayer(){
+ ++streamSession;
  try{if(hlsPlayer){hlsPlayer.destroy();hlsPlayer=null;}}catch(e){}
  try{if(dashPlayer){dashPlayer.reset();dashPlayer=null;}}catch(e){}
  try{if(mpegtsPlayer){mpegtsPlayer.pause();mpegtsPlayer.unload();mpegtsPlayer.detachMediaElement();mpegtsPlayer.destroy();mpegtsPlayer=null;}}catch(e){}
+ try{if(window.AndroidPlayer&&AndroidPlayer.stop)AndroidPlayer.stop();}catch(e){}
  video.pause();video.removeAttribute('src');
  webStreamFrame.src='about:blank';webStreamFrame.style.display='none';video.style.display='block';
 }
