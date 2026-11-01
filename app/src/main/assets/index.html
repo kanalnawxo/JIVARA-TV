@@ -1662,7 +1662,16 @@ if(channelListForDelete){
   },360);
   channelPendingClicks.set(channelListForDelete,{id,timer});
  });
- channelListForDelete.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();});
+ channelListForDelete.addEventListener('dblclick',e=>{
+  const row=e.target.closest('.channel[data-id]');if(!row)return;
+  e.preventDefault();e.stopPropagation();
+  const pending=channelPendingClicks.get(channelListForDelete);
+  if(pending){clearTimeout(pending.timer);channelPendingClicks.delete(channelListForDelete);}
+  // A double-click on a channel name starts that channel and expands its video.
+  channelListForDelete.querySelectorAll('.channel.delete-selected').forEach(x=>x.classList.remove('delete-selected'));
+  playChannel(row.dataset.id);
+  requestAnimationFrame(()=>fullscreen());
+ });
 }
 // Search results keep their ordinary single-click playback and double-click fullscreen behavior.
 const searchList=$('#searchResults');
