@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -87,7 +88,7 @@ public class MainActivity extends Activity {
                                 .setAllowCrossProtocolRedirects(true)))
                 .build();
 
-        playerView = new PlayerView(this);
+        playerView = (PlayerView) LayoutInflater.from(this).inflate(R.layout.native_player_view, root, false);
         playerView.setUseController(false);
         playerView.setPlayer(exoPlayer);
         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
