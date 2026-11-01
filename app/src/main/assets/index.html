@@ -332,10 +332,9 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
       <strong>JIVARA RADIO</strong><small id="radioVisualStatus">ئامادەی پەخشە</small>
      </div>
      <div class="radio-controls">
-      <label class="field">ناوی ڕادیۆ<input id="radioName" type="text" placeholder="ناوی ڕادیۆ بنووسە"></label>
-      <label class="field">لینکی پەخشی ڕادیۆ (URL)<input id="radioUrl" type="password" inputmode="url" placeholder="لینکی نهێنی ڕادیۆ" autocomplete="off"></label>
-      <div class="radio-actions"><button class="btn primary" id="radioSave" type="button">＋ پاشەکەوتکردن</button><button class="btn" id="radioPlay" type="button">▶ پەخشکردن</button><button class="btn" id="radioStop" type="button">■ وەستاندن</button></div><div class="panel-head">ڕادیۆ پاشەکەوتکراوەکان</div><div id="radioSavedList" class="channel-scroll"></div>
-      <div class="notice" id="radioStatus" role="status">لینکی پەخشی ڕادیۆ بنووسە، پاشان پەخشکردن دابگرە.</div>
+      <div class="panel-head">ڕادیۆکان</div><div id="radioSavedList" class="channel-scroll"></div>
+      <div class="radio-actions"><button class="btn" id="radioStop" type="button">■ وەستاندن</button></div>
+      <div class="notice" id="radioStatus" role="status">ڕادیۆیەک هەڵبژێرە بۆ دەستپێکردنی پەخش.</div>
       <audio id="radioAudio" preload="none"></audio>
      </div>
     </div>
@@ -408,6 +407,9 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 (() => {
 'use strict';
@@ -1703,9 +1705,8 @@ $('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
 function settingsTab(tab){
  const body=$('#settingsBody');
  if(tab==='radio'){
-  renderRadioList('radioManageList');
-  body.innerHTML='<div class="panel-head">بەڕێوەبردنی ڕادیۆکان</div><div class="notice">لینکەکان شاراوەن؛ بۆ سڕینەوە دوو کرتە لەسەر ڕادیۆکە بکە.</div><div id="radioManageList" class="channel-scroll"></div>';
-  renderRadioList('radioManageList');
+  body.innerHTML='<div class="panel-head">بەڕێوەبردنی ڕادیۆکان</div><div id="radioAuthPanel"></div>';
+  renderRadioAuth();
  }else if(tab==='edit'){
   body.innerHTML='<div class="panel-head">دەستکاری ناوی کەناڵەکان</div><div class="notice">دەتوانیت ناوی کەناڵەکان بگۆڕیت. ئەم گۆڕانکارییانە لە کاتی بەکارهێنانی ئەم پەڕگەیەدا دەمێننەوە.</div><div id="editChannelRows" class="channel-scroll" style="height:55vh;max-height:55vh"></div>';
   const paint=()=>{const box=$('#editChannelRows');if(!box)return;box.innerHTML=channels.length?channels.map(c=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:7px;background:#071b2d;border:1px solid #163650;border-radius:8px"><input data-edit-name="${safe(c.id)}" value="${safe(c.name)}" style="flex:1;min-width:0;background:#031322;color:white;border:1px solid #17405e;border-radius:6px;padding:9px"><button class="btn" data-save-name="${safe(c.id)}">✓</button></div>`).join(''):'<div class="empty">هیچ کەناڵێک نییە.</div>';box.querySelectorAll('[data-save-name]').forEach(btn=>btn.onclick=()=>{const c=channels.find(x=>x.id===btn.dataset.saveName);const input=box.querySelector(`[data-edit-name="${btn.dataset.saveName}"]`);if(c&&input&&input.value.trim()){c.name=input.value.trim();persistManualChannels();renderAll();paint();toast('ناوی کەناڵ نوێکرایەوە.');}});};paint();
@@ -1839,37 +1840,59 @@ document.addEventListener('keydown',e=>{
  }
  e.preventDefault();
 },true);
-const RADIO_STORAGE_KEY='jivara-radio-list-v1';
-let radioInitialized=false;
-let radioStations=[];
-function loadRadioStations(){try{const x=JSON.parse(localStorage.getItem(RADIO_STORAGE_KEY)||'[]');return Array.isArray(x)?x.filter(v=>v&&v.id&&v.name&&v.url):[];}catch(_){return [];}}
-function saveRadioStations(){try{localStorage.setItem(RADIO_STORAGE_KEY,JSON.stringify(radioStations));}catch(_){toast('نەتوانرا ڕادیۆ پاشەکەوت بکرێت.');}}
+const ADMIN_EMAIL='jivarakamal8@gmail.com';
+let radioInitialized=false,radioStations=[],radioAuth=null,radioDb=null,radioCurrentUser=null,radioEditingId=null;
+let radioFirebaseReady=false;
+function radioIsAdmin(){return !!(radioCurrentUser&&radioCurrentUser.email&&radioCurrentUser.email.toLowerCase()===ADMIN_EMAIL);}
 function renderRadioList(targetId='radioSavedList'){
  const box=$('#'+targetId);if(!box)return;
- box.innerHTML=radioStations.length?radioStations.map((r,i)=>'<button class="channel" data-radio-id="'+safe(r.id)+'"><span class="ch-number">'+(i+1)+'</span><span class="ch-name">'+safe(r.name)+'</span><span class="muted">▶</span></button>').join(''):'<div class="empty">هیچ ڕادیۆیەک پاشەکەوت نەکراوە.</div>';
- box.querySelectorAll('[data-radio-id]').forEach(btn=>{btn.onclick=()=>{const r=radioStations.find(x=>x.id===btn.dataset.radioId);if(!r)return;$('#radioName').value=r.name;$('#radioUrl').value=r.url;playRadio(r);};});
- // Two clicks mark the station red; the third removes only that station.
- let pending=null;
- box.querySelectorAll('[data-radio-id]').forEach(btn=>btn.addEventListener('click',e=>{
-  if(btn.dataset.armed==='1'){radioStations=radioStations.filter(x=>x.id!==btn.dataset.radioId);saveRadioStations();renderRadioList(targetId);toast('ڕادیۆکە سڕایەوە.');return;}
-  if(pending){clearTimeout(pending);pending=null;}
-  pending=setTimeout(()=>{pending=null;},420);
-  btn.dataset.armed='1';btn.style.background='#b51f35';toast('بۆ سڕینەوە دووبارە لەسەر هەمان ڕادیۆ کرتە بکە.');
-  setTimeout(()=>{btn.dataset.armed='0';btn.style.background='';},1800);
- }));
+ box.innerHTML=radioStations.length?radioStations.map((r,i)=>'<button class="channel" data-radio-id="'+safe(r.id)+'"><span class="ch-number">'+(i+1)+'</span><span class="ch-name">'+safe(r.name)+'</span><span class="muted">▶</span></button>').join(''):'<div class="empty">هیچ ڕادیۆیەک نییە.</div>';
+ box.querySelectorAll('[data-radio-id]').forEach(btn=>btn.onclick=()=>{const r=radioStations.find(x=>x.id===btn.dataset.radioId);if(r)playRadio(r);});
+}
+function renderRadioAdminList(){
+ const box=$('#radioAdminStations');if(!box)return;
+ if(!radioIsAdmin()){box.innerHTML='';return;}
+ box.innerHTML=radioStations.length?radioStations.map(r=>'<div style="display:flex;gap:7px;align-items:center;margin:5px 0"><span style="flex:1">'+safe(r.name)+'</span><button class="btn" data-radio-edit="'+safe(r.id)+'">دەستکاری</button><button class="btn" data-radio-delete="'+safe(r.id)+'">سڕینەوە</button></div>').join(''):'<div class="empty">هیچ ڕادیۆیەک نییە.</div>';
+ box.querySelectorAll('[data-radio-edit]').forEach(b=>b.onclick=()=>{const r=radioStations.find(x=>x.id===b.dataset.radioEdit);if(!r)return;radioEditingId=r.id;$('#radioName').value=r.name;$('#radioUrl').value=r.url;$('#radioUrl').type='text';$('#radioSave').textContent='نوێکردنەوە';});
+ box.querySelectorAll('[data-radio-delete]').forEach(b=>b.onclick=async()=>{if(!radioIsAdmin())return;try{await radioDb.collection('radioStations').doc(b.dataset.radioDelete).delete();toast('ڕادیۆکە سڕایەوە.');}catch(e){toast('سڕینەوە سەرکەوتوو نەبوو.');}});
+}
+function renderRadioAuth(){
+ const box=$('#radioAuthPanel');if(!box)return;
+ if(radioIsAdmin()){
+  box.innerHTML='<div class="notice">بەڕێوەبەری ڕادیۆ: '+safe(radioCurrentUser.email)+'</div><button class="btn" id="radioLogout" type="button">چوونەدەرەوە</button><div class="panel-head" style="margin-top:12px">زیادکردن / دەستکاری ڕادیۆ</div><label class="field">ناوی ڕادیۆ<input id="radioName" type="text" placeholder="ناوی ڕادیۆ بنووسە"></label><label class="field">لینکی پەخش<input id="radioUrl" type="password" inputmode="url" placeholder="لینکی نهێنی ڕادیۆ" autocomplete="off"></label><div class="radio-actions"><button class="btn primary" id="radioSave" type="button">＋ پاشەکەوتکردن</button></div><div class="panel-head">لیستی بەڕێوەبردن</div><div id="radioAdminStations"></div>';
+  $('#radioLogout').onclick=()=>radioAuth.signOut();
+  $('#radioUrl').addEventListener('focus',e=>e.target.type='text');$('#radioUrl').addEventListener('blur',e=>e.target.type='password');
+  $('#radioSave').onclick=saveRadioStation;renderRadioAdminList();
+ }else{
+  box.innerHTML='<div class="panel-head">چوونەژوورەوەی بەڕێوەبەر</div><label class="field">ئیمەیڵ<input id="radioAdminEmail" type="email" autocomplete="username" placeholder="ئیمەیڵ"></label><label class="field">وشەی نهێنی<input id="radioAdminPassword" type="password" autocomplete="current-password" placeholder="وشەی نهێنی"></label><button class="btn primary" id="radioLogin" type="button">چوونەژوورەوە</button><div class="notice" style="margin-top:10px">تەنها بەڕێوەبەری ڕێگەپێدراو دەتوانێت ڕادیۆ زیاد بکات یان دەستکاری و بسڕێتەوە.</div>';
+  $('#radioLogin').onclick=async()=>{const email=$('#radioAdminEmail').value.trim(),password=$('#radioAdminPassword').value;if(!email||!password)return toast('ئیمەیڵ و وشەی نهێنی بنووسە.');try{await radioAuth.signInWithEmailAndPassword(email,password);$('#radioAdminPassword').value='';}catch(e){toast('چوونەژوورەوە سەرکەوتوو نەبوو؛ زانیارییەکان بپشکنە.');}};
+ }
+}
+async function saveRadioStation(){
+ if(!radioIsAdmin())return toast('تەنها بەڕێوەبەر دەتوانێت ڕادیۆ زیاد بکات.');
+ const name=$('#radioName').value.trim(),url=$('#radioUrl').value.trim();
+ if(!name||!/^https?:\/\//i.test(url)){setRadioState(false,'ناوی ڕادیۆ و لینکی دروست بنووسە.');return;}
+ try{
+  const data={name,url,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+  if(radioEditingId){await radioDb.collection('radioStations').doc(radioEditingId).update(data);}
+  else{data.createdAt=firebase.firestore.FieldValue.serverTimestamp();await radioDb.collection('radioStations').add(data);}
+  radioEditingId=null;$('#radioName').value='';$('#radioUrl').value='';$('#radioUrl').type='password';$('#radioUrl').blur();$('#radioSave').textContent='＋ پاشەکەوتکردن';toast('ڕادیۆ پاشەکەوت کرا.');
+ }catch(e){toast('پاشەکەوتکردن سەرکەوتوو نەبوو؛ ڕێکخستنەکان بپشکنە.');}
 }
 function setRadioState(playing,message){$('#radioVisual').classList.toggle('playing',playing);$('#radioVisualStatus').textContent=playing?'لە پەخشدایە':'ئامادەی پەخشە';$('#radioStatus').textContent=message;}
-async function playRadio(r){
- const audio=$('#radioAudio');try{audio.pause();audio.src=r.url;audio.load();await audio.play();setRadioState(true,r.name+' لە پەخشدایە.');}
- catch(e){setRadioState(false,'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.');}
-}
+async function playRadio(r){const audio=$('#radioAudio');try{audio.pause();audio.src=r.url;audio.load();await audio.play();setRadioState(true,r.name+' لە پەخشدایە.');}catch(e){setRadioState(false,'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.');}}
 function initRadio(){
- if(radioInitialized)return;radioInitialized=true;radioStations=loadRadioStations();
- $('#radioSave').onclick=()=>{const name=$('#radioName').value.trim(),url=$('#radioUrl').value.trim();if(!name||!/^https?:\\/\\//i.test(url)){setRadioState(false,'ناوی ڕادیۆ و لینکی دروست بنووسە.');return;}const old=radioStations.find(x=>x.name===name);if(old){old.url=url;}else radioStations.push({id:'radio-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name,url});saveRadioStations();renderRadioList();toast('ڕادیۆ پاشەکەوت کرا.');};
- $('#radioPlay').onclick=()=>{const url=$('#radioUrl').value.trim(),name=$('#radioName').value.trim();if(!url){setRadioState(false,'سەرەتا ڕادیۆیەک هەڵبژێرە یان پاشەکەوتی بکە.');return;}playRadio({name:name||'ڕادیۆ',url});};
- $('#radioStop').onclick=()=>{const audio=$('#radioAudio');audio.pause();audio.removeAttribute('src');audio.load();setRadioState(false,'پەخش وەستێنرا.');};
+ if(radioInitialized)return;radioInitialized=true;
+ $('#radioStop').onclick=()=>{const a=$('#radioAudio');a.pause();a.removeAttribute('src');a.load();setRadioState(false,'پەخش وەستێنرا.');};
  $('#radioAudio').addEventListener('playing',()=>setRadioState(true,'ڕادیۆ لە پەخشدایە.'));
  $('#radioAudio').addEventListener('error',()=>setRadioState(false,'هەڵە لە لینک یان فۆرماتی پەخش.'));
+ try{
+  if(!window.firebase||!firebase.apps.length)throw new Error('Firebase SDK unavailable');
+  const firebaseConfig={apiKey:"AIzaSyCUSZkhM...",authDomain:"jivara-tv.firebaseapp.com",projectId:"jivara-tv",storageBucket:"jivara-tv.firebasestorage.app",messagingSenderId:"926151932523",appId:"1:926151932:web:01d96465abf6f865c98f2e",measurementId:"G-BK1BTZ1V2J"};
+  firebase.initializeApp(firebaseConfig);radioAuth=firebase.auth();radioDb=firebase.firestore();radioFirebaseReady=true;
+  radioDb.collection('radioStations').onSnapshot(snap=>{radioStations=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.name&&r.url);renderRadioList();renderRadioAdminList();},()=>{$('#radioStatus').textContent='نەتوانرا لیستی ڕادیۆکان باربکرێت.';});
+  radioAuth.onAuthStateChanged(user=>{radioCurrentUser=user;renderRadioAuth();});
+ }catch(e){$('#radioStatus').textContent='پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.';}
  renderRadioList();
 }
 initRadio();
