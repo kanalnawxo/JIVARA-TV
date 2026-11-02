@@ -987,24 +987,38 @@ let remoteChannels = [];
 let remoteChannelsLoaded = false;
 
 function normalizeRemoteGroup(value){
- const key=String(value||'').trim().toLowerCase();
+ // Dashboard may send either the stable group ID or its Kurdish/Arabic display name.
+ // Normalize text without ever moving an unknown group into Kurdish by default.
+ const clean=value=>{
+  let s=String(value??'').trim().toLowerCase();
+  try{s=s.normalize('NFKC');}catch(_){}
+  return s.replace(/[\\u200e\\u200f\\u202a-\\u202e\\s_]+/g,' ').trim();
+ };
+ const key=clean(value);
+ if(!key)return 'kurdish'; // Preserve the legacy default only for records with no group.
  const aliases={
-  local:['local','ناوخۆ','local-ناوخۆ'],
-  kurdish:['kurdish','کوردی','kurdistan'],
-  arabic:['arabic','عەرەبی','عربي'],
-  foreign:['foreign','بیانی','فیلم','movies','movie','دراما','drama'],
-  news:['news','هەواڵ','اخبار'],
+  local:['local','ناوخۆ','local ناوخۆ','محلي','محلية'],
+  kurdish:['kurdish','کوردی','کوردستان','kurdistan'],
+  arabic:['arabic','عەرەبی','عربي','العربية'],
+  foreign:['foreign','بیانی','فیلم','movies','movie','دراما','drama','أفلام','افلام'],
+  news:['news','هەواڵ','اخبار','أخبار'],
   quran:['quran','قورئان','قرآن'],
-  kids:['kids','children','منداڵان','اطفال'],
-  sports:['sports','sport','وەرزش','رياضة'],
-  music:['music','موزیک','موسيقى'],
-  documentary:['documentary','دۆکۆمێنتاری']
+  kids:['kids','children','منداڵان','اطفال','أطفال'],
+  sports:['sports','sport','وەرزش','رياضة','رياضة'],
+  music:['music','موزیک','موسيقى','موسيقى'],
+  documentary:['documentary','دۆکۆمێنتاری','وثائقي','وثائقيات'],
+  iraq:['iraq','عێراق','العراق','iraqi'],
+  iran:['iran','ئێران','ايران','إيران'],
+  turkey:['turkey','تورکیا','تركيا','ترکیا'],
+  israel:['israel','ئیسرائیل','اسرائيل','إسرائيل']
  };
  for(const g of groups){
-  if(key===g.id.toLowerCase()) return g.id;
-  if((aliases[g.id]||[]).some(x=>x.toLowerCase()===key)) return g.id;
+  if(key===clean(g.id)||key===clean(g.name))return g.id;
+  if((aliases[g.id]||[]).some(x=>clean(x)===key))return g.id;
  }
- return 'kurdish';
+ // Return an unmatched value unchanged for diagnostics; it will not be
+ // silently misfiled under the Kurdish group.
+ return key;
 }
 
 function remoteChannelId(url){
