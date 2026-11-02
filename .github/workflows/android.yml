@@ -2,7 +2,7 @@ name: Build JIVARA TV Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix-single-tap-return-from-baseline ]
   workflow_dispatch:
 
 permissions:
