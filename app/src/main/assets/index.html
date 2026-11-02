@@ -1400,11 +1400,19 @@ const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') ||
 playerScreen.addEventListener('click',e=>{
  // A single click exits fullscreen; in normal size clicks do not change the layout.
  if(isPlayerFullscreen()){
-  playerScreen.focus({preventScroll:true});
+  const returnChannelId=currentChannel?.id;
   exitedBySingleClick=true;
   clearTimeout(exitClickResetTimer);
   exitClickResetTimer=setTimeout(()=>{exitedBySingleClick=false;},500);
   fullscreen();
+  // Restore focus to the same channel without restarting its stream.
+  requestAnimationFrame(()=>{
+   if(returnChannelId && currentChannel?.id===returnChannelId){
+    focusSelectedChannel(returnChannelId);
+   }else{
+    playerScreen.focus({preventScroll:true});
+   }
+  });
  }
 });
 playerScreen.addEventListener('dblclick',e=>{
