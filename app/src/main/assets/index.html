@@ -205,23 +205,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .footer{border-top:1px solid var(--line);padding-top:9px;margin-top:14px;
  display:flex;justify-content:space-between;gap:10px;color:#6e8ba6;font-size:9px}
 
-/* Transparent autumn gust: leaves travel right-to-left, no added backdrop. */
-.movie-strip{position:relative!important;display:block!important;width:calc(100% + 24px);height:clamp(112px,18vh,190px);min-height:112px;flex:0 0 clamp(112px,18vh,190px);margin:auto -12px 0!important;padding:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:transparent!important;isolation:isolate;contain:paint;}
-.movie-strip:before,.movie-strip:after{content:none!important;display:none!important;}
-.movie-strip-head{display:none!important;}
-.movie-track{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;z-index:2!important;pointer-events:none!important;background:transparent!important;}
-.autumn-leaf{position:absolute;display:block;z-index:2;top:var(--leaf-y);left:calc(100% + var(--leaf-w));width:var(--leaf-w);height:calc(var(--leaf-w)*1.48);opacity:0;will-change:transform;transform-origin:50% 50%;filter:drop-shadow(0 2px 2px #0008);animation:autumnGust var(--leaf-time) cubic-bezier(.32,.02,.62,.99) var(--leaf-delay) infinite;}
-.autumn-leaf svg{display:block;width:100%;height:100%;overflow:visible;}
-.autumn-leaf .leaf-body{stroke:#76502a;stroke-opacity:.48;stroke-width:1.4;stroke-linejoin:round;}
-.autumn-leaf .leaf-vein{fill:none;stroke:#f8e4ad;stroke-opacity:.7;stroke-width:1.25;stroke-linecap:round;}
-.autumn-leaf .leaf-vein-dark{fill:none;stroke:#70451f;stroke-opacity:.5;stroke-width:.9;stroke-linecap:round;}
-@keyframes autumnGust{0%{opacity:0;transform:translate3d(0,0,0) rotate(-18deg) scale(.78)}6%{opacity:.78}24%{transform:translate3d(-25vw,var(--leaf-drop),0) rotate(105deg) scale(1)}48%{opacity:.72;transform:translate3d(-55vw,calc(var(--leaf-drop)*-.55),0) rotate(245deg) scale(.9)}76%{opacity:.66}100%{opacity:0;transform:translate3d(calc(-100vw - var(--leaf-w) - 30px),var(--leaf-drop),0) rotate(560deg) scale(.74)}}
-#page-home,#page-groups{padding-bottom:0;min-height:100%;}
-#page-home.active,#page-groups.active{display:flex;flex-direction:column;}
-#page-home .movie-strip,#page-groups .movie-strip{margin-top:auto!important;}
-#page-home .footer{margin-top:0;flex:0 0 auto;}
-@media(max-width:700px){.movie-strip{width:calc(100% + 16px);margin-left:-8px!important;margin-right:-8px!important;height:clamp(90px,14vh,135px);flex-basis:clamp(90px,14vh,135px)}}
-@media(prefers-reduced-motion:reduce){.autumn-leaf{animation-duration:90s;}}
+/* Original dark-blue JIVARA TV background retained; autumn animation removed. */
 
 
 .toast{display:none;position:fixed;z-index:1000;bottom:20px;left:50%;
@@ -313,7 +297,6 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     </div>
     <div class="section-title">گرووپەکان <small>کلیک بکە بۆ کردنەوە</small></div>
     <div class="categories" id="homeCategories"></div>
-    <div class="movie-strip" aria-label="هەوای پاییزی و گەڵای زەرد"><div class="movie-track" id="homeMovieTrack"></div></div>
    </section>
 
    <section class="page" id="page-groups">
@@ -321,7 +304,6 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     <div class="group-layout">
      <div class="group-cards" id="groupCards"></div>
     </div>
-    <div class="movie-strip" aria-label="هەوای پاییزی و گەڵای زەرد"><div class="movie-strip-head"></div><div class="movie-track" id="groupsMovieTrack"></div></div>
    </section>
 
    <section class="page" id="page-radio">
@@ -1113,23 +1095,6 @@ const worldMoviePosters = [
  {title:'The Lord of the Rings',src:'https://image.tmdb.org/t/p/w780/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg'},
  {title:'The Matrix Resurrections',src:'https://image.tmdb.org/t/p/w780/8c4a8kE7PizaGQQnditMmI1xbRp.jpg'}
 ];
-function renderMovieStrips(){
- const leaves=Array.from({length:38},(_,i)=>i);
- ['#homeMovieTrack','#groupsMovieTrack'].forEach(sel=>{
-  const track=$(sel);if(!track)return;
-  track.innerHTML=leaves.map(i=>{
-   const y=(i*37+7)%88;
-   const width=11+(i*11)%17;
-   const time=8+(i*7)%11;
-   const delay=-((i*19)%170)/10;
-   const drop=((i*29)%56)-28;
-   const palette=['#c77a32','#d69a42','#b96b2b','#d8ad58','#a95b2b','#c58c3c'];
-   const leafColor=palette[i%palette.length];
-   const svg='<svg viewBox="0 0 64 92" aria-hidden="true" focusable="false"><defs><linearGradient id="leafGrad'+i+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3d58a"/><stop offset=".28" stop-color="'+leafColor+'"/><stop offset=".72" stop-color="'+leafColor+'"/><stop offset="1" stop-color="#75401f"/></linearGradient><radialGradient id="leafLight'+i+'" cx=".28" cy=".2" r=".85"><stop offset="0" stop-color="#fff1c4" stop-opacity=".62"/><stop offset=".55" stop-color="#fff1c4" stop-opacity=".08"/><stop offset="1" stop-color="#321809" stop-opacity=".25"/></radialGradient></defs><path class="leaf-body" fill="url(#leafGrad'+i+')" d="M32 89 C29 76 24 66 13 57 L3 53 12 47 4 39 17 38 12 27 25 31 28 17 34 27 45 10 45 29 59 25 52 39 62 43 49 51 54 61 41 62 36 78 Z"/><path fill="url(#leafLight'+i+')" d="M32 89 C29 76 24 66 13 57 L3 53 12 47 4 39 17 38 12 27 25 31 28 17 34 27 45 10 45 29 59 25 52 39 62 43 49 51 54 61 41 62 36 78 Z"/><path class="leaf-vein-dark" d="M32 88 Q33 56 45 12 M32 73 L13 57 M33 62 L5 42 M34 52 L17 38 M36 43 L28 18 M36 62 L54 61 M39 49 L61 43 M41 36 L59 25"/><path class="leaf-vein" d="M32 88 Q33 56 45 12 M32 73 L13 57 M33 62 L5 42 M34 52 L17 38 M36 43 L28 18 M36 62 L54 61 M39 49 L61 43 M41 36 L59 25"/></svg>';
-   return '<span class="autumn-leaf" aria-hidden="true" style="--leaf-y:'+y+'%;--leaf-w:'+width+'px;--leaf-time:'+time+'s;--leaf-delay:'+delay+'s;--leaf-drop:'+drop+'px">'+svg+'</span>';
-  }).join('');
- });
-}
 
 function renderHome(){
  const countryIds=new Set(['iraq','iran','turkey','israel']);
@@ -1194,7 +1159,7 @@ function renderSearch(q=''){
  '<div class="empty">هیچ کەناڵێک نییە. لینکەکان زیاد بکە.</div>';
  // Channel activation is delegated below so double-click can be detected reliably.
 }
-function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($('#searchInput').value||'');renderMovieStrips();}
+function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($('#searchInput').value||'');}
 
 function switchPage(name){
  if(!$('#page-'+name))name='home';
@@ -1405,25 +1370,28 @@ function playChannel(id){
 video.addEventListener('playing',()=>idle.style.display='none');
 video.addEventListener('error',()=>{if(video.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
 
-let fullscreenBusy=false;
-async function fullscreen(){
+function fullscreen(){
  const el=$('#playerScreen');
- if(fullscreenBusy)return;
- fullscreenBusy=true;
- try{
-  const isExpanded=el.classList.contains('is-fullscreen') || document.fullscreenElement===el;
-  if(isExpanded){
-   el.classList.remove('is-fullscreen');
-   if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
-  }else{
-   // CSS fallback works even in browsers/WebViews without Fullscreen API.
-   el.classList.add('is-fullscreen');
-   if(el.requestFullscreen){
-    try{await el.requestFullscreen();}
-    catch(err){el.classList.add('is-fullscreen');}
-   }
+ if(!el)return;
+ const isExpanded=el.classList.contains('is-fullscreen') || document.fullscreenElement===el;
+ if(isExpanded){
+  // Remove fullscreen immediately so the native Android player returns to its normal bounds.
+  el.classList.remove('is-fullscreen');
+  if(document.fullscreenElement && document.exitFullscreen){
+   const result=document.exitFullscreen();
+   if(result && typeof result.catch==='function')result.catch(()=>{});
   }
- }finally{fullscreenBusy=false;}
+ }else{
+  el.classList.add('is-fullscreen');
+  // Android uses a native Media3 overlay. Avoid the WebView Fullscreen API there:
+  // its pending promise can block the next single-tap exit action.
+  if(!window.AndroidPlayer && el.requestFullscreen){
+   try{
+    const result=el.requestFullscreen();
+    if(result && typeof result.catch==='function')result.catch(()=>el.classList.add('is-fullscreen'));
+   }catch(err){el.classList.add('is-fullscreen');}
+  }
+ }
 }
 const playerScreen=$('#playerScreen');
 let exitedBySingleClick=false;
