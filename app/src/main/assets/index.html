@@ -1416,9 +1416,8 @@ playerScreen.addEventListener('dblclick',e=>{
   fullscreen();
  }
 });
-playerScreen.addEventListener('keydown',e=>{
- if(e.key==='Enter' || e.key===' '){e.preventDefault();fullscreen();}
-});
+// Fullscreen is intentionally controlled by a double click/tap on the video surface.
+// A single remote OK/Enter press must not expand the player.
 // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
 const channelListEl=$('#channelList');
 let holdTimer=null, heldRow=null, dragRow=null, dropRow=null, holdActivated=false, holdStartX=0, holdStartY=0;
