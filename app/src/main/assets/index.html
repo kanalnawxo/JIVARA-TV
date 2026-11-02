@@ -1397,6 +1397,13 @@ const playerScreen=$('#playerScreen');
 let exitedBySingleClick=false;
 let exitClickResetTimer=null;
 const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
+// Native Android Media3 PlayerView sits above the WebView; route its single tap here directly.
+window.handleNativePlayerTap=()=>{
+ if(isPlayerFullscreen()){
+  playerScreen.focus({preventScroll:true});
+  fullscreen();
+ }
+};
 playerScreen.addEventListener('click',e=>{
  // A single click exits fullscreen; in normal size clicks do not change the layout.
  if(isPlayerFullscreen()){
