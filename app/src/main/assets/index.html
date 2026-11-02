@@ -1397,6 +1397,7 @@ const playerScreen=$('#playerScreen');
 let exitedBySingleClick=false;
 let exitClickResetTimer=null;
 const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen') || document.fullscreenElement===playerScreen;
+window.handleNativePlayerTap=()=>{fullscreen();};
 playerScreen.addEventListener('click',e=>{
  // A single click exits fullscreen; in normal size clicks do not change the layout.
  if(isPlayerFullscreen()){
