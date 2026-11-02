@@ -99,7 +99,7 @@ public class MainActivity extends Activity {
         playerView.setClickable(true);
         playerView.setVisibility(View.GONE);
         playerView.setOnClickListener(v -> webView.evaluateJavascript(
-                "document.getElementById('playerScreen')?.dispatchEvent(new MouseEvent('click',{bubbles:true}))",
+                "if(window.handleNativePlayerTap){window.handleNativePlayerTap();}else{document.getElementById('playerScreen')?.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));}",
                 null));
         root.addView(playerView, new FrameLayout.LayoutParams(1, 1));
 
