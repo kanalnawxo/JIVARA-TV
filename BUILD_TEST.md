@@ -1,0 +1,1 @@
+Build trigger for testing the current main-branch APK. No application source changes.
