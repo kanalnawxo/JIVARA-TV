@@ -1384,18 +1384,35 @@ function playChannel(id){
 video.addEventListener('playing',()=>idle.style.display='none');
 video.addEventListener('error',()=>{if(video.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
 
+let fullscreenReturnChannelId=null;
+function restoreFullscreenChannelFocus(id){
+ const channelId=id||fullscreenReturnChannelId;
+ if(!channelId)return;
+ // Wait for the player overlay/layout to return before restoring the TV remote focus.
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  if(currentChannel?.id===channelId){
+   switchPage('browse');
+   focusSelectedChannel(channelId);
+  }
+ }));
+ fullscreenReturnChannelId=null;
+}
 function fullscreen(){
  const el=$('#playerScreen');
  if(!el)return;
  const isExpanded=el.classList.contains('is-fullscreen') || document.fullscreenElement===el;
  if(isExpanded){
+  const restoreId=fullscreenReturnChannelId||currentChannel?.id;
   // Remove fullscreen immediately so the native Android player returns to its normal bounds.
   el.classList.remove('is-fullscreen');
   if(document.fullscreenElement && document.exitFullscreen){
    const result=document.exitFullscreen();
    if(result && typeof result.catch==='function')result.catch(()=>{});
   }
+  restoreFullscreenChannelFocus(restoreId);
  }else{
+  // Remember the exact channel before the native video surface covers the WebView.
+  fullscreenReturnChannelId=currentChannel?.id||null;
   el.classList.add('is-fullscreen');
   // Android uses a native Media3 overlay. Avoid the WebView Fullscreen API there:
   // its pending promise can block the next single-tap exit action.
@@ -1680,7 +1697,10 @@ if(searchList){
 }
 document.addEventListener('fullscreenchange',()=>{
  if(document.fullscreenElement===playerScreen) playerScreen.classList.add('is-fullscreen');
- else if(!document.fullscreenElement) playerScreen.classList.remove('is-fullscreen');
+ else if(!document.fullscreenElement){
+  playerScreen.classList.remove('is-fullscreen');
+  if(fullscreenReturnChannelId)restoreFullscreenChannelFocus(fullscreenReturnChannelId);
+ }
 });
 // Keep pointer interaction natural across the whole interface; hovering a control highlights it.
 document.addEventListener('pointermove',()=>{document.documentElement.classList.add('pointer-active');},{passive:true});
