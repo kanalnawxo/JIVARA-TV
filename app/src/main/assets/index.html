@@ -1388,12 +1388,17 @@ let fullscreenReturnChannelId=null;
 function restoreFullscreenChannelFocus(id){
  const channelId=id||fullscreenReturnChannelId;
  if(!channelId)return;
- // Wait for the player overlay/layout to return before restoring the TV remote focus.
+ // Keep the channel identity until the native Android player has returned to its normal bounds.
+ const restore=()=>{
+  if(currentChannel?.id!==channelId)return;
+  if(activePage!=='browse')switchPage('browse');
+  else renderChannels();
+  focusSelectedChannel(channelId);
+ };
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  if(currentChannel?.id===channelId){
-   switchPage('browse');
-   focusSelectedChannel(channelId);
-  }
+  restore();
+  // Android updates the native PlayerView bounds asynchronously after the WebView layout changes.
+  setTimeout(restore,160);
  }));
  fullscreenReturnChannelId=null;
 }
