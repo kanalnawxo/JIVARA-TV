@@ -1776,14 +1776,9 @@ document.addEventListener('focusin',e=>{
  const el=e.target;
  const row=el?.closest?.('#channelList .channel[data-id]');
  if(row){channelFocusGuardId=row.dataset.id;return;}
- // While browsing channels, remote focus must not drift into the vertical sidebar.
- if(activePage==='browse'&&channelFocusGuardId&&el?.closest?.('.sidebar')){
-  // A channel is selected: never let Android/WebView leave the channel list
-  // and silently return DPAD focus to the vertical main menu.
-  const target=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
-  if(target&&document.activeElement!==target)target.focus({preventScroll:true});
-  return;
- }
+ // Do not trap focus between the channel list and sidebar.
+ // A deliberate remote direction may move focus; only unexpected loss to
+ // BODY/player is recovered by the guard below.
  // Recover from unsolicited focus loss after playback/native view changes.
  if(activePage==='browse'&&channelFocusGuardId&&Date.now()-lastRemoteDpadAt>700){
   const id=channelFocusGuardId;
@@ -1947,15 +1942,8 @@ document.addEventListener('keydown',e=>{
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const current=document.activeElement;
- // If native playback or WebView spatial navigation has moved focus back to
- // the sidebar, restore the selected channel BEFORE calculating any direction.
- // Otherwise the global navigator treats the sidebar as a valid current item
- // and Up/Down continue moving through the main menu.
- if(activePage==='browse'&&channelFocusGuardId&&current?.closest('.sidebar')){
-  const anchor=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
-  if(anchor)anchor.focus({preventScroll:true});
-  e.preventDefault();e.stopImmediatePropagation();return;
- }
+ // Never redirect focus from the sidebar automatically. The user may
+ // intentionally move between the channel list and main menu with the remote.
  if(key==='Enter' || key===' '){
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
