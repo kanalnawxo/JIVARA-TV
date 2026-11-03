@@ -151,17 +151,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .channel.hold-selected .ch-number,.channel.hold-selected .ch-name{color:#17202b!important}
 .channel.dragging{opacity:.45;outline:2px dashed #ffd84d}
 .channel.drop-target{border-top:3px solid #ffd84d!important}
-.channel:focus{background:#075bb8;border-color:#2b8cf1}
+.channel:focus{background:#ffd84d!important;border-color:#fff0a3!important;color:#17202b!important;box-shadow:inset 4px 0 0 #f0aa00,0 0 12px #ffd84d55!important}
 .channel .ch-number{width:25px;flex:0 0 25px;text-align:center;color:#d8e8fa;font-size:11px;font-variant-numeric:tabular-nums}
 .channel .ch-logo{width:36px;height:29px;border-radius:5px;background:#f5f8ff;color:#172b40;
  display:grid;place-items:center;overflow:hidden;font-weight:bold;font-size:8px;flex:0 0 36px}
 .channel .ch-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:2px}
 .channel .ch-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .channel.active .ch-number,.channel:focus .ch-number{color:#fff}
-.channel:focus{outline:2px solid var(--focus);outline-offset:0;box-shadow:0 0 9px #1682ff44}
+.channel:focus{outline:2px solid #fff0a3;outline-offset:0;box-shadow:0 0 12px #ffd84d66}
 /* Keep the playing channel visibly pinned even if Android TV/WebView moves DOM focus elsewhere. */
 .channel.remote-pinned{outline:2px solid var(--focus)!important;outline-offset:0!important;box-shadow:0 0 10px #1682ff66,inset 3px 0 0 #39baff!important;position:relative;z-index:1}
-html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
+html.pointer-active .channel:focus:not(:hover){outline:2px solid #fff0a3;outline-offset:0;background:#ffd84d!important;color:#17202b!important;box-shadow:inset 4px 0 0 #f0aa00,0 0 12px #ffd84d55!important}
 .player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
  max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .player-screen video{width:100%;height:100%;object-fit:contain;background:#000}
@@ -1516,10 +1516,8 @@ playerScreen.addEventListener('pointerup',e=>{
 playerScreen.addEventListener('keydown',e=>{
  if(e.key==='Enter' || e.key===' '){e.preventDefault();fullscreen();}
 });
-// Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
+// Simple channel selection: one OK/click selects and plays the focused channel.
 const channelListEl=$('#channelList');
-// Keep remote focus on the selected channel after playback starts.
-// Playback can briefly move native focus away from the channel list.
 function focusChannelRow(id){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
   const row=channelListEl?.querySelector('.channel[data-id="'+id+'"]');
@@ -1529,183 +1527,12 @@ function focusChannelRow(id){
   row.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }));
 }
-
-let holdTimer=null, heldRow=null, dragRow=null, dropRow=null, holdActivated=false, holdStartX=0, holdStartY=0;
-function clearHoldState(){
- if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
- if(dragRow)dragRow.classList.remove('dragging');
- if(dropRow)dropRow.classList.remove('drop-target');
- dragRow=null;dropRow=null;heldRow=null;
-}
 if(channelListEl){
- const updatePointerReorder=e=>{
-  if(!heldRow||!holdActivated)return;
-  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#channelList .channel[data-id]');
-  if(!dragRow){dragRow=heldRow;dragRow.classList.add('dragging');}
-  if(dropRow&&dropRow!==target)dropRow.classList.remove('drop-target');
-  dropRow=target&&target!==dragRow?target:null;
-  if(dropRow)dropRow.classList.add('drop-target');
- };
- channelListEl.addEventListener('pointerdown',e=>{
-  const row=e.target.closest('.channel[data-id]');
-  if(!row || (e.button!==0&&e.pointerType!=='touch'))return;
-  clearHoldState();holdActivated=false;heldRow=row;holdStartX=e.clientX;holdStartY=e.clientY;
-  holdTimer=setTimeout(()=>{holdTimer=null;holdActivated=true;row.classList.add('hold-selected');row.style.touchAction='none';try{if(e.pointerId!==undefined)row.setPointerCapture(e.pointerId);}catch{}toast('کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.');},650);
- });
- document.addEventListener('pointermove',e=>{
-  if(!heldRow)return;
-  const moved=Math.abs(e.clientX-holdStartX)+Math.abs(e.clientY-holdStartY);
-  if(!holdActivated&&moved>18){if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}heldRow=null;return;}
-  updatePointerReorder(e);
- },{passive:true});
- const finishReorder=e=>{
-  if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
-  if(holdActivated){
-   e.preventDefault?.();
-   if(dragRow && dropRow){
-    const from=channels.findIndex(c=>c.id===dragRow.dataset.id);
-    const to=channels.findIndex(c=>c.id===dropRow.dataset.id);
-    if(from>=0&&to>=0&&channels[from].group===channels[to].group&&from!==to){
-     const groupId=channels[from].group;
-     const same=channels.filter(c=>c.group===groupId);
-     const a=same.findIndex(c=>c.id===channels[from].id), b=same.findIndex(c=>c.id===channels[to].id);
-     const [moved]=same.splice(a,1);
-     const targetIndex=same.findIndex(c=>c.id===dropRow.dataset.id);
-     const rect=dropRow.getBoundingClientRect();
-     const after=e.clientY>rect.top+rect.height/2;
-     same.splice(Math.max(0,targetIndex+(after?1:0)),0,moved);
-     let j=0;channels=channels.map(c=>c.group===groupId?same[j++]:c);
-     persistManualChannels();
-     renderAll();
-     const movedRow=channelListEl.querySelector(`.channel[data-id="${moved.id}"]`);
-     if(movedRow){movedRow.classList.remove('hold-selected');movedRow.focus({preventScroll:true});movedRow.scrollIntoView({block:'nearest'});}
-     toast('ڕیزبەندی کەناڵەکان گۆڕدرا.');
-    }
-   }
-   // Once dropped, restore the channel's normal color.
-   channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
-   if(dragRow)dragRow.classList.remove('dragging');
-   if(dropRow)dropRow.classList.remove('drop-target');
-   channelListEl.querySelectorAll('.channel').forEach(x=>{x.style.touchAction='';});
-   dragRow=null;dropRow=null;heldRow=null;holdActivated=false;
-   channelListEl.dataset.suppressClick='1';setTimeout(()=>delete channelListEl.dataset.suppressClick,350);
-  }else{heldRow=null;}
- };
- document.addEventListener('pointerup',finishReorder);
- document.addEventListener('pointercancel',()=>{clearHoldState();holdActivated=false;});
- // Android TV remote: hold OK for 1 second to select the channel in yellow.
- // Use Up/Down to move it; release OK, then press OK again to finish.
-
- // Remote reorder is handled at document capture level because some Android TV
- // remotes deliver DPAD events to the focused view rather than the channel list.
- let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteReadyToDrop=false;
- let remoteTapFallbackTimer=null;
- let remoteTapPending=null;
- function remoteKeyName(e){
-  const code=e.keyCode||e.which||0;
-  if(code===13||code===23||code===66)return 'Enter';
-  if(code===19||code===38)return 'ArrowUp';
-  if(code===20||code===40)return 'ArrowDown';
-  if(code===21||code===37)return 'ArrowLeft';
-  if(code===22||code===39)return 'ArrowRight';
-  return e.key;
- }
- function handleRemoteChannelTap(row){
-  if(!row)return;
-  const id=row.dataset.id;
-  if(remoteTapPending){
-   const prev=remoteTapPending;clearTimeout(prev.timer);remoteTapPending=null;
-   if(prev.id===id){
-    if(currentChannel?.id!==id)playChannel(id);
-    const selected=channelListEl.querySelector('.channel[data-id="'+id+'"]');
-    if(selected)selected.focus({preventScroll:true});
-    fullscreen();return;
-   }
-  }
-  if(currentChannel?.id!==id)playChannel(id);
-  const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;},450);
-  remoteTapPending={id,timer};
- }
- function finishRemoteReorder(){
-  if(!remoteReorder)return;
-  const id=remoteHoldRow?.dataset.id;
-  remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
-  channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
-  persistManualChannels();renderChannels();
-  const placed=channelListEl.querySelector('.channel[data-id="'+id+'"]');
-  if(placed){placed.focus({preventScroll:true});placed.scrollIntoView({block:'nearest'});}
-  toast('شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.');
- }
- document.addEventListener('keydown',e=>{
-  const k=remoteKeyName(e);
-  const active=document.activeElement;
-  const row=active?.closest?.('#channelList .channel[data-id]') || remoteHoldRow;
-  // OK/Enter activation is handled once by the shared remote-focus handler.
-  // Do not consume it here; otherwise group/category buttons never receive activation.
-  if(remoteReorder && (k==='ArrowUp'||k==='ArrowDown')){
-   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-   if(e.repeat)return;
-   const id=remoteHoldRow?.dataset.id;
-   const from=channels.findIndex(c=>c.id===id);
-   if(from<0)return;
-   const current=channels[from],same=channels.filter(c=>c.group===current.group);
-   const pos=same.findIndex(c=>c.id===id),targetPos=pos+(k==='ArrowUp'?-1:1);
-   if(targetPos<0||targetPos>=same.length)return;
-   const other=same[targetPos],to=channels.findIndex(c=>c.id===other.id);
-   if(to<0)return;
-   [channels[from],channels[to]]=[channels[to],channels[from]];
-   persistManualChannels();
-   renderChannels();
-   remoteHoldRow=channelListEl.querySelector('.channel[data-id="'+id+'"]');
-   if(remoteHoldRow){
-    remoteHoldRow.classList.add('hold-selected');
-    remoteHoldRow.focus({preventScroll:true});
-    remoteHoldRow.scrollIntoView({block:'nearest',inline:'nearest'});
-   }
-   return;
-  }
-  if(remoteReorder && k==='Escape'){
-   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-   remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
-   channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
-  }
- },true);
- // OK activation is centralized in the shared document keydown handler.
-
  channelListEl.addEventListener('click',e=>{
-  if(channelListEl.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
-  const row=e.target.closest('.channel[data-id]');
-  if(row)channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>{if(x!==row)x.classList.remove('hold-selected');});
- },true);
-}
-// Pointer: first click plays inline; a second click on the same channel enters fullscreen.
-const channelListForDelete = $('#channelList');
-let pointerChannelClick = null;
-if(channelListForDelete){
- channelListForDelete.addEventListener('click',e=>{
-  if(channelListForDelete.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
   const row=e.target.closest('.channel[data-id]');
   if(!row)return;
-  const id=row.dataset.id;
-  if(pointerChannelClick){
-   clearTimeout(pointerChannelClick.timer);
-   const previous=pointerChannelClick;
-   pointerChannelClick=null;
-   if(previous.id===id){
-    if(currentChannel?.id!==id)playChannel(id);
-    const selected=channelListForDelete.querySelector('.channel[data-id="'+id+'"]');
-    if(selected)selected.focus({preventScroll:true});
-    requestAnimationFrame(()=>fullscreen());
-    return;
-   }
-   if(currentChannel?.id!==previous.id)playChannel(previous.id);
-  }
-  const timer=setTimeout(()=>{
-   if(pointerChannelClick?.id!==id)return;
-   pointerChannelClick=null;
-   if(currentChannel?.id!==id)playChannel(id);
-  },380);
-  pointerChannelClick={id,timer};
+  lastUserRemoteFocus=row;
+  if(currentChannel?.id!==row.dataset.id)playChannel(row.dataset.id);
  });
 }
 // Search results keep their ordinary single-click playback and double-click fullscreen behavior.
