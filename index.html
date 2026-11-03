@@ -1741,6 +1741,16 @@ document.addEventListener('pointerdown',e=>{
 // must not silently move the remote cursor from the channel list to the sidebar.
 let lastUserRemoteFocus=null;
 let lastDirectionalRemoteAt=0;
+// Native Android TV remotes do not consistently emit DOM Enter/click events.
+// MainActivity calls this on the physical OK key-up, using the actual focused control.
+window.__jivaraNativeActivateFocused=function(){
+ let target=document.activeElement;
+ if(!target||target===document.body||target===document.documentElement)target=lastUserRemoteFocus;
+ if(!target||!target.isConnected)return;
+ const tag=(target.tagName||'').toLowerCase();
+ if(['input','textarea','select'].includes(tag))return;
+ if(target.matches('button,a,[role="button"],.channel,.group-card,.group-btn,.category'))target.click();
+};
 let lastPointerRemoteAt=0;
 document.addEventListener('pointerdown',e=>{
  const target=e.target.closest('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel');
