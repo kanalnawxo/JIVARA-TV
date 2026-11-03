@@ -1026,7 +1026,11 @@ function normalizeRemoteGroup(value){
   kids:['kids','children','منداڵان','اطفال'],
   sports:['sports','sport','وەرزش','رياضة'],
   music:['music','موزیک','موسيقى'],
-  documentary:['documentary','دۆکۆمێنتاری']
+  documentary:['documentary','دۆکۆمێنتاری'],
+  iraq:['iraq','iraqi','عێراق','العراق'],
+  iran:['iran','iranian','ئێران','ایران','إيران'],
+  turkey:['turkey','turkish','تورکیا','تركيا'],
+  israel:['israel','israeli','ئیسرائیل','إسرائيل','اسرائيل']
  };
  for(const g of groups){
   if(key===g.id.toLowerCase()) return g.id;
@@ -1223,21 +1227,12 @@ function switchPage(name){
 function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
 
 function focusSelectedChannel(id){
- // Keep remote focus on the selected channel, including after the player starts.
- const restore=()=>{
-  if(activePage!=='browse'||currentChannel?.id!==id)return;
+ // Rendering the list replaces its buttons, so restore real keyboard/remote focus
+ // to the selected channel after each render. The active highlight remains visible.
+ requestAnimationFrame(()=>{
   const selected=$(`#channelList .channel[data-id="${CSS.escape(id)}"]`);
-  if(!selected)return;
-  const active=document.activeElement;
-  const focusInList=!!active?.closest?.('#channelList');
-  const focusOnPlayer=active===document.body||active===document.documentElement||active===video||active===playerScreen;
-  // Do not steal focus if the user has deliberately moved to another control.
-  if(focusInList||focusOnPlayer||!active){
-   selected.focus({preventScroll:true});
-   selected.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
-  }
- };
- requestAnimationFrame(restore);
+  if(selected){selected.focus({preventScroll:true});selected.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}
+ });
 }
 let channelOverlayTimer=null;
 function showChannelSwitch(c){
@@ -1434,10 +1429,7 @@ function playChannel(id){
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
 }
-video.addEventListener('playing',()=>{
- idle.style.display='none';
- if(currentChannel)focusSelectedChannel(currentChannel.id);
-});
+video.addEventListener('playing',()=>idle.style.display='none');
 video.addEventListener('error',()=>{if(video.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
 
 let fullscreenBusy=false;
