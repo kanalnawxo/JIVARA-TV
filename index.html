@@ -1073,6 +1073,11 @@ async function refreshRemoteChannels(showMessage=false){
   remoteChannelsLoaded=true;
   channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
   renderAll();
+  // Keep the remote focus anchored to the channel currently playing after the
+  // periodic Cloudflare refresh rebuilds the channel-list DOM.
+  if(activePage==='browse'&&currentChannel&&channels.some(c=>c.id===currentChannel.id)){
+   focusSelectedChannel(currentChannel.id);
+  }
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
  }catch(error){
