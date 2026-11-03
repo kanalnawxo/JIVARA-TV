@@ -246,9 +246,9 @@ public class MainActivity extends Activity {
         // dropping ACTION_UP leaves the remote focus and channel selection unstable.
         if (webView != null && (event.getAction() == KeyEvent.ACTION_DOWN
                 || event.getAction() == KeyEvent.ACTION_UP)) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && !webView.hasFocus()) {
-                webView.requestFocus();
-            }
+            // Do not steal native focus back to the WebView on every DPAD press.
+            // The WebView still receives the key event directly below; its DOM
+            // focus remains under the user's control.
             if (webView.dispatchKeyEvent(event)) {
                 return true;
             }
