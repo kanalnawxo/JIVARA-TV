@@ -96,6 +96,8 @@ public class MainActivity extends Activity {
         playerView.setShutterBackgroundColor(Color.BLACK);
         playerView.setFocusable(false);
         playerView.setFocusableInTouchMode(false);
+        // The native video surface must never become a focus target on TV remotes.
+        playerView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         playerView.setClickable(true);
         playerView.setVisibility(View.GONE);
         playerView.setOnClickListener(v -> webView.evaluateJavascript(
@@ -167,6 +169,9 @@ public class MainActivity extends Activity {
             exoPlayer.prepare();
             exoPlayer.setPlayWhenReady(true);
             playerView.setVisibility(View.VISIBLE);
+            playerView.clearFocus();
+            webView.clearFocus();
+            webView.requestFocus(View.FOCUS_DOWN);
         } catch (Exception e) {
             Toast.makeText(this, "نەتوانرا لینکەکە بخوێندرێتەوە", Toast.LENGTH_SHORT).show();
         }
@@ -178,7 +183,11 @@ public class MainActivity extends Activity {
             exoPlayer.stop();
             exoPlayer.clearMediaItems();
         }
-        if (playerView != null) playerView.setVisibility(View.GONE);
+        if (playerView != null) {
+            playerView.setVisibility(View.GONE);
+            playerView.clearFocus();
+        }
+        if (webView != null) webView.requestFocus(View.FOCUS_DOWN);
     }
 
     private void updatePlayerBounds(double x, double y, double w, double h) {
