@@ -159,6 +159,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .channel .ch-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .channel.active .ch-number,.channel:focus .ch-number{color:#fff}
 .channel:focus{outline:2px solid var(--focus);outline-offset:0;box-shadow:0 0 9px #1682ff44}
+/* Keep the playing channel visibly pinned even if Android TV/WebView moves DOM focus elsewhere. */
+.channel.remote-pinned{outline:2px solid var(--focus)!important;outline-offset:0!important;box-shadow:0 0 10px #1682ff66,inset 3px 0 0 #39baff!important;position:relative;z-index:1}
 html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
 .player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
  max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
@@ -1199,7 +1201,7 @@ function renderChannels(){
  $('#browseHeading').textContent=group(currentGroup).name;
  $('#browseCount').textContent=list.length+' کەناڵ';
  $('#channelList').innerHTML=list.length?list.map((c,i)=>
- `<button class="channel ${currentChannel?.id===c.id?'active':''}" data-id="${c.id}" tabindex="0">
+ `<button class="channel ${currentChannel?.id===c.id?'active remote-pinned':''}" data-id="${c.id}" tabindex="0">
  <span class="ch-number">${String(i+1).padStart(2,'0')}</span>
  <span class="ch-logo">${c.logo?`<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`:safe(c.name.slice(0,3))}</span>
  <span class="ch-name">${safe(c.name)}</span></button>`).join(''):
@@ -1433,8 +1435,8 @@ function playChannel(id){
    const list=$('#channelList');
    const selected=list?.querySelector('.channel[data-id="'+c.id+'"]');
    if(selected){
-    list.querySelectorAll('.channel.active').forEach(x=>x.classList.remove('active'));
-    selected.classList.add('active');
+    list.querySelectorAll('.channel.active,.channel.remote-pinned').forEach(x=>x.classList.remove('active','remote-pinned'));
+    selected.classList.add('active','remote-pinned');
    }else renderChannels();
   }
   focusSelectedChannel(c.id);
@@ -1766,8 +1768,9 @@ let channelFocusGuardId=null;
 document.addEventListener('focusin',e=>{
  const el=e.target;
  const row=el?.closest?.('#channelList .channel[data-id]');
+ // Keep the last selected channel as the anchor even when focus temporarily
+ // moves to playback, the toolbar, or another non-channel surface.
  if(row) channelFocusGuardId=row.dataset.id;
- else if(el!==document.body&&el!==document.documentElement&&!el?.closest?.('#playerScreen')) channelFocusGuardId=null;
 });
 setInterval(()=>{
  if(activePage!=='browse'||!channelFocusGuardId)return;
