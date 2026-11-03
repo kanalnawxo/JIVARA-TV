@@ -1757,6 +1757,29 @@ document.addEventListener('focusin',e=>{
   el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
 });
+
+// Android TV WebViews can occasionally drop DOM focus after media playback
+// or an idle period without firing a useful navigation event. Remember that
+// the user was navigating the channel list and recover only when focus falls
+// back to BODY; never steal focus from another control or page.
+let channelFocusGuardId=null;
+document.addEventListener('focusin',e=>{
+ const el=e.target;
+ const row=el?.closest?.('#channelList .channel[data-id]');
+ if(row) channelFocusGuardId=row.dataset.id;
+ else if(el!==document.body&&el!==document.documentElement) channelFocusGuardId=null;
+});
+setInterval(()=>{
+ if(activePage!=='browse'||!channelFocusGuardId)return;
+ const active=document.activeElement;
+ if(active!==document.body&&active!==document.documentElement&&active?.isConnected)return;
+ const row=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
+ if(row)row.focus({preventScroll:true});
+ else if(currentChannel&&$('#channelList .channel[data-id="'+CSS.escape(currentChannel.id)+'"]')){
+  channelFocusGuardId=currentChannel.id;
+  focusSelectedChannel(currentChannel.id);
+ }
+},900);
 // Make dynamically rendered tiles and controls available to keyboard/remote navigation.
 document.addEventListener('pointerover',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
