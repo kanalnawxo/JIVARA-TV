@@ -1499,6 +1499,17 @@ playerScreen.addEventListener('keydown',e=>{
 });
 // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
 const channelListEl=$('#channelList');
+// Keep remote focus on the selected channel after playback starts.
+// Playback can briefly move native focus away from the channel list.
+function focusChannelRow(id){
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const row=channelListEl?.querySelector('.channel[data-id="'+id+'"]');
+  if(!row)return;
+  lastUserRemoteFocus=row;
+  row.focus({preventScroll:true});
+  row.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+ }));
+}
 let holdTimer=null, heldRow=null, dragRow=null, dropRow=null, holdActivated=false, holdStartX=0, holdStartY=0;
 function clearHoldState(){
  if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
@@ -1591,7 +1602,7 @@ if(channelListEl){
    }
   }
   if(currentChannel?.id!==id)playChannel(id);
-  else row.focus({preventScroll:true});
+  focusChannelRow(id);
   const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;},450);
   remoteTapPending={id,timer};
  }
@@ -1709,7 +1720,7 @@ if(channelListForDelete){
    if(pointerChannelClick?.id!==id)return;
    pointerChannelClick=null;
    if(currentChannel?.id!==id)playChannel(id);
-   else row.focus({preventScroll:true});
+   focusChannelRow(id);
   },380);
   pointerChannelClick={id,timer};
  });
