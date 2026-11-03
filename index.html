@@ -1778,12 +1778,10 @@ document.addEventListener('focusin',e=>{
  if(row){channelFocusGuardId=row.dataset.id;return;}
  // While browsing channels, remote focus must not drift into the vertical sidebar.
  if(activePage==='browse'&&channelFocusGuardId&&el?.closest?.('.sidebar')){
-  const id=channelFocusGuardId;
-  requestAnimationFrame(()=>{
-   if(activePage!=='browse')return;
-   const target=$('#channelList .channel[data-id="'+CSS.escape(id)+'"]');
-   if(target&&document.activeElement!==target)target.focus({preventScroll:true});
-  });
+  // A channel is selected: never let Android/WebView leave the channel list
+  // and silently return DPAD focus to the vertical main menu.
+  const target=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
+  if(target&&document.activeElement!==target)target.focus({preventScroll:true});
   return;
  }
  // Recover from unsolicited focus loss after playback/native view changes.
@@ -1949,6 +1947,15 @@ document.addEventListener('keydown',e=>{
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const current=document.activeElement;
+ // If native playback or WebView spatial navigation has moved focus back to
+ // the sidebar, restore the selected channel BEFORE calculating any direction.
+ // Otherwise the global navigator treats the sidebar as a valid current item
+ // and Up/Down continue moving through the main menu.
+ if(activePage==='browse'&&channelFocusGuardId&&current?.closest('.sidebar')){
+  const anchor=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
+  if(anchor)anchor.focus({preventScroll:true});
+  e.preventDefault();e.stopImmediatePropagation();return;
+ }
  if(key==='Enter' || key===' '){
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
