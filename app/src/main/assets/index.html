@@ -1599,6 +1599,7 @@ if(channelListEl){
  // Remote reorder is handled at document capture level because some Android TV
  // remotes deliver DPAD events to the focused view rather than the channel list.
  let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteReadyToDrop=false;
+ let remoteTapFallbackTimer=null;
  let remoteTapPending=null;
  function remoteKeyName(e){
   const code=e.keyCode||e.which||0;
@@ -1653,6 +1654,7 @@ if(channelListEl){
    if(row && !remoteHoldTimer && !e.repeat){
     remoteHoldRow=row;
     remoteHoldTimer=setTimeout(()=>{
+     if(remoteTapFallbackTimer){clearTimeout(remoteTapFallbackTimer);remoteTapFallbackTimer=null;}
      remoteHoldTimer=null;
      remoteReorder=true;remoteReadyToDrop=false;
      const live=channelListEl.querySelector('.channel[data-id="'+row.dataset.id+'"]');
@@ -1661,6 +1663,16 @@ if(channelListEl){
      remoteHoldRow.focus({preventScroll:true});
      toast('کەناڵەکە زەرد بوو؛ بە تیرەکانی سەرەوە و خوارەوە شوێنەکەی بگۆڕە، پاشان OK دابگرە بۆ جێگیرکردن.');
     },850);
+    // Some Android TV WebViews omit keyup for the remote OK button.
+    // If that happens, treat a normal press as a tap; a genuine long press
+    // still reaches the 850ms reorder handler above.
+    remoteTapFallbackTimer=setTimeout(()=>{
+     remoteTapFallbackTimer=null;
+     if(!remoteHoldTimer||remoteReorder)return;
+     clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
+     const id=remoteHoldRow?.dataset.id;remoteHoldRow=null;
+     if(id)handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+id+'"]'));
+    },500);
     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
    }
    return;
@@ -1698,6 +1710,7 @@ if(channelListEl){
   if(k!=='Enter'&&k!==' ')return;
   if(remoteHoldTimer){
    clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
+   if(remoteTapFallbackTimer){clearTimeout(remoteTapFallbackTimer);remoteTapFallbackTimer=null;}
    const id=remoteHoldRow?.dataset.id;remoteHoldRow=null;
    if(id&&!remoteReorder)handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+id+'"]'));
    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return;
