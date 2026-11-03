@@ -1510,13 +1510,7 @@ function focusChannelRow(id){
   row.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }));
 }
-// Called by the Android player only after the native stream reaches STATE_READY.
-window.restoreChannelFocusAfterPlayback=function(){
- const id=currentChannel?.id;
- if(!id)return;
- const row=channelListEl?.querySelector('.channel[data-id="'+id+'"]');
- if(row)focusChannelRow(id);
-};
+
 let holdTimer=null, heldRow=null, dragRow=null, dropRow=null, holdActivated=false, holdStartX=0, holdStartY=0;
 function clearHoldState(){
  if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
@@ -1609,7 +1603,6 @@ if(channelListEl){
    }
   }
   if(currentChannel?.id!==id)playChannel(id);
-  focusChannelRow(id);
   const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;},450);
   remoteTapPending={id,timer};
  }
@@ -1727,7 +1720,6 @@ if(channelListForDelete){
    if(pointerChannelClick?.id!==id)return;
    pointerChannelClick=null;
    if(currentChannel?.id!==id)playChannel(id);
-   focusChannelRow(id);
   },380);
   pointerChannelClick={id,timer};
  });
@@ -1775,19 +1767,10 @@ document.addEventListener('focusin',e=>{
  if(el && el.scrollIntoView && el.closest('.page.active')){
   el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
- if(el?.closest('.sidebar') && lastUserRemoteFocus?.matches?.('#channelList .channel') &&
-    Date.now()-lastDirectionalRemoteAt>180 && Date.now()-lastPointerRemoteAt>700 &&
-    activePage==='browse' && lastUserRemoteFocus.isConnected){
-  const keep=lastUserRemoteFocus;
-  requestAnimationFrame(()=>{if(activePage==='browse'&&keep.isConnected)keep.focus({preventScroll:true});});
- }
+
 });
 
-// Android TV WebViews may move DOM focus onto the video/player surface
-// when playback starts or after an idle period. Keep the last channel as the
-// focus anchor while that happens, and restore it without stealing focus from
-// other interface controls the user deliberately navigates to.
-// Remote focus is user-controlled; no focus guard or timer may steal it.
+
 // Make dynamically rendered tiles and controls available to keyboard/remote navigation.
 document.addEventListener('pointerover',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
@@ -1924,8 +1907,16 @@ document.addEventListener('keydown',e=>{
  const keyMap={37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',13:'Enter',23:'Enter',66:'Enter'};
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
- const current=document.activeElement;
+ let current=document.activeElement;
  if(arrows.includes(key))lastDirectionalRemoteAt=Date.now();
+ // DOM focus is restored only as a direct response to the user's remote key.
+ // Playback itself never moves the cursor or steals the user's navigation state.
+ if((!current || current===document.body || current===document.documentElement) &&
+    lastUserRemoteFocus?.isConnected &&
+    lastUserRemoteFocus.closest('.page.active,.sidebar,.topbar')){
+  current=lastUserRemoteFocus;
+  current.focus({preventScroll:true});
+ }
  if(current && current!==document.body && current!==document.documentElement &&
     current.matches?.('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel')){
   lastUserRemoteFocus=current;
@@ -1963,14 +1954,9 @@ document.addEventListener('keydown',e=>{
  });
  if(!items.length)return;
  if(!items.includes(current)){
-  // Resume at the last control the user navigated to, not automatically at
-  // the main sidebar after Android/WebView drops DOM focus.
-  const remembered=lastUserRemoteFocus;
-  if(remembered?.isConnected && items.includes(remembered)){
-   remembered.focus({preventScroll:true});e.preventDefault();return;
-  }
-  const first=items.find(el=>el.classList.contains('nav'))||items[0];
-  first.focus({preventScroll:true});e.preventDefault();return;
+  // Do not jump to the sidebar or any default control. Wait for the user
+  // to explicitly focus a visible control with the remote.
+  e.preventDefault();return;
  }
  // Up/down from a channel row traverses only the channel list.
  if(activePage==='browse'&&current.matches('#channelList .channel')&&(key==='ArrowUp'||key==='ArrowDown')){
