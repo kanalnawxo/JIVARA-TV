@@ -243,14 +243,26 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        // Forward BOTH key-down and key-up events to the WebView.
-        // The HTML remote handler uses keyup to complete OK/select actions;
-        // dropping ACTION_UP leaves the remote focus and channel selection unstable.
+        // Handle Android TV's physical OK/Select key at the native Activity level.
+        // Several TV WebView builds move DOM focus for DPAD but swallow the
+        // corresponding Enter key before JavaScript can activate the focused item.
+        final int code = event.getKeyCode();
+        final boolean isSelect = code == KeyEvent.KEYCODE_DPAD_CENTER
+                || code == KeyEvent.KEYCODE_ENTER
+                || code == KeyEvent.KEYCODE_NUMPAD_ENTER
+                || code == KeyEvent.KEYCODE_BUTTON_A
+                || code == KeyEvent.KEYCODE_SELECT;
+        if (webView != null && isSelect) {
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                webView.evaluateJavascript(
+                        "if(window.__jivaraNativeActivateFocused){window.__jivaraNativeActivateFocused();}",
+                        null);
+            }
+            // Consume both phases so WebView cannot double-activate the same item.
+            return true;
+        }
         if (webView != null && (event.getAction() == KeyEvent.ACTION_DOWN
                 || event.getAction() == KeyEvent.ACTION_UP)) {
-            // Do not steal native focus back to the WebView on every DPAD press.
-            // The WebView still receives the key event directly below; its DOM
-            // focus remains under the user's control.
             if (webView.dispatchKeyEvent(event)) {
                 return true;
             }
