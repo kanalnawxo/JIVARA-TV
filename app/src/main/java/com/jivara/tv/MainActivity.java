@@ -169,9 +169,9 @@ public class MainActivity extends Activity {
             exoPlayer.prepare();
             exoPlayer.setPlayWhenReady(true);
             playerView.setVisibility(View.VISIBLE);
-            playerView.clearFocus();
-            webView.clearFocus();
-            webView.requestFocus(View.FOCUS_DOWN);
+            // Preserve the existing WebView/DOM focus on the selected channel.
+            // Clearing WebView focus here makes Android TV move to the first
+            // focusable sidebar button when native playback starts.
         } catch (Exception e) {
             Toast.makeText(this, "نەتوانرا لینکەکە بخوێندرێتەوە", Toast.LENGTH_SHORT).show();
         }
