@@ -1758,28 +1758,32 @@ document.addEventListener('focusin',e=>{
  }
 });
 
-// Android TV WebViews can occasionally drop DOM focus after media playback
-// or an idle period without firing a useful navigation event. Remember that
-// the user was navigating the channel list and recover only when focus falls
-// back to BODY; never steal focus from another control or page.
+// Android TV WebViews may move DOM focus onto the video/player surface
+// when playback starts or after an idle period. Keep the last channel as the
+// focus anchor while that happens, and restore it without stealing focus from
+// other interface controls the user deliberately navigates to.
 let channelFocusGuardId=null;
 document.addEventListener('focusin',e=>{
  const el=e.target;
  const row=el?.closest?.('#channelList .channel[data-id]');
  if(row) channelFocusGuardId=row.dataset.id;
- else if(el!==document.body&&el!==document.documentElement) channelFocusGuardId=null;
+ else if(el!==document.body&&el!==document.documentElement&&!el?.closest?.('#playerScreen')) channelFocusGuardId=null;
 });
 setInterval(()=>{
  if(activePage!=='browse'||!channelFocusGuardId)return;
  const active=document.activeElement;
- if(active!==document.body&&active!==document.documentElement&&active?.isConnected)return;
+ const activeRow=active?.closest?.('#channelList .channel[data-id]');
+ if(activeRow?.dataset.id===channelFocusGuardId)return;
+ // Restore if focus was lost to BODY or captured by the video/player surface.
+ const focusLost=active===document.body||active===document.documentElement||!active?.isConnected||!!active?.closest?.('#playerScreen');
+ if(!focusLost)return;
  const row=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
  if(row)row.focus({preventScroll:true});
  else if(currentChannel&&$('#channelList .channel[data-id="'+CSS.escape(currentChannel.id)+'"]')){
   channelFocusGuardId=currentChannel.id;
   focusSelectedChannel(currentChannel.id);
  }
-},900);
+},500);
 // Make dynamically rendered tiles and controls available to keyboard/remote navigation.
 document.addEventListener('pointerover',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
