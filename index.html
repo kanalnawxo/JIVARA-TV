@@ -1090,7 +1090,7 @@ async function refreshRemoteChannels(showMessage=false){
   // Restore focus only when a real server-side change required rebuilding
   // the list, keeping the currently playing channel selected on TV remotes.
   if(activePage==='browse'&&currentChannel&&channels.some(c=>c.id===currentChannel.id)){
-   focusSelectedChannel(currentChannel.id);
+
   }
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
@@ -1241,14 +1241,6 @@ function switchPage(name){
 }
 function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
 
-function focusSelectedChannel(id){
- // Rendering the list replaces its buttons, so restore real keyboard/remote focus
- // to the selected channel after each render. The active highlight remains visible.
- requestAnimationFrame(()=>{
-  const selected=$(`#channelList .channel[data-id="${CSS.escape(id)}"]`);
-  if(selected){selected.focus({preventScroll:true});selected.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}
- });
-}
 let channelOverlayTimer=null;
 function showChannelSwitch(c){
  const overlay=$('#channelSwitchOverlay');
@@ -1439,7 +1431,7 @@ function playChannel(id){
     selected.classList.add('active','remote-pinned');
    }else renderChannels();
   }
-  focusSelectedChannel(c.id);
+
  }else{renderGroups();}
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
@@ -1484,8 +1476,7 @@ function exitPlayerFullscreenKeepChannel(){
  }catch(err){}
  playerScreen.blur();
  requestAnimationFrame(()=>{
-  if(playingChannelId && currentChannel?.id===playingChannelId)focusSelectedChannel(playingChannelId);
-  else playerScreen.focus({preventScroll:true});
+  /* Keep focus where the user left it. */
   exitingPlayerFullscreen=false;
  });
 }
@@ -1743,7 +1734,7 @@ document.addEventListener('fullscreenchange',()=>{
  if(document.fullscreenElement===playerScreen) playerScreen.classList.add('is-fullscreen');
  else if(!document.fullscreenElement){
   playerScreen.classList.remove('is-fullscreen');
-  if(currentChannel)requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));
+  /* Fullscreen changes do not move remote focus. */
  }
 });
 // Keep pointer interaction natural across the whole interface; hovering a control highlights it.
@@ -1764,47 +1755,7 @@ document.addEventListener('focusin',e=>{
 // when playback starts or after an idle period. Keep the last channel as the
 // focus anchor while that happens, and restore it without stealing focus from
 // other interface controls the user deliberately navigates to.
-let channelFocusGuardId=null;
-let lastRemoteDpadAt=0;
-// Distinguish an intentional DPAD move from Android/WebView unexpectedly
-// moving DOM focus after playback or while the user is idle.
-document.addEventListener('keydown',e=>{
- const k=e.key||({19:'ArrowUp',20:'ArrowDown',21:'ArrowLeft',22:'ArrowRight'}[e.keyCode]||'');
- if(k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight')lastRemoteDpadAt=Date.now();
-},true);
-document.addEventListener('focusin',e=>{
- const el=e.target;
- const row=el?.closest?.('#channelList .channel[data-id]');
- if(row){channelFocusGuardId=row.dataset.id;return;}
- // Do not trap focus between the channel list and sidebar.
- // A deliberate remote direction may move focus; only unexpected loss to
- // BODY/player is recovered by the guard below.
- // Recover from unsolicited focus loss after playback/native view changes.
- if(activePage==='browse'&&channelFocusGuardId&&Date.now()-lastRemoteDpadAt>700){
-  const id=channelFocusGuardId;
-  requestAnimationFrame(()=>{
-   if(activePage!=='browse'||Date.now()-lastRemoteDpadAt<=700)return;
-   const target=$('#channelList .channel[data-id="'+CSS.escape(id)+'"]');
-   const focused=document.activeElement;
-   if(target&&focused!==target&&!focused?.matches?.('input,textarea,select'))target.focus({preventScroll:true});
-  });
- }
-});
-setInterval(()=>{
- if(activePage!=='browse'||!channelFocusGuardId)return;
- const active=document.activeElement;
- const activeRow=active?.closest?.('#channelList .channel[data-id]');
- if(activeRow?.dataset.id===channelFocusGuardId)return;
- // Restore if focus was lost to BODY or captured by the video/player surface.
- const focusLost=active===document.body||active===document.documentElement||!active?.isConnected||!!active?.closest?.('#playerScreen');
- if(!focusLost)return;
- const row=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
- if(row)row.focus({preventScroll:true});
- else if(currentChannel&&$('#channelList .channel[data-id="'+CSS.escape(currentChannel.id)+'"]')){
-  channelFocusGuardId=currentChannel.id;
-  focusSelectedChannel(currentChannel.id);
- }
-},500);
+// Remote focus is user-controlled; no focus guard or timer may steal it.
 // Make dynamically rendered tiles and controls available to keyboard/remote navigation.
 document.addEventListener('pointerover',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
@@ -1976,11 +1927,7 @@ document.addEventListener('keydown',e=>{
  });
  if(!items.length)return;
  if(!items.includes(current)){
-  // Restore the remembered channel instead of defaulting to the sidebar.
-  if(activePage==='browse'&&channelFocusGuardId){
-   const anchor=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
-   if(anchor){anchor.focus({preventScroll:true});e.preventDefault();return;}
-  }
+  // No remembered channel is restored when focus is absent.
   const first=items.find(el=>el.classList.contains('nav'))||items[0];
   first.focus({preventScroll:true});e.preventDefault();return;
  }
