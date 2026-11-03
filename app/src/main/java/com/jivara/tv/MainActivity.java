@@ -260,11 +260,25 @@ public class MainActivity extends Activity {
             // Consume both phases so WebView cannot double-activate the same item.
             return true;
         }
-        if (webView != null && (event.getAction() == KeyEvent.ACTION_DOWN
-                || event.getAction() == KeyEvent.ACTION_UP)) {
-            if (webView.dispatchKeyEvent(event)) {
-                return true;
+        // Route TV directional keys directly into the WebView document.
+        // Some Android TV WebView builds keep native focus on the WebView itself,
+        // so DOM focus never receives DPAD unless we forward the key explicitly.
+        final String remoteKey;
+        switch (code) {
+            case KeyEvent.KEYCODE_DPAD_UP: remoteKey = "ArrowUp"; break;
+            case KeyEvent.KEYCODE_DPAD_DOWN: remoteKey = "ArrowDown"; break;
+            case KeyEvent.KEYCODE_DPAD_LEFT: remoteKey = "ArrowLeft"; break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT: remoteKey = "ArrowRight"; break;
+            default: remoteKey = null; break;
+        }
+        if (webView != null && remoteKey != null) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                String js = "document.dispatchEvent(new KeyboardEvent('keydown',{key:"
+                        + JSONObject.quote(remoteKey)
+                        + ",bubbles:true,cancelable:true}));";
+                webView.evaluateJavascript(js, null);
             }
+            return true;
         }
         return super.dispatchKeyEvent(event);
     }
