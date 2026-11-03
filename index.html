@@ -1765,12 +1765,28 @@ document.addEventListener('focusin',e=>{
 // focus anchor while that happens, and restore it without stealing focus from
 // other interface controls the user deliberately navigates to.
 let channelFocusGuardId=null;
+let lastRemoteDpadAt=0;
+// Distinguish an intentional DPAD move from Android/WebView unexpectedly
+// moving DOM focus after playback or while the user is idle.
+document.addEventListener('keydown',e=>{
+ const k=e.key||({19:'ArrowUp',20:'ArrowDown',21:'ArrowLeft',22:'ArrowRight'}[e.keyCode]||'');
+ if(k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight')lastRemoteDpadAt=Date.now();
+},true);
 document.addEventListener('focusin',e=>{
  const el=e.target;
  const row=el?.closest?.('#channelList .channel[data-id]');
- // Keep the last selected channel as the anchor even when focus temporarily
- // moves to playback, the toolbar, or another non-channel surface.
- if(row) channelFocusGuardId=row.dataset.id;
+ if(row){channelFocusGuardId=row.dataset.id;return;}
+ // If focus changes without a recent remote navigation, treat it as an
+ // unsolicited native-player/WebView focus steal and return to the channel.
+ if(activePage==='browse'&&channelFocusGuardId&&Date.now()-lastRemoteDpadAt>700){
+  const id=channelFocusGuardId;
+  requestAnimationFrame(()=>{
+   if(activePage!=='browse'||Date.now()-lastRemoteDpadAt<=700)return;
+   const target=$('#channelList .channel[data-id="'+CSS.escape(id)+'"]');
+   const focused=document.activeElement;
+   if(target&&focused!==target&&!focused?.matches?.('input,textarea,select'))target.focus({preventScroll:true});
+  });
+ }
 });
 setInterval(()=>{
  if(activePage!=='browse'||!channelFocusGuardId)return;
