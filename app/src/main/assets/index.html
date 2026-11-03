@@ -159,6 +159,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .channel .ch-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .channel.active .ch-number,.channel:focus .ch-number{color:#fff}
 .channel:focus{outline:2px solid var(--focus);outline-offset:0;box-shadow:0 0 9px #1682ff44}
+/* Keep the playing channel visibly pinned even if Android TV/WebView moves DOM focus elsewhere. */
+.channel.remote-pinned{outline:2px solid var(--focus)!important;outline-offset:0!important;box-shadow:0 0 10px #1682ff66,inset 3px 0 0 #39baff!important;position:relative;z-index:1}
 html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
 .player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
  max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
@@ -1069,10 +1071,27 @@ async function refreshRemoteChannels(showMessage=false){
     group:normalizeRemoteGroup(item.group)
    });
   }
-  remoteChannels=next;
+  // Avoid rebuilding the channel-list DOM on every 60-second poll when
+  // the server data has not changed. Replacing focused buttons makes TV remote
+  // focus disappear even though the visible channel list looks identical.
+  const nextChannels=applyChannelOverrides([...next,...loadManualChannels()]);
+  const sameChannels=(a,b)=>a.length===b.length&&a.every((c,i)=>{
+   const n=b[i];
+   return n&&c.id===n.id&&c.name===n.name&&c.logo===n.logo&&c.url===n.url&&c.group===n.group;
+  });
   remoteChannelsLoaded=true;
-  channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
+  if(sameChannels(channels,nextChannels)){
+   if(showMessage) toast('کەناڵەکان پێشتر نوێ بوون.');
+   return true;
+  }
+  remoteChannels=next;
+  channels=nextChannels;
   renderAll();
+  // Restore focus only when a real server-side change required rebuilding
+  // the list, keeping the currently playing channel selected on TV remotes.
+  if(activePage==='browse'&&currentChannel&&channels.some(c=>c.id===currentChannel.id)){
+
+  }
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
  }catch(error){
@@ -1182,7 +1201,7 @@ function renderChannels(){
  $('#browseHeading').textContent=group(currentGroup).name;
  $('#browseCount').textContent=list.length+' کەناڵ';
  $('#channelList').innerHTML=list.length?list.map((c,i)=>
- `<button class="channel ${currentChannel?.id===c.id?'active':''}" data-id="${c.id}" tabindex="0">
+ `<button class="channel ${currentChannel?.id===c.id?'active remote-pinned':''}" data-id="${c.id}" tabindex="0">
  <span class="ch-number">${String(i+1).padStart(2,'0')}</span>
  <span class="ch-logo">${c.logo?`<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`:safe(c.name.slice(0,3))}</span>
  <span class="ch-name">${safe(c.name)}</span></button>`).join(''):
@@ -1222,14 +1241,6 @@ function switchPage(name){
 }
 function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
 
-function focusSelectedChannel(id){
- // Rendering the list replaces its buttons, so restore real keyboard/remote focus
- // to the selected channel after each render. The active highlight remains visible.
- requestAnimationFrame(()=>{
-  const selected=$(`#channelList .channel[data-id="${CSS.escape(id)}"]`);
-  if(selected){selected.focus({preventScroll:true});selected.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}
- });
-}
 let channelOverlayTimer=null;
 function showChannelSwitch(c){
  const overlay=$('#channelSwitchOverlay');
@@ -1416,11 +1427,11 @@ function playChannel(id){
    const list=$('#channelList');
    const selected=list?.querySelector('.channel[data-id="'+c.id+'"]');
    if(selected){
-    list.querySelectorAll('.channel.active').forEach(x=>x.classList.remove('active'));
-    selected.classList.add('active');
+    list.querySelectorAll('.channel.active,.channel.remote-pinned').forEach(x=>x.classList.remove('active','remote-pinned'));
+    selected.classList.add('active','remote-pinned');
    }else renderChannels();
   }
-  focusSelectedChannel(c.id);
+
  }else{renderGroups();}
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
@@ -1465,8 +1476,7 @@ function exitPlayerFullscreenKeepChannel(){
  }catch(err){}
  playerScreen.blur();
  requestAnimationFrame(()=>{
-  if(playingChannelId && currentChannel?.id===playingChannelId)focusSelectedChannel(playingChannelId);
-  else playerScreen.focus({preventScroll:true});
+  /* Keep focus where the user left it. */
   exitingPlayerFullscreen=false;
  });
 }
@@ -1489,6 +1499,18 @@ playerScreen.addEventListener('keydown',e=>{
 });
 // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
 const channelListEl=$('#channelList');
+// Keep remote focus on the selected channel after playback starts.
+// Playback can briefly move native focus away from the channel list.
+function focusChannelRow(id){
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const row=channelListEl?.querySelector('.channel[data-id="'+id+'"]');
+  if(!row)return;
+  lastUserRemoteFocus=row;
+  row.focus({preventScroll:true});
+  row.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+ }));
+}
+
 let holdTimer=null, heldRow=null, dragRow=null, dropRow=null, holdActivated=false, holdStartX=0, holdStartY=0;
 function clearHoldState(){
  if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
@@ -1581,7 +1603,6 @@ if(channelListEl){
    }
   }
   if(currentChannel?.id!==id)playChannel(id);
-  else row.focus({preventScroll:true});
   const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;},450);
   remoteTapPending={id,timer};
  }
@@ -1699,7 +1720,6 @@ if(channelListForDelete){
    if(pointerChannelClick?.id!==id)return;
    pointerChannelClick=null;
    if(currentChannel?.id!==id)playChannel(id);
-   else row.focus({preventScroll:true});
   },380);
   pointerChannelClick={id,timer};
  });
@@ -1724,7 +1744,7 @@ document.addEventListener('fullscreenchange',()=>{
  if(document.fullscreenElement===playerScreen) playerScreen.classList.add('is-fullscreen');
  else if(!document.fullscreenElement){
   playerScreen.classList.remove('is-fullscreen');
-  if(currentChannel)requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));
+  /* Fullscreen changes do not move remote focus. */
  }
 });
 // Keep pointer interaction natural across the whole interface; hovering a control highlights it.
@@ -1733,13 +1753,24 @@ document.addEventListener('pointerdown',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"],.channel,.group-card,.group-btn');
  if(target) target.classList.add('pointer-hover');
 },{passive:true});
-// Keep keyboard/TV-remote focus visible while moving freely between UI controls.
+// Keep the last user-controlled focus zone. Playback/native focus changes
+// must not silently move the remote cursor from the channel list to the sidebar.
+let lastUserRemoteFocus=null;
+let lastDirectionalRemoteAt=0;
+let lastPointerRemoteAt=0;
+document.addEventListener('pointerdown',e=>{
+ const target=e.target.closest('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel');
+ if(target){lastUserRemoteFocus=target;lastPointerRemoteAt=Date.now();}
+},true);
 document.addEventListener('focusin',e=>{
  const el=e.target;
  if(el && el.scrollIntoView && el.closest('.page.active')){
   el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
+
 });
+
+
 // Make dynamically rendered tiles and controls available to keyboard/remote navigation.
 document.addEventListener('pointerover',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
@@ -1876,7 +1907,21 @@ document.addEventListener('keydown',e=>{
  const keyMap={37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',13:'Enter',23:'Enter',66:'Enter'};
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
- const current=document.activeElement;
+ let current=document.activeElement;
+ if(arrows.includes(key))lastDirectionalRemoteAt=Date.now();
+ // DOM focus is restored only as a direct response to the user's remote key.
+ // Playback itself never moves the cursor or steals the user's navigation state.
+ if((!current || current===document.body || current===document.documentElement) &&
+    lastUserRemoteFocus?.isConnected &&
+    lastUserRemoteFocus.closest('.page.active,.sidebar,.topbar')){
+  current=lastUserRemoteFocus;
+  current.focus({preventScroll:true});
+ }
+ if(current && current!==document.body && current!==document.documentElement &&
+    current.matches?.('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel')){
+  lastUserRemoteFocus=current;
+ }
+ // The remote's explicit direction is the only way to change focus zones.
  if(key==='Enter' || key===' '){
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
@@ -1909,8 +1954,16 @@ document.addEventListener('keydown',e=>{
  });
  if(!items.length)return;
  if(!items.includes(current)){
-  const first=items.find(el=>el.classList.contains('nav'))||items[0];
-  first.focus({preventScroll:true});e.preventDefault();return;
+  // Do not jump to the sidebar or any default control. Wait for the user
+  // to explicitly focus a visible control with the remote.
+  e.preventDefault();return;
+ }
+ // Up/down from a channel row traverses only the channel list.
+ if(activePage==='browse'&&current.matches('#channelList .channel')&&(key==='ArrowUp'||key==='ArrowDown')){
+  const rows=[...document.querySelectorAll('#channelList .channel[data-id]')];
+  const at=rows.indexOf(current),next=rows[at+(key==='ArrowUp'?-1:1)];
+  if(next)next.focus({preventScroll:true});
+  e.preventDefault();return;
  }
  let dx=0,dy=0;
  if(key==='ArrowUp')dy=-1;
@@ -1929,6 +1982,7 @@ document.addEventListener('keydown',e=>{
   if(score<bestScore){best=el;bestScore=score;}
  }
  if(best){
+  lastUserRemoteFocus=best;
   best.focus({preventScroll:true});
   best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
