@@ -1775,9 +1775,12 @@ document.addEventListener('keydown',e=>{
  });
  if(!items.length)return;
  if(!items.includes(current)){
-  // Do not jump to the sidebar or any default control. Wait for the user
-  // to explicitly focus a visible control with the remote.
-  e.preventDefault();return;
+  // Android TV may send DPAD to the native WebView without assigning DOM
+  // focus. Seed focus on the first visible control and continue navigation.
+  current=items[0];
+  if(!current){e.preventDefault();return;}
+  lastUserRemoteFocus=current;
+  current.focus({preventScroll:true});
  }
  // Up/down from a channel row traverses only the channel list.
  if(activePage==='browse'&&current.matches('#channelList .channel')&&(key==='ArrowUp'||key==='ArrowDown')){
