@@ -140,28 +140,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .browse-layout{align-items:stretch;min-height:0}
 .browse-layout>.panel:first-child{display:flex;flex-direction:column;min-height:0}
 .channel-scroll{display:flex;flex:1 1 auto;flex-direction:column;gap:4px;min-height:0;max-height:none;overflow:auto;padding:3px 4px 4px 3px;box-sizing:border-box}
-.channel-reorder-help{margin:15px 4px 3px;padding:9px 10px;border:1px solid #9a7717;border-radius:7px;background:rgba(255,216,77,.08);color:#ffd84d;font-size:11px;line-height:1.8;text-align:center;direction:rtl;flex:0 0 auto}
-
 .channel{width:100%;display:flex;align-items:center;gap:10px;text-align:left;direction:ltr;
  background:#061a2c;border:1px solid transparent;border-radius:6px;padding:5px 7px;font-size:10px;min-height:40px;transition:background .12s,border-color .12s,box-shadow .12s;box-sizing:border-box}
 .channel.active{background:#075bb8;border-color:#2b8cf1;box-shadow:inset 3px 0 0 #39baff}
 .channel.delete-selected,.channel.delete-selected:focus{background:#e32636!important;border-color:#ff8a94!important;color:#fff!important;box-shadow:inset 4px 0 0 #a90d1a,0 0 10px #e3263655!important}
 .channel.delete-selected .ch-number,.channel.delete-selected .ch-name{color:#fff!important}
-.channel.hold-selected,.channel.hold-selected:focus{background:#ffd84d!important;border-color:#fff0a3!important;color:#17202b!important;box-shadow:inset 4px 0 0 #f0aa00,0 0 12px #ffd84d55!important}
-.channel.hold-selected .ch-number,.channel.hold-selected .ch-name{color:#17202b!important}
-.channel.dragging{opacity:.45;outline:2px dashed #ffd84d}
-.channel.drop-target{border-top:3px solid #ffd84d!important}
-.channel:focus{background:#ffd84d!important;border-color:#fff0a3!important;color:#17202b!important;box-shadow:inset 4px 0 0 #f0aa00,0 0 12px #ffd84d55!important}
+.channel:focus{background:#075bb8;border-color:#2b8cf1}
 .channel .ch-number{width:25px;flex:0 0 25px;text-align:center;color:#d8e8fa;font-size:11px;font-variant-numeric:tabular-nums}
 .channel .ch-logo{width:36px;height:29px;border-radius:5px;background:#f5f8ff;color:#172b40;
  display:grid;place-items:center;overflow:hidden;font-weight:bold;font-size:8px;flex:0 0 36px}
 .channel .ch-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:2px}
 .channel .ch-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .channel.active .ch-number,.channel:focus .ch-number{color:#fff}
-.channel:focus{outline:2px solid #fff0a3;outline-offset:0;box-shadow:0 0 12px #ffd84d66}
-/* Keep the playing channel visibly pinned even if Android TV/WebView moves DOM focus elsewhere. */
-.channel.remote-pinned{outline:2px solid var(--focus)!important;outline-offset:0!important;box-shadow:0 0 10px #1682ff66,inset 3px 0 0 #39baff!important;position:relative;z-index:1}
-html.pointer-active .channel:focus:not(:hover){outline:2px solid #fff0a3;outline-offset:0;background:#ffd84d!important;color:#17202b!important;box-shadow:inset 4px 0 0 #f0aa00,0 0 12px #ffd84d55!important}
+.channel:focus{outline:2px solid var(--focus);outline-offset:0;box-shadow:0 0 9px #1682ff44}
+html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
 .player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
  max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .player-screen video{width:100%;height:100%;object-fit:contain;background:#000}
@@ -282,6 +274,20 @@ html.pointer-active .channel:focus:not(:hover){outline:2px solid #fff0a3;outline
 .radio-nav{position:relative;isolation:isolate;overflow:visible}
 .radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}
 @keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}
+
+/* TV remote selection: the focused channel is the only yellow cursor state. */
+.channel:focus,.channel:focus-visible{
+ background:#ffd84d!important;
+ border-color:#fff0a6!important;
+ color:#17202b!important;
+ outline:2px solid #ffd84d!important;
+ outline-offset:0;
+ box-shadow:0 0 10px #ffd84d88!important;
+}
+.channel:focus .ch-name,.channel:focus .ch-number,
+.channel:focus-visible .ch-name,.channel:focus-visible .ch-number{
+ color:#17202b!important;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dashjs@4.7.4/dist/dash.all.min.js"></script>
@@ -352,7 +358,7 @@ html.pointer-active .channel:focus:not(:hover){outline:2px solid #fff0a3;outline
      <div class="panel">
       <div class="panel-head"><span>لیستی کەناڵەکان</span></div>
       <div class="channel-scroll" id="channelList"></div>
-      <div class="channel-reorder-help" role="note">بۆ گۆڕینی شوێنی کەناڵ و ڕێکخستنی لیستەکە بە دڵی خۆت، نیو چرکە دوگمەی ناوەڕاست (OK / Enter)ی ڕیمۆتەکەت لەسەر کەناڵەکە ڕابگرە؛ کاتێک ڕەنگەکەی زەرد بوو، بە تیرەکانی سەرەوە و خوارەوە بیگوازەرەوە، پاشان OK دووبارە دابگرە بۆ دانانی لە شوێنی نوێ؛ دوای ئەوە بە OK کەناڵەکە پخش بکە.</div>
+      
      </div>
      <div class="panel">
       <div class="panel-head"><span id="nowTitle">پلەیەری ڤیدیۆ</span></div>
@@ -1071,27 +1077,10 @@ async function refreshRemoteChannels(showMessage=false){
     group:normalizeRemoteGroup(item.group)
    });
   }
-  // Avoid rebuilding the channel-list DOM on every 60-second poll when
-  // the server data has not changed. Replacing focused buttons makes TV remote
-  // focus disappear even though the visible channel list looks identical.
-  const nextChannels=applyChannelOverrides([...next,...loadManualChannels()]);
-  const sameChannels=(a,b)=>a.length===b.length&&a.every((c,i)=>{
-   const n=b[i];
-   return n&&c.id===n.id&&c.name===n.name&&c.logo===n.logo&&c.url===n.url&&c.group===n.group;
-  });
-  remoteChannelsLoaded=true;
-  if(sameChannels(channels,nextChannels)){
-   if(showMessage) toast('کەناڵەکان پێشتر نوێ بوون.');
-   return true;
-  }
   remoteChannels=next;
-  channels=nextChannels;
+  remoteChannelsLoaded=true;
+  channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
   renderAll();
-  // Restore focus only when a real server-side change required rebuilding
-  // the list, keeping the currently playing channel selected on TV remotes.
-  if(activePage==='browse'&&currentChannel&&channels.some(c=>c.id===currentChannel.id)){
-
-  }
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
  }catch(error){
@@ -1201,7 +1190,7 @@ function renderChannels(){
  $('#browseHeading').textContent=group(currentGroup).name;
  $('#browseCount').textContent=list.length+' کەناڵ';
  $('#channelList').innerHTML=list.length?list.map((c,i)=>
- `<button class="channel ${currentChannel?.id===c.id?'active remote-pinned':''}" data-id="${c.id}" tabindex="0">
+ `<button class="channel ${currentChannel?.id===c.id?'active':''}" data-id="${c.id}" tabindex="0">
  <span class="ch-number">${String(i+1).padStart(2,'0')}</span>
  <span class="ch-logo">${c.logo?`<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`:safe(c.name.slice(0,3))}</span>
  <span class="ch-name">${safe(c.name)}</span></button>`).join(''):
@@ -1225,41 +1214,30 @@ function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($
 
 function switchPage(name){
  if(!$('#page-'+name))name='home';
- const enteringBrowse=name==='browse'&&activePage!=='browse';
  // Stop radio playback immediately when navigating away from its page.
  if(activePage==='radio'&&name!=='radio')stopRadioPlayback('بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.');
  // Leaving the live channel page must stop the native Android player completely.
  if(activePage==='browse'&&name!=='browse')cleanPlayer();
  activePage=name;
- $('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
- $('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+ $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+ $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
  const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
- if(name==='browse'){
-  renderChannels();
-  // On an explicit move into the channel page, transfer remote focus from
-  // the sidebar to the selected channel (or the first channel). No playback
-  // timer or background event is allowed to move focus afterwards.
-  if(enteringBrowse){
-   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    if(activePage!=='browse')return;
-    const list=$('#channelList');
-    const target=(currentChannel&&list?.querySelector('.channel[data-id="'+currentChannel.id+'"]'))
-      ||list?.querySelector('.channel[data-id]');
-    if(target){
-     lastUserRemoteFocus=target;
-     target.focus({preventScroll:true});
-     target.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
-    }
-   }));
-  }
- }
+ if(name==='browse')renderChannels();
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
 }
 function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
 
+function focusSelectedChannel(id){
+ // Rendering the list replaces its buttons, so restore real keyboard/remote focus
+ // to the selected channel after each render. The active highlight remains visible.
+ requestAnimationFrame(()=>{
+  const selected=$(`#channelList .channel[data-id="${CSS.escape(id)}"]`);
+  if(selected){selected.focus({preventScroll:true});selected.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}
+ });
+}
 let channelOverlayTimer=null;
 function showChannelSwitch(c){
  const overlay=$('#channelSwitchOverlay');
@@ -1446,11 +1424,11 @@ function playChannel(id){
    const list=$('#channelList');
    const selected=list?.querySelector('.channel[data-id="'+c.id+'"]');
    if(selected){
-    list.querySelectorAll('.channel.active,.channel.remote-pinned').forEach(x=>x.classList.remove('active','remote-pinned'));
-    selected.classList.add('active','remote-pinned');
+    list.querySelectorAll('.channel.active').forEach(x=>x.classList.remove('active'));
+    selected.classList.add('active');
    }else renderChannels();
   }
-
+  focusSelectedChannel(c.id);
  }else{renderGroups();}
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
@@ -1495,7 +1473,8 @@ function exitPlayerFullscreenKeepChannel(){
  }catch(err){}
  playerScreen.blur();
  requestAnimationFrame(()=>{
-  /* Keep focus where the user left it. */
+  if(playingChannelId && currentChannel?.id===playingChannelId)focusSelectedChannel(playingChannelId);
+  else playerScreen.focus({preventScroll:true});
   exitingPlayerFullscreen=false;
  });
 }
@@ -1516,23 +1495,35 @@ playerScreen.addEventListener('pointerup',e=>{
 playerScreen.addEventListener('keydown',e=>{
  if(e.key==='Enter' || e.key===' '){e.preventDefault();fullscreen();}
 });
-// Simple channel selection: one OK/click selects and plays the focused channel.
-const channelListEl=$('#channelList');
-function focusChannelRow(id){
- requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  const row=channelListEl?.querySelector('.channel[data-id="'+id+'"]');
-  if(!row)return;
-  lastUserRemoteFocus=row;
-  row.focus({preventScroll:true});
-  row.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
- }));
-}
-if(channelListEl){
- channelListEl.addEventListener('click',e=>{
+// Pointer: first click plays inline; a second click on the same channel enters fullscreen.
+const channelListForDelete = $('#channelList');
+let pointerChannelClick = null;
+if(channelListForDelete){
+ channelListForDelete.addEventListener('click',e=>{
+  if(channelListForDelete.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
   const row=e.target.closest('.channel[data-id]');
   if(!row)return;
-  lastUserRemoteFocus=row;
-  if(currentChannel?.id!==row.dataset.id)playChannel(row.dataset.id);
+  const id=row.dataset.id;
+  if(pointerChannelClick){
+   clearTimeout(pointerChannelClick.timer);
+   const previous=pointerChannelClick;
+   pointerChannelClick=null;
+   if(previous.id===id){
+    if(currentChannel?.id!==id)playChannel(id);
+    const selected=channelListForDelete.querySelector('.channel[data-id="'+id+'"]');
+    if(selected)selected.focus({preventScroll:true});
+    requestAnimationFrame(()=>fullscreen());
+    return;
+   }
+   if(currentChannel?.id!==previous.id)playChannel(previous.id);
+  }
+  const timer=setTimeout(()=>{
+   if(pointerChannelClick?.id!==id)return;
+   pointerChannelClick=null;
+   if(currentChannel?.id!==id)playChannel(id);
+   else row.focus({preventScroll:true});
+  },380);
+  pointerChannelClick={id,timer};
  });
 }
 // Search results keep their ordinary single-click playback and double-click fullscreen behavior.
@@ -1555,7 +1546,7 @@ document.addEventListener('fullscreenchange',()=>{
  if(document.fullscreenElement===playerScreen) playerScreen.classList.add('is-fullscreen');
  else if(!document.fullscreenElement){
   playerScreen.classList.remove('is-fullscreen');
-  /* Fullscreen changes do not move remote focus. */
+  if(currentChannel)requestAnimationFrame(()=>focusSelectedChannel(currentChannel.id));
  }
 });
 // Keep pointer interaction natural across the whole interface; hovering a control highlights it.
@@ -1564,34 +1555,13 @@ document.addEventListener('pointerdown',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"],.channel,.group-card,.group-btn');
  if(target) target.classList.add('pointer-hover');
 },{passive:true});
-// Keep the last user-controlled focus zone. Playback/native focus changes
-// must not silently move the remote cursor from the channel list to the sidebar.
-let lastUserRemoteFocus=null;
-let lastDirectionalRemoteAt=0;
-// Native Android TV remotes do not consistently emit DOM Enter/click events.
-// MainActivity calls this on the physical OK key-up, using the actual focused control.
-window.__jivaraNativeActivateFocused=function(){
- let target=document.activeElement;
- if(!target||target===document.body||target===document.documentElement)target=lastUserRemoteFocus;
- if(!target||!target.isConnected)return;
- const tag=(target.tagName||'').toLowerCase();
- if(['input','textarea','select'].includes(tag))return;
- if(target.matches('button,a,[role="button"],.channel,.group-card,.group-btn,.category'))target.click();
-};
-let lastPointerRemoteAt=0;
-document.addEventListener('pointerdown',e=>{
- const target=e.target.closest('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel');
- if(target){lastUserRemoteFocus=target;lastPointerRemoteAt=Date.now();}
-},true);
+// Keep keyboard/TV-remote focus visible while moving freely between UI controls.
 document.addEventListener('focusin',e=>{
  const el=e.target;
  if(el && el.scrollIntoView && el.closest('.page.active')){
   el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
-
 });
-
-
 // Make dynamically rendered tiles and controls available to keyboard/remote navigation.
 document.addEventListener('pointerover',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
@@ -1724,89 +1694,57 @@ async function updateLiveViewerCount(){
 updateLiveViewerCount();
 setInterval(updateLiveViewerCount,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLiveViewerCount();});
+// One simple remote-control path: arrows move focus, OK activates the focused item.
+function jivaraActivateFocused(){
+ const el=document.activeElement;
+ if(!el||el===document.body||el===document.documentElement)return;
+ const tag=(el.tagName||'').toLowerCase();
+ if(['input','textarea','select'].includes(tag))return;
+ if(el.matches('button,a,[role="button"],.channel,.group-card,.group-btn,.category,.radio-nav')){
+  el.click();
+ }
+}
+window.__jivaraNativeActivateFocused=jivaraActivateFocused;
 document.addEventListener('keydown',e=>{
  const keyMap={37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',13:'Enter',23:'Enter',66:'Enter'};
  const key=keyMap[e.keyCode]||e.key;
- const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
- let current=document.activeElement;
- if(arrows.includes(key))lastDirectionalRemoteAt=Date.now();
- // DOM focus is restored only as a direct response to the user's remote key.
- // Playback itself never moves the cursor or steals the user's navigation state.
- if((!current || current===document.body || current===document.documentElement) &&
-    lastUserRemoteFocus?.isConnected &&
-    lastUserRemoteFocus.closest('.page.active,.sidebar,.topbar')){
-  current=lastUserRemoteFocus;
-  current.focus({preventScroll:true});
- }
- if(current && current!==document.body && current!==document.documentElement &&
-    current.matches?.('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel')){
-  lastUserRemoteFocus=current;
- }
- // The remote's explicit direction is the only way to change focus zones.
- if(key==='Enter' || key===' '){
-  if(current && current!==document.body && current!==document.documentElement){
-   const tag=(current.tagName||'').toLowerCase();
-   if(['button','a','input','select','textarea'].includes(tag) || current.matches('[role="button"],.channel,.group-card,.group-btn,.category')){
-    if(tag==='input' || tag==='textarea' || tag==='select')return;
-    e.preventDefault();e.stopPropagation();
-    current.click();
-   }
-  }
+ if(key==='Enter'||key===' '){
+  e.preventDefault();
+  e.stopPropagation();
+  jivaraActivateFocused();
   return;
  }
- if(!arrows.includes(key))return;
- if((key==='ArrowUp'||key==='ArrowDown') && current?.closest('.channel.hold-selected'))return;
- const tag=(e.target.tagName||'').toLowerCase();
+ const vectors={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+ const vector=vectors[key];
+ if(!vector)return;
+ const tag=(e.target?.tagName||'').toLowerCase();
  if(['input','textarea','select'].includes(tag))return;
- if(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen')){
-  if(key==='ArrowUp'||key==='ArrowDown'){
-   const now=Date.now();if(now-(window.__jivaraFullscreenSwitchAt||0)<320){e.preventDefault();return;}
-   window.__jivaraFullscreenSwitchAt=now;
-   const rows=groupChannels(currentGroup),at=rows.findIndex(c=>c.id===currentChannel?.id),next=rows[at+(key==='ArrowUp'?-1:1)];
-   if(next)playChannel(next.id);
-  }
-  e.preventDefault();return;
- }
- if(e.repeat){e.preventDefault();return;}
  const selector='.sidebar button,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
  const items=[...new Set(document.querySelectorAll(selector))].filter(el=>{
   const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
   return r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&el.getAttribute('aria-hidden')!=='true';
  });
  if(!items.length)return;
+ let current=document.activeElement;
  if(!items.includes(current)){
-  // Android TV may send DPAD to the native WebView without assigning DOM
-  // focus. Seed focus on the first visible control and continue navigation.
-  current=items[0];
-  if(!current){e.preventDefault();return;}
-  lastUserRemoteFocus=current;
+  current=items.find(el=>el.classList.contains('nav'))||items[0];
   current.focus({preventScroll:true});
+  e.preventDefault();
+  return;
  }
- // Up/down from a channel row traverses only the channel list.
- if(activePage==='browse'&&current.matches('#channelList .channel')&&(key==='ArrowUp'||key==='ArrowDown')){
-  const rows=[...document.querySelectorAll('#channelList .channel[data-id]')];
-  const at=rows.indexOf(current),next=rows[at+(key==='ArrowUp'?-1:1)];
-  if(next)next.focus({preventScroll:true});
-  e.preventDefault();return;
- }
- let dx=0,dy=0;
- if(key==='ArrowUp')dy=-1;
- if(key==='ArrowDown')dy=1;
- if(key==='ArrowLeft')dx=-1;
- if(key==='ArrowRight')dx=1;
- const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;
+ const [dx,dy]=vector;
+ const rect=current.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
  let best=null,bestScore=Infinity;
  for(const el of items){
   if(el===current)continue;
-  const r=el.getBoundingClientRect(),vx=r.left+r.width/2-ax,vy=r.top+r.height/2-ay;
-  const primary=vx*dx+vy*dy;
-  if(primary<=0)continue;
+  const r=el.getBoundingClientRect(),vx=r.left+r.width/2-cx,vy=r.top+r.height/2-cy;
+  const forward=vx*dx+vy*dy;
+  if(forward<=0)continue;
   const cross=Math.abs(vx*dy-vy*dx);
-  const score=primary+cross*2.2+(cross*cross)/(Math.max(primary,1))*0.025;
+  const score=forward+cross*2.2+(cross*cross)/(Math.max(forward,1))*0.025;
   if(score<bestScore){best=el;bestScore=score;}
  }
  if(best){
-  lastUserRemoteFocus=best;
   best.focus({preventScroll:true});
   best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
