@@ -1743,11 +1743,25 @@ document.addEventListener('pointerdown',e=>{
  const target=e.target.closest('button,a,input,select,textarea,[role="button"],.channel,.group-card,.group-btn');
  if(target) target.classList.add('pointer-hover');
 },{passive:true});
-// Keep keyboard/TV-remote focus visible while moving freely between UI controls.
+// Keep the last user-controlled focus zone. Playback/native focus changes
+// must not silently move the remote cursor from the channel list to the sidebar.
+let lastUserRemoteFocus=null;
+let lastDirectionalRemoteAt=0;
+let lastPointerRemoteAt=0;
+document.addEventListener('pointerdown',e=>{
+ const target=e.target.closest('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel');
+ if(target){lastUserRemoteFocus=target;lastPointerRemoteAt=Date.now();}
+},true);
 document.addEventListener('focusin',e=>{
  const el=e.target;
  if(el && el.scrollIntoView && el.closest('.page.active')){
   el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+ }
+ if(el?.closest('.sidebar') && lastUserRemoteFocus?.matches?.('#channelList .channel') &&
+    Date.now()-lastDirectionalRemoteAt>180 && Date.now()-lastPointerRemoteAt>700 &&
+    activePage==='browse' && lastUserRemoteFocus.isConnected){
+  const keep=lastUserRemoteFocus;
+  requestAnimationFrame(()=>{if(activePage==='browse'&&keep.isConnected)keep.focus({preventScroll:true});});
  }
 });
 
@@ -1893,8 +1907,12 @@ document.addEventListener('keydown',e=>{
  const key=keyMap[e.keyCode]||e.key;
  const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const current=document.activeElement;
- // Never redirect focus from the sidebar automatically. The user may
- // intentionally move between the channel list and main menu with the remote.
+ if(arrows.includes(key))lastDirectionalRemoteAt=Date.now();
+ if(current && current!==document.body && current!==document.documentElement &&
+    current.matches?.('.sidebar button,.topbar button,.page.active button,.page.active [tabindex],.page.active .channel')){
+  lastUserRemoteFocus=current;
+ }
+ // The remote's explicit direction is the only way to change focus zones.
  if(key==='Enter' || key===' '){
   if(current && current!==document.body && current!==document.documentElement){
    const tag=(current.tagName||'').toLowerCase();
@@ -1927,7 +1945,12 @@ document.addEventListener('keydown',e=>{
  });
  if(!items.length)return;
  if(!items.includes(current)){
-  // No remembered channel is restored when focus is absent.
+  // Resume at the last control the user navigated to, not automatically at
+  // the main sidebar after Android/WebView drops DOM focus.
+  const remembered=lastUserRemoteFocus;
+  if(remembered?.isConnected && items.includes(remembered)){
+   remembered.focus({preventScroll:true});e.preventDefault();return;
+  }
   const first=items.find(el=>el.classList.contains('nav'))||items[0];
   first.focus({preventScroll:true});e.preventDefault();return;
  }
@@ -1955,6 +1978,7 @@ document.addEventListener('keydown',e=>{
   if(score<bestScore){best=el;bestScore=score;}
  }
  if(best){
+  lastUserRemoteFocus=best;
   best.focus({preventScroll:true});
   best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
  }
