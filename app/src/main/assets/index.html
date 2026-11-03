@@ -1640,43 +1640,8 @@ if(channelListEl){
   const k=remoteKeyName(e);
   const active=document.activeElement;
   const row=active?.closest?.('#channelList .channel[data-id]') || remoteHoldRow;
-  const isOk=k==='Enter'||k===' ';
-  if(isOk){
-   if(remoteHoldTimer){
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-    return;
-   }
-   if(remoteReorder){
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-    if(!e.repeat && remoteReadyToDrop)finishRemoteReorder();
-    return;
-   }
-   if(row && !remoteHoldTimer && !e.repeat){
-    remoteHoldRow=row;
-    remoteHoldTimer=setTimeout(()=>{
-     if(remoteTapFallbackTimer){clearTimeout(remoteTapFallbackTimer);remoteTapFallbackTimer=null;}
-     remoteHoldTimer=null;
-     remoteReorder=true;remoteReadyToDrop=false;
-     const live=channelListEl.querySelector('.channel[data-id="'+row.dataset.id+'"]');
-     remoteHoldRow=live||row;
-     remoteHoldRow.classList.add('hold-selected');
-     remoteHoldRow.focus({preventScroll:true});
-     toast('کەناڵەکە زەرد بوو؛ بە تیرەکانی سەرەوە و خوارەوە شوێنەکەی بگۆڕە، پاشان OK دابگرە بۆ جێگیرکردن.');
-    },850);
-    // Some Android TV WebViews omit keyup for the remote OK button.
-    // If that happens, treat a normal press as a tap; a genuine long press
-    // still reaches the 850ms reorder handler above.
-    remoteTapFallbackTimer=setTimeout(()=>{
-     remoteTapFallbackTimer=null;
-     if(!remoteHoldTimer||remoteReorder)return;
-     clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
-     const id=remoteHoldRow?.dataset.id;remoteHoldRow=null;
-     if(id)handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+id+'"]'));
-    },500);
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-   }
-   return;
-  }
+  // OK/Enter activation is handled once by the shared remote-focus handler.
+  // Do not consume it here; otherwise group/category buttons never receive activation.
   if(remoteReorder && (k==='ArrowUp'||k==='ArrowDown')){
    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
    if(e.repeat)return;
@@ -1705,21 +1670,8 @@ if(channelListEl){
    channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
   }
  },true);
- document.addEventListener('keyup',e=>{
-  const k=remoteKeyName(e);
-  if(k!=='Enter'&&k!==' ')return;
-  if(remoteHoldTimer){
-   clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
-   if(remoteTapFallbackTimer){clearTimeout(remoteTapFallbackTimer);remoteTapFallbackTimer=null;}
-   const id=remoteHoldRow?.dataset.id;remoteHoldRow=null;
-   if(id&&!remoteReorder)handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+id+'"]'));
-   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return;
-  }
-  if(remoteReorder){
-   remoteReadyToDrop=true;
-   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-  }
- },true);
+ // OK activation is centralized in the shared document keydown handler.
+
  channelListEl.addEventListener('click',e=>{
   if(channelListEl.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
   const row=e.target.closest('.channel[data-id]');
