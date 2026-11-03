@@ -1069,12 +1069,24 @@ async function refreshRemoteChannels(showMessage=false){
     group:normalizeRemoteGroup(item.group)
    });
   }
-  remoteChannels=next;
+  // Avoid rebuilding the channel-list DOM on every 60-second poll when
+  // the server data has not changed. Replacing focused buttons makes TV remote
+  // focus disappear even though the visible channel list looks identical.
+  const nextChannels=applyChannelOverrides([...next,...loadManualChannels()]);
+  const sameChannels=(a,b)=>a.length===b.length&&a.every((c,i)=>{
+   const n=b[i];
+   return n&&c.id===n.id&&c.name===n.name&&c.logo===n.logo&&c.url===n.url&&c.group===n.group;
+  });
   remoteChannelsLoaded=true;
-  channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
+  if(sameChannels(channels,nextChannels)){
+   if(showMessage) toast('کەناڵەکان پێشتر نوێ بوون.');
+   return true;
+  }
+  remoteChannels=next;
+  channels=nextChannels;
   renderAll();
-  // Keep the remote focus anchored to the channel currently playing after the
-  // periodic Cloudflare refresh rebuilds the channel-list DOM.
+  // Restore focus only when a real server-side change required rebuilding
+  // the list, keeping the currently playing channel selected on TV remotes.
   if(activePage==='browse'&&currentChannel&&channels.some(c=>c.id===currentChannel.id)){
    focusSelectedChannel(currentChannel.id);
   }
