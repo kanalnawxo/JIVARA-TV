@@ -1776,8 +1776,17 @@ document.addEventListener('focusin',e=>{
  const el=e.target;
  const row=el?.closest?.('#channelList .channel[data-id]');
  if(row){channelFocusGuardId=row.dataset.id;return;}
- // If focus changes without a recent remote navigation, treat it as an
- // unsolicited native-player/WebView focus steal and return to the channel.
+ // While browsing channels, remote focus must not drift into the vertical sidebar.
+ if(activePage==='browse'&&channelFocusGuardId&&el?.closest?.('.sidebar')){
+  const id=channelFocusGuardId;
+  requestAnimationFrame(()=>{
+   if(activePage!=='browse')return;
+   const target=$('#channelList .channel[data-id="'+CSS.escape(id)+'"]');
+   if(target&&document.activeElement!==target)target.focus({preventScroll:true});
+  });
+  return;
+ }
+ // Recover from unsolicited focus loss after playback/native view changes.
  if(activePage==='browse'&&channelFocusGuardId&&Date.now()-lastRemoteDpadAt>700){
   const id=channelFocusGuardId;
   requestAnimationFrame(()=>{
@@ -1972,8 +1981,20 @@ document.addEventListener('keydown',e=>{
  });
  if(!items.length)return;
  if(!items.includes(current)){
+  // Restore the remembered channel instead of defaulting to the sidebar.
+  if(activePage==='browse'&&channelFocusGuardId){
+   const anchor=$('#channelList .channel[data-id="'+CSS.escape(channelFocusGuardId)+'"]');
+   if(anchor){anchor.focus({preventScroll:true});e.preventDefault();return;}
+  }
   const first=items.find(el=>el.classList.contains('nav'))||items[0];
   first.focus({preventScroll:true});e.preventDefault();return;
+ }
+ // Up/down from a channel row traverses only the channel list.
+ if(activePage==='browse'&&current.matches('#channelList .channel')&&(key==='ArrowUp'||key==='ArrowDown')){
+  const rows=[...document.querySelectorAll('#channelList .channel[data-id]')];
+  const at=rows.indexOf(current),next=rows[at+(key==='ArrowUp'?-1:1)];
+  if(next)next.focus({preventScroll:true});
+  e.preventDefault();return;
  }
  let dx=0,dy=0;
  if(key==='ArrowUp')dy=-1;
