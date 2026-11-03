@@ -187,7 +187,9 @@ public class MainActivity extends Activity {
             playerView.setVisibility(View.GONE);
             playerView.clearFocus();
         }
-        if (webView != null) webView.requestFocus(View.FOCUS_DOWN);
+        // Do not request directional focus on the WebView here.
+        // stopStream() is also called immediately before every new channel starts;
+        // FOCUS_DOWN moves Android TV focus to another control (often the sidebar).
     }
 
     private void updatePlayerBounds(double x, double y, double w, double h) {
