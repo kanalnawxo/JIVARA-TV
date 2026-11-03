@@ -109,9 +109,18 @@ public class MainActivity extends Activity {
             @Override
             public void onPlaybackStateChanged(int state) {
                 if (state == Player.STATE_READY) {
-                    webView.evaluateJavascript(
-                            "document.getElementById('idle').style.display='none';"
-                            + "document.getElementById('video').dispatchEvent(new Event('playing'));", null);
+                    // Native playback can cause Android TV to move focus away from the
+                    // WebView after the video surface becomes visible. Reclaim the WebView
+                    // focus only once the stream is actually ready, then restore the DOM
+                    // focus to the currently selected channel row.
+                    webView.post(() -> {
+                        webView.requestFocus(View.FOCUS_DOWN);
+                        webView.evaluateJavascript(
+                                "document.getElementById('idle').style.display='none';"
+                                + "document.getElementById('video').dispatchEvent(new Event('playing'));", null);
+                        webView.evaluateJavascript(
+                                "if(window.restoreChannelFocusAfterPlayback)window.restoreChannelFocusAfterPlayback();", null);
+                    });
                 }
             }
 
