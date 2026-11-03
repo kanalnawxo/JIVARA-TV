@@ -15,6 +15,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.Toast;
 import org.json.JSONObject;
 
@@ -104,6 +105,25 @@ public class MainActivity extends Activity {
                 "document.getElementById('playerScreen')?.dispatchEvent(new MouseEvent('click',{bubbles:true}))",
                 null));
         root.addView(playerView, new FrameLayout.LayoutParams(1, 1));
+
+        // Show the repository's JK_TV_APK logo as a centered startup splash.
+        ImageView splashLogo = new ImageView(this);
+        splashLogo.setImageResource(R.drawable.jk_tv_apk);
+        splashLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        splashLogo.setBackgroundColor(Color.BLACK);
+        splashLogo.setPadding(
+                (int) (24 * density), (int) (24 * density),
+                (int) (24 * density), (int) (24 * density));
+        root.addView(splashLogo, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        splashLogo.bringToFront();
+        splashLogo.postDelayed(() -> {
+            if (splashLogo.getParent() == root) {
+                root.removeView(splashLogo);
+            }
+            if (webView != null) webView.requestFocus();
+        }, 3000);
 
         exoPlayer.addListener(new Player.Listener() {
             @Override
