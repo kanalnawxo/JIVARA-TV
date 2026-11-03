@@ -1225,17 +1225,36 @@ function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($
 
 function switchPage(name){
  if(!$('#page-'+name))name='home';
+ const enteringBrowse=name==='browse'&&activePage!=='browse';
  // Stop radio playback immediately when navigating away from its page.
  if(activePage==='radio'&&name!=='radio')stopRadioPlayback('بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.');
  // Leaving the live channel page must stop the native Android player completely.
  if(activePage==='browse'&&name!=='browse')cleanPlayer();
  activePage=name;
- $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
- $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+ $('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+ $('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
  const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
- if(name==='browse')renderChannels();
+ if(name==='browse'){
+  renderChannels();
+  // On an explicit move into the channel page, transfer remote focus from
+  // the sidebar to the selected channel (or the first channel). No playback
+  // timer or background event is allowed to move focus afterwards.
+  if(enteringBrowse){
+   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    if(activePage!=='browse')return;
+    const list=$('#channelList');
+    const target=(currentChannel&&list?.querySelector('.channel[data-id="'+currentChannel.id+'"]'))
+      ||list?.querySelector('.channel[data-id]');
+    if(target){
+     lastUserRemoteFocus=target;
+     target.focus({preventScroll:true});
+     target.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+    }
+   }));
+  }
+ }
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
 }
