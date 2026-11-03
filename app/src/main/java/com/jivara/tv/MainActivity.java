@@ -250,8 +250,7 @@ public class MainActivity extends Activity {
         final boolean isSelect = code == KeyEvent.KEYCODE_DPAD_CENTER
                 || code == KeyEvent.KEYCODE_ENTER
                 || code == KeyEvent.KEYCODE_NUMPAD_ENTER
-                || code == KeyEvent.KEYCODE_BUTTON_A
-                || code == KeyEvent.KEYCODE_SELECT;
+                || code == KeyEvent.KEYCODE_BUTTON_A;
         if (webView != null && isSelect) {
             if (event.getAction() == KeyEvent.ACTION_UP) {
                 webView.evaluateJavascript(
