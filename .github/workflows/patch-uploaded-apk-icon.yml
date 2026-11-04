@@ -1,0 +1,105 @@
+name: Apply JIVARA TV launcher logo to uploaded APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/patch-uploaded-apk-icon.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-original-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool
+          python3 -m pip install --user pillow
+
+      - name: Download the exact APK from commit 080f30e
+        run: |
+          curl -fL "https://raw.githubusercontent.com/kanalnawxo/JIVARA-TV/080f30e74342e854b5dde197053530ed2f489b55/JIVARA_TV.apk" -o original.apk
+          curl -fL "https://raw.githubusercontent.com/kanalnawxo/JIVARA-TV/main/APK%20LOGO.png" -o "APK LOGO.png"
+          test -s original.apk
+          test -s "APK LOGO.png"
+
+      - name: Decode original APK and replace only launcher icon resources
+        run: |
+          apktool d -f original.apk -o decoded
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          from PIL import Image
+
+          root = "decoded"
+          manifest = os.path.join(root, "AndroidManifest.xml")
+          tree = ET.parse(manifest)
+          app = tree.getroot().find("application")
+          if app is None:
+              raise SystemExit("AndroidManifest.xml has no application element")
+          ns = "{http://schemas.android.com/apk/res/android}"
+          app.set(ns + "icon", "@mipmap/ic_launcher")
+          app.set(ns + "roundIcon", "@mipmap/ic_launcher")
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+
+          source = Image.open("APK LOGO.png").convert("RGBA")
+          res = os.path.join(root, "res")
+          os.makedirs(os.path.join(res, "mipmap-anydpi-v26"), exist_ok=True)
+          os.makedirs(os.path.join(res, "drawable-nodpi"), exist_ok=True)
+          os.makedirs(os.path.join(res, "values"), exist_ok=True)
+
+          def make_icon(size, margin_ratio=0.16):
+              canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+              max_side = int(size * (1 - 2 * margin_ratio))
+              logo = source.copy()
+              logo.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+              canvas.alpha_composite(logo, ((size-logo.width)//2, (size-logo.height)//2))
+              return canvas
+
+          for density, size in [("mdpi",48),("hdpi",72),("xhdpi",96),("xxhdpi",144),("xxxhdpi",192)]:
+              folder = os.path.join(res, "mipmap-" + density)
+              os.makedirs(folder, exist_ok=True)
+              make_icon(size).save(os.path.join(folder, "ic_launcher.png"))
+
+          make_icon(432, 0.25).save(os.path.join(res, "drawable-nodpi", "jivara_icon_foreground.png"))
+          with open(os.path.join(res, "values", "jivara_icon_colors.xml"), "w", encoding="utf-8") as f:
+              f.write('''<?xml version="1.0" encoding="utf-8"?>\n<resources><color name="jivara_icon_background">#101010</color></resources>\n''')
+          adaptive = '''<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/jivara_icon_background"/><foreground android:drawable="@drawable/jivara_icon_foreground"/></adaptive-icon>\n'''
+          for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
+              with open(os.path.join(res, "mipmap-anydpi-v26", name), "w", encoding="utf-8") as f:
+                  f.write(adaptive)
+          PY
+
+      - name: Rebuild the same APK package with the new launcher icon
+        run: |
+          apktool b decoded -o unsigned.apk
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
+          PASS="$(openssl rand -hex 24)"
+          keytool -genkeypair -v -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
+          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_icon.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_icon.apk
+          test -s JIVARA_TV_icon.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-080f30e-with-launcher-logo
+          path: JIVARA_TV_icon.apk
+          retention-days: 30
+
+      - name: Publish installable APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.1
+          name: JIVARA TV v1.0.1 - Launcher Logo
+          body: |
+            JIVARA TV based on the exact uploaded APK from commit 080f30e.
+            Only the launcher icon was replaced with APK LOGO.png.
+            The APK was rebuilt and re-signed; uninstall the previous signed copy before installing this one.
+          files: JIVARA_TV_icon.apk
