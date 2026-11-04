@@ -32,6 +32,9 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Use the requested APK logo
+        run: cp "APK LOGO.png" "app/src/main/res/drawable-nodpi/jk_tv_apk.png"
+
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
