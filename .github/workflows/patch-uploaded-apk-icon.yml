@@ -45,11 +45,13 @@ jobs:
           ns = "{http://schemas.android.com/apk/res/android}"
           app.set(ns + "icon", "@mipmap/ic_launcher")
           app.set(ns + "roundIcon", "@mipmap/ic_launcher")
-          # Some launchers read the icon declared on the launcher activity itself.
+          app.set(ns + "banner", "@drawable/tv_banner")
+          # Android TV launchers may read icon/banner from the launcher activity.
           for element in app.iter():
               if element.tag.rsplit("}", 1)[-1] in ("activity", "activity-alias"):
                   element.set(ns + "icon", "@mipmap/ic_launcher")
                   element.set(ns + "roundIcon", "@mipmap/ic_launcher")
+                  element.set(ns + "banner", "@drawable/tv_banner")
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
 
           from PIL import ImageOps
@@ -57,6 +59,7 @@ jobs:
           res = os.path.join(root, "res")
           os.makedirs(os.path.join(res, "mipmap-anydpi-v26"), exist_ok=True)
           os.makedirs(os.path.join(res, "drawable-nodpi"), exist_ok=True)
+          os.makedirs(os.path.join(res, "drawable-xhdpi"), exist_ok=True)
           os.makedirs(os.path.join(res, "values"), exist_ok=True)
 
           def make_icon(size):
@@ -69,6 +72,10 @@ jobs:
               make_icon(size).save(os.path.join(folder, "ic_launcher.png"))
 
           make_icon(432).save(os.path.join(res, "drawable-nodpi", "jivara_icon_foreground.png"))
+          # Android TV home-screen tile banner (16:9), derived from the exact same logo.
+          ImageOps.fit(source, (320, 180), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5)).save(
+              os.path.join(res, "drawable-xhdpi", "tv_banner.png")
+          )
           with open(os.path.join(res, "values", "jivara_icon_colors.xml"), "w", encoding="utf-8") as f:
               f.write('''<?xml version="1.0" encoding="utf-8"?>\n<resources><color name="jivara_icon_background">#101010</color></resources>\n''')
           adaptive = '''<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/jivara_icon_background"/><foreground android:drawable="@drawable/jivara_icon_foreground"/></adaptive-icon>\n'''
@@ -98,11 +105,11 @@ jobs:
       - name: Publish installable APK release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
-          name: JIVARA TV v1.0.2 - Full Icon
+          tag_name: v1.0.3
+          name: JIVARA TV v1.0.3 - Android TV Icon and Banner
           body: |
             JIVARA TV based on the exact uploaded APK from commit 080f30e.
-            Only the launcher icon was replaced with a full-bleed square crop of APK LOGO.png, without margins.
+            Launcher icon and Android TV banner were set from APK LOGO.png. The square launcher icon fills its canvas; a 16:9 banner is also provided for TV launchers.
             The APK was rebuilt and re-signed; uninstall the previous signed copy before installing this one.
           files: JIVARA_TV_icon.apk
           overwrite_files: true
