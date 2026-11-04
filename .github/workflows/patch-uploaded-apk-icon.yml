@@ -19,6 +19,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y apktool
           python3 -m pip install --user pillow
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
 
       - name: Download the exact APK from commit 080f30e
         run: |
@@ -75,10 +77,8 @@ jobs:
 
       - name: Rebuild the same APK package with the new launcher icon
         run: |
-          apktool b decoded -o unsigned.apk
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
           BT="$ANDROID_HOME/build-tools/36.0.0"
+          apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
           "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
           PASS="$(openssl rand -hex 24)"
           keytool -genkeypair -v -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
