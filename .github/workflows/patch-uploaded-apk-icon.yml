@@ -45,28 +45,30 @@ jobs:
           ns = "{http://schemas.android.com/apk/res/android}"
           app.set(ns + "icon", "@mipmap/ic_launcher")
           app.set(ns + "roundIcon", "@mipmap/ic_launcher")
+          # Some launchers read the icon declared on the launcher activity itself.
+          for element in app.iter():
+              if element.tag.rsplit("}", 1)[-1] in ("activity", "activity-alias"):
+                  element.set(ns + "icon", "@mipmap/ic_launcher")
+                  element.set(ns + "roundIcon", "@mipmap/ic_launcher")
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
 
+          from PIL import ImageOps
           source = Image.open("APK LOGO.png").convert("RGBA")
           res = os.path.join(root, "res")
           os.makedirs(os.path.join(res, "mipmap-anydpi-v26"), exist_ok=True)
           os.makedirs(os.path.join(res, "drawable-nodpi"), exist_ok=True)
           os.makedirs(os.path.join(res, "values"), exist_ok=True)
 
-          def make_icon(size, margin_ratio=0.16):
-              canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-              max_side = int(size * (1 - 2 * margin_ratio))
-              logo = source.copy()
-              logo.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
-              canvas.alpha_composite(logo, ((size-logo.width)//2, (size-logo.height)//2))
-              return canvas
+          def make_icon(size):
+              # Full-bleed square icon: fill the complete canvas, with no transparent padding.
+              return ImageOps.fit(source, (size, size), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
 
           for density, size in [("mdpi",48),("hdpi",72),("xhdpi",96),("xxhdpi",144),("xxxhdpi",192)]:
               folder = os.path.join(res, "mipmap-" + density)
               os.makedirs(folder, exist_ok=True)
               make_icon(size).save(os.path.join(folder, "ic_launcher.png"))
 
-          make_icon(432, 0.25).save(os.path.join(res, "drawable-nodpi", "jivara_icon_foreground.png"))
+          make_icon(432).save(os.path.join(res, "drawable-nodpi", "jivara_icon_foreground.png"))
           with open(os.path.join(res, "values", "jivara_icon_colors.xml"), "w", encoding="utf-8") as f:
               f.write('''<?xml version="1.0" encoding="utf-8"?>\n<resources><color name="jivara_icon_background">#101010</color></resources>\n''')
           adaptive = '''<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/jivara_icon_background"/><foreground android:drawable="@drawable/jivara_icon_foreground"/></adaptive-icon>\n'''
@@ -96,10 +98,11 @@ jobs:
       - name: Publish installable APK release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.1
-          name: JIVARA TV v1.0.1 - Launcher Logo
+          tag_name: v1.0.2
+          name: JIVARA TV v1.0.2 - Full Icon
           body: |
             JIVARA TV based on the exact uploaded APK from commit 080f30e.
-            Only the launcher icon was replaced with APK LOGO.png.
+            Only the launcher icon was replaced with a full-bleed square crop of APK LOGO.png, without margins.
             The APK was rebuilt and re-signed; uninstall the previous signed copy before installing this one.
           files: JIVARA_TV_icon.apk
+          overwrite_files: true
