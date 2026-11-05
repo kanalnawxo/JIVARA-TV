@@ -10,8 +10,8 @@ android {
         applicationId 'com.jivara.tv'
         minSdk 23
         targetSdk 28
-        versionCode 1
-        versionName '1.0.0'
+        versionCode 8
+        versionName '1.0.8'
     }
 
     compileOptions {
