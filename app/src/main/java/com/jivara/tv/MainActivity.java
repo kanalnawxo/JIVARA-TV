@@ -106,14 +106,11 @@ public class MainActivity extends Activity {
                 null));
         root.addView(playerView, new FrameLayout.LayoutParams(1, 1));
 
-        // Show the repository's JK_TV_APK logo as a centered startup splash.
+        // Use APK LOGO.png for the full-screen startup splash (same asset as launcher icon).
         ImageView splashLogo = new ImageView(this);
         splashLogo.setImageResource(R.drawable.jk_tv_apk);
-        splashLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        splashLogo.setScaleType(ImageView.ScaleType.CENTER_CROP);
         splashLogo.setBackgroundColor(Color.BLACK);
-        splashLogo.setPadding(
-                (int) (24 * density), (int) (24 * density),
-                (int) (24 * density), (int) (24 * density));
         root.addView(splashLogo, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
@@ -123,7 +120,7 @@ public class MainActivity extends Activity {
                 root.removeView(splashLogo);
             }
             if (webView != null) webView.requestFocus();
-        }, 3000);
+        }, 5000);
 
         exoPlayer.addListener(new Player.Listener() {
             @Override
