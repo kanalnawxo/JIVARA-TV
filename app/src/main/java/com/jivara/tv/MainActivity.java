@@ -25,8 +25,6 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
-import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
@@ -85,33 +83,11 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // Give live IPTV streams a larger safety buffer to reduce stalls on brief
-        // network jitter, while keeping a short initial playback threshold.
-        // Default adaptive bitrate selection remains enabled; no quality cap is applied.
-        DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
-                .setBufferDurationsMs(
-                        20_000, // minimum buffer
-                        60_000, // maximum buffer
-                        2_500,  // start playback after
-                        5_000   // resume after rebuffer
-                )
-                .setPrioritizeTimeOverSizeThresholds(true)
-                .build();
-
-        // Allow every genuine video rendition up to 8K when the stream,
-        // decoder and TV display support it. Keep adaptive selection enabled
-        // so ExoPlayer chooses the highest sustainable quality for the network.
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
-        trackSelector.setParameters(
-                trackSelector.buildUponParameters()
-                        .setMaxVideoSize(7680, 4320)
-                        .setMaxVideoBitrate(Integer.MAX_VALUE)
-                        .build()
-        );
-
+        // Restore ExoPlayer's proven default adaptive track selection and
+        // buffering behavior from v1.0.5. This avoids selecting unusually
+        // high-resolution renditions that may reduce real-world picture quality
+        // on TVs or networks that cannot decode/sustain them.
         exoPlayer = new ExoPlayer.Builder(this)
-                .setTrackSelector(trackSelector)
-                .setLoadControl(loadControl)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(
                         new DefaultHttpDataSource.Factory()
                                 .setUserAgent("JIVARA-TV/1.0 Android Media3")
