@@ -3,7 +3,7 @@ name: Build JIVARA TV Android APK
 
 on:
   push:
-    branches: [ main, fix/v1.0.3-country-group-mapping ]
+    branches: [ main, fix/v1.0.3-country-group-mapping, fix/v1.0.6-remote-ok-longpress ]
   workflow_dispatch:
 
 permissions:
