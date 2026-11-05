@@ -8,8 +8,8 @@
     <application
         android:allowBackup="false"
         android:label="JIVARA TV"
-        android:icon="@drawable/jk_tv_apk"
-        android:roundIcon="@drawable/jk_tv_apk"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
