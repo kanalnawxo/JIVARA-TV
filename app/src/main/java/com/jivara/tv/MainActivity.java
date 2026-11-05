@@ -283,12 +283,23 @@ public class MainActivity extends Activity {
                 || code == KeyEvent.KEYCODE_NUMPAD_ENTER
                 || code == KeyEvent.KEYCODE_BUTTON_A;
         if (webView != null && isSelect) {
-            if (event.getAction() == KeyEvent.ACTION_UP) {
-                webView.evaluateJavascript(
-                        "if(window.__jivaraNativeActivateFocused){window.__jivaraNativeActivateFocused();}",
-                        null);
+            // Forward both phases to the page. The page's capture-phase remote
+            // handlers need keydown + keyup (especially for channel select and
+            // long-press behavior). The previous native callback invoked a
+            // JavaScript helper that did not exist, swallowing every OK press.
+            if (event.getAction() == KeyEvent.ACTION_DOWN
+                    || event.getAction() == KeyEvent.ACTION_UP) {
+                String action = event.getAction() == KeyEvent.ACTION_DOWN
+                        ? "keydown" : "keyup";
+                String js = "document.dispatchEvent(new KeyboardEvent("
+                        + JSONObject.quote(action)
+                        + ",{key:'Enter',code:'Enter',keyCode:13,which:13,"
+                        + "bubbles:true,cancelable:true,repeat:"
+                        + (event.getRepeatCount() > 0 ? "true" : "false")
+                        + "}));";
+                webView.evaluateJavascript(js, null);
             }
-            // Consume both phases so WebView cannot double-activate the same item.
+            // Consume native phases to prevent duplicate activation.
             return true;
         }
         // Route TV directional keys directly into the WebView document.
