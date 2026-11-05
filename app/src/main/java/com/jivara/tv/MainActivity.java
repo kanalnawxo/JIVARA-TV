@@ -272,12 +272,16 @@ public class MainActivity extends Activity {
                 || code == KeyEvent.KEYCODE_NUMPAD_ENTER
                 || code == KeyEvent.KEYCODE_BUTTON_A;
         if (webView != null && isSelect) {
-            if (event.getAction() == KeyEvent.ACTION_UP) {
-                webView.evaluateJavascript(
-                        "if(window.__jivaraNativeActivateFocused){window.__jivaraNativeActivateFocused();}",
-                        null);
-            }
-            // Consume both phases so WebView cannot double-activate the same item.
+            // Forward BOTH phases of the physical remote OK key to the page.
+            // The page uses keydown/keyup timing to distinguish a short press
+            // from a long press (yellow channel reorder). Consuming the key
+            // without forwarding these events breaks both behaviors.
+            final String action = event.getAction() == KeyEvent.ACTION_DOWN ? "keydown" : "keyup";
+            final boolean repeated = event.getRepeatCount() > 0;
+            final String js = "document.dispatchEvent(new KeyboardEvent('" + action
+                    + "',{key:'Enter',code:'Enter',keyCode:13,which:13,"
+                    + "repeat:" + repeated + ",bubbles:true,cancelable:true}));";
+            webView.evaluateJavascript(js, null);
             return true;
         }
         // Route TV directional keys directly into the WebView document.
