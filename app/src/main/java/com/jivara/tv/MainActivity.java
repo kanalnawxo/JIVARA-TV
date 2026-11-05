@@ -92,6 +92,9 @@ public class MainActivity extends Activity {
         trackSelector.setParameters(trackSelector.buildUponParameters()
                 .setMaxVideoSize(7680, 4320)
                 .setMaxVideoBitrate(Integer.MAX_VALUE)
+                // Prefer the highest rendition the device can decode instead of
+                // dropping to a low variant solely from a conservative bandwidth estimate.
+                .setForceHighestSupportedBitrate(true)
                 .build());
         exoPlayer = new ExoPlayer.Builder(this)
                 .setTrackSelector(trackSelector)
