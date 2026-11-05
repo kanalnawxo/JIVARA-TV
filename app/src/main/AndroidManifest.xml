@@ -10,6 +10,7 @@
         android:label="JIVARA TV"
         android:icon="@drawable/jk_tv_apk"
         android:roundIcon="@drawable/jk_tv_apk"
+        android:banner="@drawable/jk_tv_apk"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
