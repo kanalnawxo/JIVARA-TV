@@ -25,6 +25,7 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
@@ -83,7 +84,21 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
+        // Give live IPTV streams a larger safety buffer to reduce stalls on brief
+        // network jitter, while keeping a short initial playback threshold.
+        // Default adaptive bitrate selection remains enabled; no quality cap is applied.
+        DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                        20_000, // minimum buffer
+                        60_000, // maximum buffer
+                        2_500,  // start playback after
+                        5_000   // resume after rebuffer
+                )
+                .setPrioritizeTimeOverSizeThresholds(true)
+                .build();
+
         exoPlayer = new ExoPlayer.Builder(this)
+                .setLoadControl(loadControl)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(
                         new DefaultHttpDataSource.Factory()
                                 .setUserAgent("JIVARA-TV/1.0 Android Media3")
