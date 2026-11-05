@@ -414,6 +414,14 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 <script>
 (() => {
 'use strict';
+
+// Native Android TV OK/Enter bridge: replay the select key into the
+// document so the existing remote-control handlers can activate focus.
+window.__jivaraNativeActivateFocused = function(){
+ const init={key:'Enter',code:'Enter',bubbles:true,cancelable:true};
+ document.dispatchEvent(new KeyboardEvent('keydown',init));
+ document.dispatchEvent(new KeyboardEvent('keyup',init));
+};
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
