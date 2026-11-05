@@ -25,6 +25,7 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
@@ -97,7 +98,19 @@ public class MainActivity extends Activity {
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build();
 
+        // Allow every genuine video rendition up to 8K when the stream,
+        // decoder and TV display support it. Keep adaptive selection enabled
+        // so ExoPlayer chooses the highest sustainable quality for the network.
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
+        trackSelector.setParameters(
+                trackSelector.buildUponParameters()
+                        .setMaxVideoSize(7680, 4320)
+                        .setMaxVideoBitrate(Integer.MAX_VALUE)
+                        .build()
+        );
+
         exoPlayer = new ExoPlayer.Builder(this)
+                .setTrackSelector(trackSelector)
                 .setLoadControl(loadControl)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(
                         new DefaultHttpDataSource.Factory()
