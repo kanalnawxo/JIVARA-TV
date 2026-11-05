@@ -25,6 +25,7 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
@@ -83,11 +84,15 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // Restore ExoPlayer's proven default adaptive track selection and
-        // buffering behavior from v1.0.5. This avoids selecting unusually
-        // high-resolution renditions that may reduce real-world picture quality
-        // on TVs or networks that cannot decode/sustain them.
+        // Allow adaptive playback up to 8K while keeping ExoPlayer's
+        // default buffering. The selected quality remains source-, device-,
+        // and network-dependent; no upscaling or forced 8K is applied.
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
+        trackSelector.setParameters(trackSelector.buildUponParameters()
+                .setMaxVideoSize(7680, 4320)
+                .build());
         exoPlayer = new ExoPlayer.Builder(this)
+                .setTrackSelector(trackSelector)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(
                         new DefaultHttpDataSource.Factory()
                                 .setUserAgent("JIVARA-TV/1.0 Android Media3")
