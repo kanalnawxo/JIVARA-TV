@@ -1016,11 +1016,11 @@ let remoteChannelsLoaded = false;
 
 function normalizeRemoteGroup(value){
  const cleanGroupName=value=>String(value??'')
+  .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'')
+  .replace(/[\u064b-\u065f\u0670\u0640]/g,'')
   .trim()
   .toLowerCase()
-  .replace(/[\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]/g,'')
-  .replace(/[\\u064b-\\u065f\\u0670\\u0640]/g,'')
-  .replace(/\\s+/g,' ');
+  .replace(/\s+/g,' ');
  const key=cleanGroupName(value);
  const aliases={
   local:['local','ناوخۆ','local-ناوخۆ'],
@@ -1042,7 +1042,7 @@ function normalizeRemoteGroup(value){
   if(key===cleanGroupName(g.id)) return g.id;
   if((aliases[g.id]||[]).some(x=>cleanGroupName(x)===key)) return g.id;
  }
- return 'kurdish';
+ return '';
 }
 
 function remoteChannelId(url){
