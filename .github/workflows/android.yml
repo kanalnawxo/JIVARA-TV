@@ -35,6 +35,11 @@ jobs:
       - name: Use the requested APK logo
         run: cp "APK LOGO.png" "app/src/main/res/drawable-nodpi/jk_tv_apk.png"
 
+      - name: Prepare full-size launcher icon from the same APK LOGO.png
+        run: |
+          python3 -m pip install --quiet Pillow
+          python3 .github/scripts/make_launcher_icon.py
+
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
