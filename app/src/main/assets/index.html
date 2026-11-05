@@ -1015,7 +1015,13 @@ let remoteChannels = [];
 let remoteChannelsLoaded = false;
 
 function normalizeRemoteGroup(value){
- const key=String(value||'').trim().toLowerCase();
+ const cleanGroupName=value=>String(value??'')
+  .trim()
+  .toLowerCase()
+  .replace(/[\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]/g,'')
+  .replace(/[\\u064b-\\u065f\\u0670\\u0640]/g,'')
+  .replace(/\\s+/g,' ');
+ const key=cleanGroupName(value);
  const aliases={
   local:['local','ناوخۆ','local-ناوخۆ'],
   kurdish:['kurdish','کوردی','kurdistan'],
@@ -1026,11 +1032,15 @@ function normalizeRemoteGroup(value){
   kids:['kids','children','منداڵان','اطفال'],
   sports:['sports','sport','وەرزش','رياضة'],
   music:['music','موزیک','موسيقى'],
-  documentary:['documentary','دۆکۆمێنتاری']
+  documentary:['documentary','دۆکۆمێنتاری'],
+  iraq:['iraq','عێراق','العراق','گروپی عێراق','group iraq','iraq group'],
+  iran:['iran','ئێران','ءێران','ایران','ايران','إيران','گروپی ئێران','group iran','iran group'],
+  turkey:['turkey','تورکیا','ترکیا','تركيا','ترکیه','گروپی تورکیا','group turkey','turkey group'],
+  israel:['israel','ئیسرائیل','اسرائیل','إسرائيل','گروپی ئیسرائیل','group israel','israel group']
  };
  for(const g of groups){
-  if(key===g.id.toLowerCase()) return g.id;
-  if((aliases[g.id]||[]).some(x=>x.toLowerCase()===key)) return g.id;
+  if(key===cleanGroupName(g.id)) return g.id;
+  if((aliases[g.id]||[]).some(x=>cleanGroupName(x)===key)) return g.id;
  }
  return 'kurdish';
 }
