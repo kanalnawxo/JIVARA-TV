@@ -1839,7 +1839,7 @@ function settingsTab(tab){
    renderAll();fillDeleteChannels();status.textContent='کەناڵەکە بە سەرکەوتوویی سڕایەوە.';toast('کەناڵەکە سڕایەوە.');
   };
  }else if(tab==='groups'){
-  body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   groups.map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
+  body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   allGroups().map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
  }else{
   body.innerHTML=`<div class="panel-head">زیادکردنی کەناڵ بە دەستی</div>
    <form id="manualChannelForm" class="form-grid">
