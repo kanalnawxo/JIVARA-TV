@@ -189,15 +189,7 @@ jobs:
         run: |
           BT="$ANDROID_HOME/build-tools/36.0.0"
           apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
-          DEX_COUNT=$(unzip -Z1 original.apk | grep -Ec '^classes([0-9]+)?\.dex$' || true)
-          NEXT=$((DEX_COUNT + 1))
-          cp dex-out/classes.dex "classes${NEXT}.dex"
-          python3 - <<'PY'
-          import zipfile
-          with zipfile.ZipFile("unsigned.apk","a") as z:
-              z.write("classes" + str(int(__import__("os").environ.get("NEXT_DEX","0")) or 4) + ".dex")
-          PY
-          # Ensure the newly compiled dex is included under the next free dex name.
+          # Add the compiled activity as the next multidex file.
           python3 - <<'PY'
           import zipfile
           from pathlib import Path
