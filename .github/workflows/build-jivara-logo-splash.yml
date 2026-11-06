@@ -1,4 +1,4 @@
-name: Build JIVARA TV safe icon-only test APK
+name: Build JIVARA TV with safe 5-second HTML splash
 
 on:
   push:
@@ -25,53 +25,38 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
 
-      - name: Decode the original working JIVARA APK
+      - name: Decode the original JIVARA APK
         run: |
           cp JIVARA_TV.zip original.apk
           cp "APK LOGO.png" logo.png
           apktool d -f original.apk -o decoded
 
-      - name: Set Android and Android TV launcher artwork
+      - name: Add splash inside the existing WebView page and set launcher artwork
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import math, struct, wave
           import xml.etree.ElementTree as ET
           from PIL import Image
 
           root = Path("decoded")
           res = root / "res"
-          manifest = root / "AndroidManifest.xml"
-          ns = "{http://schemas.android.com/apk/res/android}"
+          assets = root / "assets"
+          assets.mkdir(parents=True, exist_ok=True)
+          logo_path = Path("logo.png")
+          html_path = assets / "index.html"
+          if not html_path.exists():
+              raise SystemExit("APK assets/index.html was not found")
+          html = html_path.read_text(encoding="utf-8")
+          if "</body>" not in html.lower():
+              raise SystemExit("Could not find the HTML body end; APK left unchanged")
 
-          # Android phone/tablet launcher icon plus Android TV banner.
-          tree = ET.parse(manifest)
-          manifest_root = tree.getroot()
-          app = manifest_root.find("application")
-          if app is None:
-              raise SystemExit("AndroidManifest.xml has no application element")
-          app.set(ns + "icon", "@mipmap/ic_launcher")
-          app.set(ns + "roundIcon", "@mipmap/ic_launcher")
-          app.set(ns + "banner", "@drawable/jivara_tv_banner")
+          # Keep the supplied artwork as a separate local WebView asset.
+          with Image.open(logo_path) as im:
+              source = im.convert("RGBA")
+              source.save(assets / "jivara-splash.png", format="PNG", optimize=True)
 
-          # Android TV launchers read the banner from the LEANBACK_LAUNCHER activity.
-          found_leanback = False
-          for activity in app.findall("activity") + app.findall("activity-alias"):
-              for intent in activity.findall("intent-filter"):
-                  categories = {
-                      node.get(ns + "name")
-                      for node in intent.findall("category")
-                  }
-                  if "android.intent.category.LEANBACK_LAUNCHER" in categories:
-                      activity.set(ns + "icon", "@mipmap/ic_launcher")
-                      activity.set(ns + "banner", "@drawable/jivara_tv_banner")
-                      found_leanback = True
-          if not found_leanback:
-              print("No LEANBACK_LAUNCHER activity found; application banner is still configured")
-          tree.write(manifest, encoding="utf-8", xml_declaration=True)
-
-          with Image.open("logo.png") as image:
-              source = image.convert("RGBA")
-              # Standard launcher bitmap icons for every density.
+              # Launcher icons and Android TV banner all use the same supplied logo.
               for density, size in [
                   ("mdpi", 48), ("hdpi", 72), ("xhdpi", 96),
                   ("xxhdpi", 144), ("xxxhdpi", 192)
@@ -82,58 +67,122 @@ jobs:
                       folder / "ic_launcher.png", format="PNG", optimize=True
                   )
 
-              # Adaptive icon foreground from the same approved LOGO.png.
               foreground = res / "drawable-nodpi" / "jivara_icon_foreground.png"
               foreground.parent.mkdir(parents=True, exist_ok=True)
               source.resize((432, 432), Image.Resampling.LANCZOS).save(
                   foreground, format="PNG", optimize=True
               )
 
-              # Android TV banner: 16:9 canvas, complete logo contained without cropping.
               banner = Image.new("RGBA", (320, 180), (16, 16, 16, 255))
               fitted = source.copy()
               fitted.thumbnail((288, 148), Image.Resampling.LANCZOS)
-              x = (320 - fitted.width) // 2
-              y = (180 - fitted.height) // 2
-              banner.alpha_composite(fitted, (x, y))
-              banner_path = res / "drawable-nodpi" / "jivara_tv_banner.png"
-              banner.save(banner_path, format="PNG", optimize=True)
+              banner.alpha_composite(fitted, ((320-fitted.width)//2, (180-fitted.height)//2))
+              banner.save(res / "drawable-nodpi" / "jivara_tv_banner.png", format="PNG", optimize=True)
+
+          # Create a short original three-note JIVARA sound, stored as a normal WebView asset.
+          rate = 22050
+          notes = [(523.25, 0.34), (659.25, 0.34), (783.99, 0.62)]
+          with wave.open(str(assets / "jivara-intro.wav"), "wb") as wav:
+              wav.setnchannels(1)
+              wav.setsampwidth(2)
+              wav.setframerate(rate)
+              samples = bytearray()
+              for freq, duration in notes:
+                  count = int(rate * duration)
+                  for i in range(count):
+                      fade = min(1.0, i/(rate*0.025), (count-i)/(rate*0.08))
+                      value = int(4800 * fade * math.sin(2*math.pi*freq*i/rate))
+                      samples.extend(struct.pack("<h", value))
+                  samples.extend(b"\x00\x00" * int(rate*0.045))
+              wav.writeframes(samples)
+
+          splash = """
+          <!-- JIVARA startup artwork: HTML-only overlay; no Android Activity/smali changes. -->
+          <style>
+          #jivaraStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#080808;
+            display:flex;align-items:center;justify-content:center;opacity:1;
+            transition:opacity .48s ease;pointer-events:none}
+          #jivaraStartupSplash img{display:block;width:min(42vw,520px);height:min(42vh,300px);
+            object-fit:contain;transform:scale(.82);opacity:.25;
+            animation:jivaraLogoIn .72s cubic-bezier(.2,.85,.25,1) forwards}
+          @keyframes jivaraLogoIn{to{transform:scale(1);opacity:1}}
+          </style>
+          <div id="jivaraStartupSplash" aria-hidden="true">
+            <img src="jivara-splash.png" alt="">
+          </div>
+          <audio id="jivaraStartupSound" src="jivara-intro.wav" autoplay preload="auto"></audio>
+          <script>
+          (function(){
+            var splash=document.getElementById('jivaraStartupSplash');
+            var sound=document.getElementById('jivaraStartupSound');
+            if(sound){var p=sound.play();if(p&&p.catch)p.catch(function(){});}
+            window.setTimeout(function(){
+              if(!splash)return;
+              splash.style.opacity='0';
+              window.setTimeout(function(){if(splash&&splash.parentNode)splash.parentNode.removeChild(splash);},520);
+            },5000);
+          })();
+          </script>
+          """
+          import re
+          html = re.sub(r"</body\s*>", lambda m: splash + m.group(0), html, count=1, flags=re.I)
+          html_path.write_text(html, encoding="utf-8")
+
+          # Update only launcher metadata; preserve the existing Activity and app code.
+          manifest = root / "AndroidManifest.xml"
+          tree = ET.parse(manifest)
+          manifest_root = tree.getroot()
+          app = manifest_root.find("application")
+          if app is None:
+              raise SystemExit("AndroidManifest.xml has no application element")
+          ns = "{http://schemas.android.com/apk/res/android}"
+          app.set(ns + "icon", "@mipmap/ic_launcher")
+          app.set(ns + "roundIcon", "@mipmap/ic_launcher")
+          app.set(ns + "banner", "@drawable/jivara_tv_banner")
+          for activity in app.findall("activity") + app.findall("activity-alias"):
+              for intent in activity.findall("intent-filter"):
+                  cats = {node.get(ns + "name") for node in intent.findall("category")}
+                  if "android.intent.category.LEANBACK_LAUNCHER" in cats:
+                      activity.set(ns + "icon", "@mipmap/ic_launcher")
+                      activity.set(ns + "banner", "@drawable/jivara_tv_banner")
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
 
           adaptive_dir = res / "mipmap-anydpi-v26"
           adaptive_dir.mkdir(parents=True, exist_ok=True)
           background_dir = res / "drawable"
           background_dir.mkdir(parents=True, exist_ok=True)
           (background_dir / "jivara_icon_background.xml").write_text(
-              '<?xml version="1.0" encoding="utf-8"?>\\n'
+              '<?xml version="1.0" encoding="utf-8"?>\n'
               '<shape xmlns:android="http://schemas.android.com/apk/res/android">'
-              '<solid android:color="#101010"/></shape>\\n',
+              '<solid android:color="#101010"/></shape>\n',
               encoding="utf-8"
           )
           adaptive = (
-              '<?xml version="1.0" encoding="utf-8"?>\\n'
+              '<?xml version="1.0" encoding="utf-8"?>\n'
               '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">'
               '<background android:drawable="@drawable/jivara_icon_background"/>'
               '<foreground android:drawable="@drawable/jivara_icon_foreground"/>'
-              '</adaptive-icon>\\n'
+              '</adaptive-icon>\n'
           )
           for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
               (adaptive_dir / name).write_text(adaptive, encoding="utf-8")
           PY
 
-      - name: Rebuild and sign APK without changing app code
+      - name: Rebuild and sign APK
         run: |
           BT="$ANDROID_HOME/build-tools/36.0.0"
           apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
           "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
           PASS="$(openssl rand -hex 24)"
           keytool -genkeypair -v -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
-          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_logo_icon_only.apk aligned.apk
-          "$BT/apksigner" verify --verbose JIVARA_TV_logo_icon_only.apk
-          test -s JIVARA_TV_logo_icon_only.apk
+          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_safe_splash.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_safe_splash.apk
+          test -s JIVARA_TV_safe_splash.apk
+          unzip -l JIVARA_TV_safe_splash.apk | grep -E 'assets/(index.html|jivara-splash.png|jivara-intro.wav)'
 
-      - name: Upload icon-only APK artifact
+      - name: Upload safe splash APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JIVARA-TV-logo-icon-only
-          path: JIVARA_TV_logo_icon_only.apk
+          name: JIVARA-TV-safe-5-second-splash
+          path: JIVARA_TV_safe_splash.apk
           retention-days: 30
