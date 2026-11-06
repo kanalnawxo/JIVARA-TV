@@ -1003,7 +1003,7 @@ function rememberChannelDeletion(channel){
 function loadManualChannels(){
  try{
   const saved=JSON.parse(localStorage.getItem(MANUAL_CHANNELS_STORAGE_KEY)||'[]');
-  const kept=Array.isArray(saved)?saved.filter(c=>c&&typeof c.name==='string'&&typeof c.url==='string'&&allGroups().some(g=>g.id===c.group)).map(c=>({...c,id:String(c.id||('manual-'+Date.now())),logo:String(c.logo||'')})) : [];
+  const kept=Array.isArray(saved)?saved.filter(c=>c&&typeof c.name==='string'&&typeof c.url==='string'&&(allGroups().some(g=>g.id===c.group)||String(c.group).startsWith('remote-group-'))).map(c=>({...c,id:String(c.id||('manual-'+Date.now())),logo:String(c.logo||'')})) : [];
   localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(kept));
   return kept;
  }catch(_){return [];}
