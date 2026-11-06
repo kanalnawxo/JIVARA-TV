@@ -190,6 +190,7 @@ jobs:
               private MediaPlayer player;
               private AudioManager audioManager;
               private AudioFocusRequest focusRequest;
+              private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {};
               private final Handler handler = new Handler(Looper.getMainLooper());
               private Runnable launchTask;
               @Override public void onCreate(Bundle state) {
@@ -204,18 +205,38 @@ jobs:
                   logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
                   int w = getResources().getDisplayMetrics().widthPixels;
                   int h = getResources().getDisplayMetrics().heightPixels;
-                  FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams((int)(w*.92f),(int)(h*.94f),Gravity.CENTER);
+                  FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams((int)(w*.62f),(int)(h*.62f),Gravity.CENTER);
                   root.addView(logo,lp);
                   setContentView(root);
-                  // Route through the standard TV MUSIC stream for broad Android TV compatibility.
+                  // Start small and move smoothly into the center, then hold before the 5-second transition.
+                  logo.setAlpha(0f);
+                  logo.setScaleX(.38f);
+                  logo.setScaleY(.38f);
+                  logo.setTranslationY(42f);
+                  logo.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0f)
+                      .setDuration(700L).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+                  // Use Android's MUSIC stream and request transient audio focus before playback.
                   setVolumeControlStream(AudioManager.STREAM_MUSIC);
                   audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+                  boolean hasAudioFocus = false;
                   if (audioManager != null) {
-                      try { audioManager.requestAudioFocus(null,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN_TRANSIENT); }
-                      catch (Exception ignored) {}
+                      try {
+                          if (Build.VERSION.SDK_INT >= 26) {
+                              AudioAttributes attrs = new AudioAttributes.Builder()
+                                  .setUsage(AudioAttributes.USAGE_MEDIA)
+                                  .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();
+                              focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                                  .setAudioAttributes(attrs).setOnAudioFocusChangeListener(focusListener)
+                                  .setWillPauseWhenDucked(false).build();
+                              hasAudioFocus = audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+                          } else {
+                              hasAudioFocus = audioManager.requestAudioFocus(focusListener,AudioManager.STREAM_MUSIC,
+                                  AudioManager.AUDIOFOCUS_GAIN_TRANSIENT) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+                          }
+                      } catch (Exception ignored) {}
                   }
                   int soundId = getResources().getIdentifier("jivara_intro","raw",getPackageName());
-                  if (soundId != 0) {
+                  if (soundId != 0 && hasAudioFocus) {
                       try {
                           player = MediaPlayer.create(this,soundId);
                           if (player != null) {
@@ -248,7 +269,7 @@ jobs:
                   if (audioManager != null) {
                       try {
                           if (Build.VERSION.SDK_INT >= 26 && focusRequest != null) audioManager.abandonAudioFocusRequest(focusRequest);
-                          else audioManager.abandonAudioFocus(null);
+                          else audioManager.abandonAudioFocus(focusListener);
                       } catch (Exception ignored) {}
                   }
               }
