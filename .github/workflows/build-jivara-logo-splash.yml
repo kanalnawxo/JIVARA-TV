@@ -1,4 +1,4 @@
-name: Build JIVARA TV with safe 5-second HTML splash
+name: Build JIVARA TV with native 5-second startup splash
 
 on:
   push:
@@ -23,15 +23,17 @@ jobs:
           sudo apt-get install -y apktool
           python3 -m pip install --user pillow
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0" "platforms;android-35"
 
       - name: Decode the original JIVARA APK
         run: |
           cp JIVARA_TV.zip original.apk
           cp "APK LOGO.png" logo.png
           apktool d -f original.apk -o decoded
+          echo "Original dex files:"
+          unzip -l original.apk | grep -E 'classes[0-9]*\.dex' || true
 
-      - name: Add splash inside the existing WebView page and set launcher artwork
+      - name: Create native splash activity, logo resources, and startup sound
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -41,148 +43,182 @@ jobs:
 
           root = Path("decoded")
           res = root / "res"
-          assets = root / "assets"
-          assets.mkdir(parents=True, exist_ok=True)
-          logo_path = Path("logo.png")
-          html_path = assets / "index.html"
-          if not html_path.exists():
-              raise SystemExit("APK assets/index.html was not found")
-          html = html_path.read_text(encoding="utf-8")
-          if "</body>" not in html.lower():
-              raise SystemExit("Could not find the HTML body end; APK left unchanged")
+          logo = Image.open("logo.png").convert("RGBA")
 
-          # Keep the supplied artwork as a separate local WebView asset.
-          with Image.open(logo_path) as im:
-              source = im.convert("RGBA")
-              source.save(assets / "jivara-splash.png", format="PNG", optimize=True)
+          # The exact same supplied artwork is used for the native splash and launcher.
+          splash_dir = res / "drawable-nodpi"
+          splash_dir.mkdir(parents=True, exist_ok=True)
+          logo.save(splash_dir / "jivara_splash_logo.png", format="PNG", optimize=True)
 
-              # Launcher icons and Android TV banner all use the same supplied logo.
-              for density, size in [
-                  ("mdpi", 48), ("hdpi", 72), ("xhdpi", 96),
-                  ("xxhdpi", 144), ("xxxhdpi", 192)
-              ]:
-                  folder = res / ("mipmap-" + density)
-                  folder.mkdir(parents=True, exist_ok=True)
-                  source.resize((size, size), Image.Resampling.LANCZOS).save(
-                      folder / "ic_launcher.png", format="PNG", optimize=True
-                  )
+          for density, size in [("mdpi",48),("hdpi",72),("xhdpi",96),("xxhdpi",144),("xxxhdpi",192)]:
+              folder = res / ("mipmap-" + density)
+              folder.mkdir(parents=True, exist_ok=True)
+              logo.resize((size,size), Image.Resampling.LANCZOS).save(folder / "ic_launcher.png", format="PNG", optimize=True)
+          fg = res / "drawable-nodpi" / "jivara_icon_foreground.png"
+          logo.resize((432,432), Image.Resampling.LANCZOS).save(fg, format="PNG", optimize=True)
+          banner = Image.new("RGBA",(320,180),(16,16,16,255))
+          fitted = logo.copy()
+          fitted.thumbnail((288,148),Image.Resampling.LANCZOS)
+          banner.alpha_composite(fitted,((320-fitted.width)//2,(180-fitted.height)//2))
+          banner.save(res / "drawable-nodpi" / "jivara_tv_banner.png",format="PNG",optimize=True)
 
-              foreground = res / "drawable-nodpi" / "jivara_icon_foreground.png"
-              foreground.parent.mkdir(parents=True, exist_ok=True)
-              source.resize((432, 432), Image.Resampling.LANCZOS).save(
-                  foreground, format="PNG", optimize=True
-              )
-
-              banner = Image.new("RGBA", (320, 180), (16, 16, 16, 255))
-              fitted = source.copy()
-              fitted.thumbnail((288, 148), Image.Resampling.LANCZOS)
-              banner.alpha_composite(fitted, ((320-fitted.width)//2, (180-fitted.height)//2))
-              banner.save(res / "drawable-nodpi" / "jivara_tv_banner.png", format="PNG", optimize=True)
-
-          # Create a short original three-note JIVARA sound, stored as a normal WebView asset.
+          # Five-second original intro melody.
+          raw = res / "raw"
+          raw.mkdir(parents=True,exist_ok=True)
           rate = 22050
-          notes = [(523.25, 0.34), (659.25, 0.34), (783.99, 0.62)]
-          with wave.open(str(assets / "jivara-intro.wav"), "wb") as wav:
-              wav.setnchannels(1)
-              wav.setsampwidth(2)
-              wav.setframerate(rate)
+          notes = [(523.25,.65),(659.25,.65),(783.99,.9),(659.25,.65),(783.99,1.0),(1046.5,1.15)]
+          with wave.open(str(raw / "jivara_intro.wav"),"wb") as wav:
+              wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(rate)
               samples = bytearray()
-              for freq, duration in notes:
-                  count = int(rate * duration)
+              for freq,duration in notes:
+                  count=int(rate*duration)
                   for i in range(count):
-                      fade = min(1.0, i/(rate*0.025), (count-i)/(rate*0.08))
-                      value = int(4800 * fade * math.sin(2*math.pi*freq*i/rate))
-                      samples.extend(struct.pack("<h", value))
-                  samples.extend(b"\x00\x00" * int(rate*0.045))
+                      fade=min(1.0,i/(rate*.035),(count-i)/(rate*.12))
+                      value=int(5200*fade*math.sin(2*math.pi*freq*i/rate))
+                      samples.extend(struct.pack("<h",value))
+                  samples.extend(b"\x00\x00"*int(rate*.08))
               wav.writeframes(samples)
 
-          splash = """
-          <!-- JIVARA startup artwork: HTML-only overlay; no Android Activity/smali changes. -->
-          <style>
-          #jivaraStartupSplash{position:fixed;inset:0;z-index:2147483647;background:#080808;
-            display:flex;align-items:center;justify-content:center;opacity:1;
-            transition:opacity .48s ease;pointer-events:none}
-          #jivaraStartupSplash img{display:block;width:min(42vw,520px);height:min(42vh,300px);
-            object-fit:contain;transform:scale(.82);opacity:.25;
-            animation:jivaraLogoIn .72s cubic-bezier(.2,.85,.25,1) forwards}
-          @keyframes jivaraLogoIn{to{transform:scale(1);opacity:1}}
-          </style>
-          <div id="jivaraStartupSplash" aria-hidden="true">
-            <img src="jivara-splash.png" alt="">
-          </div>
-          <audio id="jivaraStartupSound" src="jivara-intro.wav" autoplay preload="auto"></audio>
-          <script>
-          (function(){
-            var splash=document.getElementById('jivaraStartupSplash');
-            var sound=document.getElementById('jivaraStartupSound');
-            if(sound){var p=sound.play();if(p&&p.catch)p.catch(function(){});}
-            window.setTimeout(function(){
-              if(!splash)return;
-              splash.style.opacity='0';
-              window.setTimeout(function(){if(splash&&splash.parentNode)splash.parentNode.removeChild(splash);},520);
-            },5000);
-          })();
-          </script>
-          """
-          import re
-          html = re.sub(r"</body\s*>", lambda m: splash + m.group(0), html, count=1, flags=re.I)
-          html_path.write_text(html, encoding="utf-8")
-
-          # Update only launcher metadata; preserve the existing Activity and app code.
+          # Move launcher intent to a dedicated native SplashActivity; MainActivity remains intact.
           manifest = root / "AndroidManifest.xml"
-          tree = ET.parse(manifest)
-          manifest_root = tree.getroot()
-          app = manifest_root.find("application")
-          if app is None:
-              raise SystemExit("AndroidManifest.xml has no application element")
-          ns = "{http://schemas.android.com/apk/res/android}"
-          app.set(ns + "icon", "@mipmap/ic_launcher")
-          app.set(ns + "roundIcon", "@mipmap/ic_launcher")
-          app.set(ns + "banner", "@drawable/jivara_tv_banner")
-          for activity in app.findall("activity") + app.findall("activity-alias"):
-              for intent in activity.findall("intent-filter"):
-                  cats = {node.get(ns + "name") for node in intent.findall("category")}
-                  if "android.intent.category.LEANBACK_LAUNCHER" in cats:
-                      activity.set(ns + "icon", "@mipmap/ic_launcher")
-                      activity.set(ns + "banner", "@drawable/jivara_tv_banner")
-          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+          tree = ET.parse(manifest); mr = tree.getroot()
+          ns_uri = "http://schemas.android.com/apk/res/android"
+          A = lambda name: "{%s}%s" % (ns_uri,name)
+          app = mr.find("application")
+          if app is None: raise SystemExit("Missing application element")
+          main = None
+          for act in list(app.findall("activity")):
+              if act.get(A("name")) == "com.jivara.tv.MainActivity":
+                  main = act
+          if main is None: raise SystemExit("MainActivity not found")
+          for filt in list(main.findall("intent-filter")):
+              actions = [x.get(A("name")) for x in filt.findall("action")]
+              cats = [x.get(A("name")) for x in filt.findall("category")]
+              if "android.intent.action.MAIN" in actions:
+                  main.remove(filt)
+          splash = ET.SubElement(app,"activity",{
+              A("name"):"com.jivara.tv.JivaraSplashActivity",
+              A("exported"):"true",
+              A("screenOrientation"):"landscape",
+              A("theme"):"@style/AppTheme"
+          })
+          filt = ET.SubElement(splash,"intent-filter")
+          ET.SubElement(filt,"action",{A("name"):"android.intent.action.MAIN"})
+          ET.SubElement(filt,"category",{A("name"):"android.intent.category.LAUNCHER"})
+          ET.SubElement(filt,"category",{A("name"):"android.intent.category.LEANBACK_LAUNCHER"})
+          app.set(A("icon"),"@mipmap/ic_launcher")
+          app.set(A("roundIcon"),"@mipmap/ic_launcher")
+          app.set(A("banner"),"@drawable/jivara_tv_banner")
+          tree.write(manifest,encoding="utf-8",xml_declaration=True)
 
-          adaptive_dir = res / "mipmap-anydpi-v26"
-          adaptive_dir.mkdir(parents=True, exist_ok=True)
-          background_dir = res / "drawable"
-          background_dir.mkdir(parents=True, exist_ok=True)
-          (background_dir / "jivara_icon_background.xml").write_text(
-              '<?xml version="1.0" encoding="utf-8"?>\n'
-              '<shape xmlns:android="http://schemas.android.com/apk/res/android">'
-              '<solid android:color="#101010"/></shape>\n',
-              encoding="utf-8"
-          )
-          adaptive = (
-              '<?xml version="1.0" encoding="utf-8"?>\n'
-              '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">'
-              '<background android:drawable="@drawable/jivara_icon_background"/>'
-              '<foreground android:drawable="@drawable/jivara_icon_foreground"/>'
-              '</adaptive-icon>\n'
-          )
-          for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
-              (adaptive_dir / name).write_text(adaptive, encoding="utf-8")
+          # Native Activity: show the image immediately, play sound, then open MainActivity after 5 sec.
+          java = Path("JivaraSplashActivity.java")
+          java.write_text(r"""
+          package com.jivara.tv;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.content.Intent;
+          import android.graphics.Color;
+          import android.view.Gravity;
+          import android.view.WindowManager;
+          import android.widget.FrameLayout;
+          import android.widget.ImageView;
+          import android.media.MediaPlayer;
+
+          public final class JivaraSplashActivity extends Activity {
+              private MediaPlayer player;
+              private final Handler handler = new Handler(Looper.getMainLooper());
+              private Runnable launchTask;
+              private void releaseSound() {
+                  if (player != null) {
+                      try { if (player.isPlaying()) player.stop(); } catch (Exception ignored) {}
+                      try { player.release(); } catch (Exception ignored) {}
+                      player = null;
+                  }
+              }
+              @Override public void onCreate(Bundle state) {
+                  super.onCreate(state);
+                  getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                  getWindow().setBackgroundDrawableResource(android.R.color.black);
+                  FrameLayout root = new FrameLayout(this);
+                  root.setBackgroundColor(Color.rgb(8,8,8));
+                  ImageView logo = new ImageView(this);
+                  int imageId = getResources().getIdentifier("jivara_splash_logo","drawable",getPackageName());
+                  if (imageId != 0) logo.setImageResource(imageId);
+                  logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                  int w = getResources().getDisplayMetrics().widthPixels;
+                  int h = getResources().getDisplayMetrics().heightPixels;
+                  FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams((int)(w*.42f),(int)(h*.58f),Gravity.CENTER);
+                  root.addView(logo,lp);
+                  setContentView(root);
+                  int soundId = getResources().getIdentifier("jivara_intro","raw",getPackageName());
+                  if (soundId != 0) {
+                      try { player = MediaPlayer.create(this,soundId); if (player != null) player.start(); }
+                      catch (Exception ignored) { releaseSound(); }
+                  }
+                  launchTask = new Runnable() {
+                      @Override public void run() {
+                          releaseSound();
+                          Intent intent = new Intent();
+                          intent.setClassName(JivaraSplashActivity.this,"com.jivara.tv.MainActivity");
+                          startActivity(intent);
+                          finish();
+                      }
+                  };
+                  handler.postDelayed(launchTask,5000L);
+              }
+              @Override protected void onDestroy() {
+                  if (launchTask != null) handler.removeCallbacks(launchTask);
+                  releaseSound();
+                  super.onDestroy();
+              }
+          }
+          """,encoding="utf-8")
           PY
 
-      - name: Rebuild and sign APK
+      - name: Compile native splash activity to dex
+        run: |
+          mkdir -p java-classes dex-out
+          javac -source 8 -target 8 -classpath "$ANDROID_HOME/platforms/android-35/android.jar" -d java-classes JivaraSplashActivity.java
+          "$ANDROID_HOME/build-tools/36.0.0/d8" --lib "$ANDROID_HOME/platforms/android-35/android.jar" --min-api 21 --output dex-out java-classes/com/jivara/tv/*.class
+          test -s dex-out/classes.dex
+
+      - name: Rebuild, add native activity dex, and sign APK
         run: |
           BT="$ANDROID_HOME/build-tools/36.0.0"
           apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
+          DEX_COUNT=$(unzip -Z1 original.apk | grep -Ec '^classes([0-9]+)?\.dex$' || true)
+          NEXT=$((DEX_COUNT + 1))
+          cp dex-out/classes.dex "classes${NEXT}.dex"
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile("unsigned.apk","a") as z:
+              z.write("classes" + str(int(__import__("os").environ.get("NEXT_DEX","0")) or 4) + ".dex")
+          PY
+          # Ensure the newly compiled dex is included under the next free dex name.
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          apk=Path("unsigned.apk")
+          dex=Path("dex-out/classes.dex")
+          with zipfile.ZipFile(apk,"a") as z:
+              names=set(z.namelist())
+              i=2
+              while f"classes{i}.dex" in names: i+=1
+              z.write(dex,f"classes{i}.dex")
+          PY
           "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
           PASS="$(openssl rand -hex 24)"
           keytool -genkeypair -v -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
-          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_safe_splash.apk aligned.apk
-          "$BT/apksigner" verify --verbose JIVARA_TV_safe_splash.apk
-          test -s JIVARA_TV_safe_splash.apk
-          unzip -l JIVARA_TV_safe_splash.apk | grep -E 'assets/(index.html|jivara-splash.png|jivara-intro.wav)'
+          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_native_splash.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_native_splash.apk
+          unzip -l JIVARA_TV_native_splash.apk | grep -E 'classes[0-9]*\.dex|res/drawable-nodpi/jivara_splash_logo.png|res/raw/jivara_intro.wav'
 
-      - name: Upload safe splash APK artifact
+      - name: Upload native splash APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JIVARA-TV-safe-5-second-splash
-          path: JIVARA_TV_safe_splash.apk
+          name: JIVARA-TV-native-5-second-splash
+          path: JIVARA_TV_native_splash.apk
           retention-days: 30
