@@ -2024,16 +2024,70 @@ settingsTab('manual');
    'دەستکاری':'Edit','سڕینەوە':'Delete','نوێکردنەوە':'Update','پاشەکەوتکردن':'Save','وشەی نهێنی':'Password','ئیمەیڵ':'Email'
   }
  };
+ Object.assign(dictionaries.ar,{
+  'لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.':'يجب أن يبدأ الرابط بـ http:// أو https://.',
+  'فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.':'تعذرت قراءة ملف M3U. استخدم رابط M3U8 أو TS مباشراً؛ قد يمنع CORS أو الخادم ذلك.',
+  'پەخش نەکرا: لینکەکە، سێرڤەر، CORS/HTTPS یان فۆرماتی ڤیدیۆ پشکنە.':'تعذر التشغيل: تحقق من الرابط أو الخادم أو CORS/HTTPS أو تنسيق الفيديو.',
+  'هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.':'خطأ في البث: تحقق من التنسيق أو الرابط أو أذونات الخادم.',
+  'بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.':'تم إيقاف البث عند مغادرة صفحة الراديو.',
+  'کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.':'أصبحت القناة صفراء؛ اسحبها إلى موضع جديد.',
+  'ڕادیۆ لە پەخشدایە.':'الراديو قيد التشغيل.','پەخش وەستێنرا.':'تم إيقاف البث.','هەڵە لە لینک یان فۆرماتی پەخش.':'خطأ في رابط البث أو تنسيقه.',
+  'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.':'تعذر التشغيل؛ تحقق من رابط الراديو وتنسيقه.',
+  'ئیمەیڵ و وشەی نهێنی بنووسە.':'أدخل البريد الإلكتروني وكلمة المرور.','تەنها بەڕێوەبەر دەتوانێت ڕادیۆ زیاد بکات.':'يمكن للمسؤول فقط إضافة محطات الراديو.',
+  'ناوی ڕادیۆ و لینکی دروست بنووسە.':'أدخل اسم محطة الراديو ورابطاً صحيحاً.','ڕادیۆ پاشەکەوت کرا.':'تم حفظ محطة الراديو.',
+  'پاشەکەوتکردن سەرکەوتوو نەبوو؛ ڕێکخستنەکان بپشکنە.':'فشل الحفظ؛ تحقق من الإعدادات.',
+  'سڕینەوە سەرکەوتوو نەبوو.':'فشل الحذف.','ڕادیۆکە سڕایەوە.':'تم حذف محطة الراديو.',
+  'هیچ ڕادیۆیەک نییە.':'لا توجد محطات راديو.','ئەم گرووپە بەتاڵە.':'هذه المجموعة فارغة.',
+  'لە ڕێکخستنەکان کەناڵ زیاد بکە.':'أضف قناة من الإعدادات.','هیچ کەناڵێک نییە. لینکەکان زیاد بکە.':'لا توجد قنوات. أضف الروابط.',
+  'گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.':'اختر مجموعة وأضف قنواتك إليها.',
+  'تکایە کەناڵێک دیاری بکە.':'يرجى اختيار قناة.','ناوی کەناڵ گۆڕدرا و لە گروپی خۆیدا پاشەکەوت کرا.':'تم تغيير اسم القناة وحفظه ضمن مجموعته.',
+  'ناوی کەناڵ نوێکرایەوە.':'تم تحديث اسم القناة.','کەناڵەکە بە سەرکەوتوویی سڕایەوە.':'تم حذف القناة بنجاح.',
+  'کەناڵەکە بە سەرکەوتوویی زیاد کرا.':'تمت إضافة القناة بنجاح.','تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.':'يرجى إدخال الاسم ورابط البث؛ يجب أن يكون رابط الشعار صالحاً.',
+  'دڵنیایت لە سڕینەوەی':'هل أنت متأكد من حذف','لینکی کەناڵ':'رابط القناة'
+ });
+ Object.assign(dictionaries.en,{
+  'لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.':'The link must start with http:// or https://.',
+  'فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.':'Could not read the M3U file. Use a direct M3U8 or TS link; CORS or the server may block it.',
+  'پەخش نەکرا: لینکەکە، سێرڤەر، CORS/HTTPS یان فۆرماتی ڤیدیۆ پشکنە.':'Playback failed: check the link, server, CORS/HTTPS, or video format.',
+  'هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.':'Stream error: check the format, link, or server permissions.',
+  'بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.':'Playback stopped because you left the radio page.',
+  'کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.':'The channel is highlighted; drag it to a new position.',
+  'ڕادیۆ لە پەخشدایە.':'Radio is playing.','پەخش وەستێنرا.':'Playback stopped.','هەڵە لە لینک یان فۆرماتی پەخش.':'Error in the stream link or format.',
+  'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.':'Playback failed; check the radio link and format.',
+  'ئیمەیڵ و وشەی نهێنی بنووسە.':'Enter your email and password.','تەنها بەڕێوەبەر دەتوانێت ڕادیۆ زیاد بکات.':'Only an administrator can add radio stations.',
+  'ناوی ڕادیۆ و لینکی دروست بنووسە.':'Enter a radio station name and a valid link.','ڕادیۆ پاشەکەوت کرا.':'Radio station saved.',
+  'پاشەکەوتکردن سەرکەوتوو نەبوو؛ ڕێکخستنەکان بپشکنە.':'Save failed; check the settings.',
+  'سڕینەوە سەرکەوتوو نەبوو.':'Delete failed.','ڕادیۆکە سڕایەوە.':'Radio station deleted.',
+  'هیچ ڕادیۆیەک نییە.':'No radio stations.','ئەم گرووپە بەتاڵە.':'This group is empty.',
+  'لە ڕێکخستنەکان کەناڵ زیاد بکە.':'Add a channel in Settings.','هیچ کەناڵێک نییە. لینکەکان زیاد بکە.':'No channels found. Add links.',
+  'گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.':'Choose a group and add your channels.',
+  'تکایە کەناڵێک دیاری بکە.':'Please select a channel.','ناوی کەناڵ گۆڕدرا و لە گروپی خۆیدا پاشەکەوت کرا.':'Channel name changed and saved in its group.',
+  'ناوی کەناڵ نوێکرایەوە.':'Channel name updated.','کەناڵەکە بە سەرکەوتوویی سڕایەوە.':'Channel deleted successfully.',
+  'کەناڵەکە بە سەرکەوتوویی زیاد کرا.':'Channel added successfully.','تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.':'Enter a name and stream link; the logo link must be a valid URL.',
+  'دڵنیایت لە سڕینەوەی':'Are you sure you want to delete','لینکی کەناڵ':'Channel link'
+ });
+
+ const groupNames={
+  'ناوخۆ':{ar:'محلي',en:'Local'},'کوردی':{ar:'كردي',en:'Kurdish'},'عەرەبی':{ar:'عربي',en:'Arabic'},
+  'بیانی':{ar:'أجنبي',en:'Foreign'},'هەواڵ':{ar:'أخبار',en:'News'},'قورئان':{ar:'القرآن',en:'Quran'},
+  'منداڵان':{ar:'الأطفال',en:'Kids'},'وەرزش':{ar:'الرياضة',en:'Sports'},'موزیک':{ar:'الموسيقى',en:'Music'},
+  'دۆکۆمێنتاری':{ar:'وثائقي',en:'Documentary'},'عێراق':{ar:'العراق',en:'Iraq'},'ئێران':{ar:'إيران',en:'Iran'},
+  'تورکیا':{ar:'تركيا',en:'Turkey'},'ئیسرائیل':{ar:'إسرائيل',en:'Israel'}
+ };
  const languageKeys=['ku','ar','en'];
- const reverse={ar:{},en:{}};
+ const reverse={ar:{},en:{}},reverseGroups={};
  Object.keys(dictionaries.ar).forEach(k=>reverse.ar[dictionaries.ar[k]]=k);
  Object.keys(dictionaries.en).forEach(k=>reverse.en[dictionaries.en[k]]=k);
+ Object.keys(groupNames).forEach(k=>{reverseGroups[groupNames[k].ar]=k;reverseGroups[groupNames[k].en]=k;});
  const normalize=value=>String(value).replace(/\s+/g,' ').trim();
- function translateValue(value,lang){
+ function translateValue(value,lang,isGroup){
   const original=normalize(value);
-  if(lang==='ku') return reverse.ar[original]||reverse.en[original]||original;
-  const key=dictionaries[lang][original]?original:(reverse[lang][original]||original);
-  return dictionaries[lang][key]||original;
+  if(isGroup){
+   const key=groupNames[original]?original:(reverseGroups[original]||original);
+   return lang==='ku'?key:(groupNames[key]&&groupNames[key][lang]||key);
+  }
+  const key=dictionaries[lang]&&dictionaries[lang][original]?original:(reverse.ar[original]||reverse.en[original]||original);
+  return lang==='ku'?key:(dictionaries[lang][key]||key);
  }
  function translateTree(root,lang){
   if(!root)return;
@@ -2044,7 +2098,7 @@ settingsTab('manual');
    if(!parent||parent.closest('[data-no-translate="true"],script,style'))return;
    const raw=node.nodeValue,trimmed=normalize(raw);
    if(!trimmed)return;
-   const translated=translateValue(trimmed,lang);
+   const translated=translateValue(trimmed,lang,!!parent.closest('.category,.group-card,.group-btn,select'));
    if(translated!==trimmed){
     const lead=(raw.match(/^\s*/)||[''])[0],tail=(raw.match(/\s*$/)||[''])[0];
     node.nodeValue=lead+translated+tail;
@@ -2055,7 +2109,7 @@ settingsTab('manual');
     if(el.closest('[data-no-translate="true"]'))return;
     ['placeholder','title','aria-label','alt'].forEach(attr=>{
      if(el.hasAttribute(attr)){
-      const old=el.getAttribute(attr),next=translateValue(old,lang);
+      const old=el.getAttribute(attr),next=translateValue(old,lang,false);
       if(next!==normalize(old))el.setAttribute(attr,next);
      }
     });
