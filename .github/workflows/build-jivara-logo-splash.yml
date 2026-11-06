@@ -87,7 +87,7 @@ jobs:
           if not smali.exists():
               raise SystemExit("Could not locate com.jivara.tv.MainActivity in decoded APK")
           source_text = smali.read_text(encoding="utf-8")
-          marker = '    invoke-virtual {v1, v2}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V\\n    .line 123\\n    return-void'
+          marker = '    invoke-virtual {v1, v2}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V\n\n    .line 123\n    return-void'
           if marker not in source_text:
               raise SystemExit("MainActivity onCreate insertion point was not found; APK left unchanged")
           inject = '''    invoke-virtual {v1, v2}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V
