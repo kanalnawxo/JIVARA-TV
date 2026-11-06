@@ -116,7 +116,7 @@ jobs:
           source_text = smali.read_text(encoding="utf-8")
           # Reserve dedicated local registers for the injected code so v0-v4 never alias p0/p1.
           import re
-          method = re.search(r'(?ms)^\\.method[^\\n]* onCreate\\(Landroid/os/Bundle;\\)V.*?^\\.end method', source_text)
+          method = re.search(r'(?ms)^\.method[^\n]* onCreate\(Landroid/os/Bundle;\)V.*?^\.end method', source_text)
           if not method:
               raise SystemExit("Could not locate MainActivity.onCreate(Bundle)")
           block = method.group(0)
