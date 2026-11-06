@@ -1,0 +1,199 @@
+name: Build JIVARA TV with 5-second logo splash
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/build-jivara-logo-splash.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Android APK tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool
+          python3 -m pip install --user pillow
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
+
+      - name: Decode the uploaded JIVARA APK
+        run: |
+          cp JIVARA_TV.zip original.apk
+          cp "APK LOGO.png" logo.png
+          apktool d -f original.apk -o decoded
+
+      - name: Apply only the requested logo, launcher icon, and splash
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          import xml.etree.ElementTree as ET
+          from PIL import Image, ImageOps
+
+          root = Path("decoded")
+          logo = Path("logo.png")
+          manifest = root / "AndroidManifest.xml"
+          tree = ET.parse(manifest)
+          app = tree.getroot().find("application")
+          if app is None:
+              raise SystemExit("AndroidManifest.xml has no application element")
+          ns = "{http://schemas.android.com/apk/res/android}"
+          app.set(ns + "icon", "@mipmap/ic_launcher")
+          app.set(ns + "roundIcon", "@mipmap/ic_launcher")
+          for element in app.iter():
+              if element.tag.rsplit("}", 1)[-1] in ("activity", "activity-alias"):
+                  element.set(ns + "icon", "@mipmap/ic_launcher")
+                  element.set(ns + "roundIcon", "@mipmap/ic_launcher")
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+
+          res = root / "res"
+          with Image.open(logo) as im:
+              source = im.convert("RGBA")
+              # The splash uses the exact supplied LOGO.png artwork, without cropping.
+              splash_dir = res / "drawable-nodpi"
+              splash_dir.mkdir(parents=True, exist_ok=True)
+              source.save(splash_dir / "jivara_splash.png", format="PNG", optimize=True)
+
+              # Launcher icons are generated from the same exact LOGO.png.
+              for density, size in [("mdpi",48),("hdpi",72),("xhdpi",96),("xxhdpi",144),("xxxhdpi",192)]:
+                  folder = res / ("mipmap-" + density)
+                  folder.mkdir(parents=True, exist_ok=True)
+                  ImageOps.fit(source, (size,size), method=Image.Resampling.LANCZOS).save(folder / "ic_launcher.png")
+              fg = res / "drawable-nodpi" / "jivara_icon_foreground.png"
+              ImageOps.fit(source, (432,432), method=Image.Resampling.LANCZOS).save(fg)
+              colors = res / "values"
+              colors.mkdir(parents=True, exist_ok=True)
+              (colors / "jivara_icon_colors.xml").write_text(
+                  '<?xml version="1.0" encoding="utf-8"?>\\n<resources><color name="jivara_icon_background">#101010</color></resources>\\n',
+                  encoding="utf-8")
+              adaptive_dir = res / "mipmap-anydpi-v26"
+              adaptive_dir.mkdir(parents=True, exist_ok=True)
+              adaptive = '<?xml version="1.0" encoding="utf-8"?>\\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/jivara_icon_background"/><foreground android:drawable="@drawable/jivara_icon_foreground"/></adaptive-icon>\\n'
+              for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
+                  (adaptive_dir / name).write_text(adaptive, encoding="utf-8")
+
+          # Add a native image overlay after the app's WebView and player are created.
+          smali = root / "smali_classes3/com/jivara/tv/MainActivity.smali"
+          if not smali.exists():
+              raise SystemExit("Could not locate com.jivara.tv.MainActivity in decoded APK")
+          source_text = smali.read_text(encoding="utf-8")
+          marker = '    invoke-virtual {v1, v2}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V\\n    .line 123\\n    return-void'
+          if marker not in source_text:
+              raise SystemExit("MainActivity onCreate insertion point was not found; APK left unchanged")
+          inject = '''    invoke-virtual {v1, v2}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V
+
+              # Native logo overlay: centered, fit-center, five seconds, then a soft fade.
+              new-instance v0, Landroid/widget/ImageView;
+              invoke-direct {v0, p0}, Landroid/widget/ImageView;-><init>(Landroid/content/Context;)V
+              invoke-virtual {p0}, Landroid/app/Activity;->getResources()Landroid/content/res/Resources;
+              move-result-object v1
+              const-string v2, "jivara_splash"
+              const-string v3, "drawable"
+              invoke-virtual {p0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
+              move-result-object v4
+              invoke-virtual {v1, v2, v3, v4}, Landroid/content/res/Resources;->getIdentifier(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
+              move-result v1
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setImageResource(I)V
+              sget-object v1, Landroid/widget/ImageView$ScaleType;->FIT_CENTER:Landroid/widget/ImageView$ScaleType;
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setScaleType(Landroid/widget/ImageView$ScaleType;)V
+              const/4 v1, 0x0
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setClickable(Z)V
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setFocusable(Z)V
+              new-instance v1, Landroid/widget/FrameLayout$LayoutParams;
+              const/4 v2, -0x1
+              invoke-direct {v1, v2, v2}, Landroid/widget/FrameLayout$LayoutParams;-><init>(II)V
+              iget-object v2, p0, Lcom/jivara/tv/MainActivity;->root:Landroid/widget/FrameLayout;
+              invoke-virtual {v2, v0, v1}, Landroid/widget/FrameLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
+              new-instance v1, Landroid/os/Handler;
+              invoke-direct {v1}, Landroid/os/Handler;-><init>()V
+              new-instance v2, Lcom/jivara/tv/SplashFadeRunnable;
+              invoke-direct {v2, v0}, Lcom/jivara/tv/SplashFadeRunnable;-><init>(Landroid/view/View;)V
+              const-wide/16 v3, 0x1388
+              invoke-virtual {v1, v2, v3, v4}, Landroid/os/Handler;->postDelayed(Ljava/lang/Runnable;J)Z
+              .line 123
+              return-void'''
+          smali.write_text(source_text.replace(marker, inject, 1), encoding="utf-8")
+
+          pkg = root / "smali_classes3/com/jivara/tv"
+          (pkg / "SplashFadeRunnable.smali").write_text('''.class public Lcom/jivara/tv/SplashFadeRunnable;
+          .super Ljava/lang/Object;
+          .implements Ljava/lang/Runnable;
+
+          .field private final splash:Landroid/view/View;
+
+          .method public constructor <init>(Landroid/view/View;)V
+              .locals 0
+              invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+              iput-object p1, p0, Lcom/jivara/tv/SplashFadeRunnable;->splash:Landroid/view/View;
+              return-void
+          .end method
+
+          .method public run()V
+              .locals 4
+              iget-object v0, p0, Lcom/jivara/tv/SplashFadeRunnable;->splash:Landroid/view/View;
+              invoke-virtual {v0}, Landroid/view/View;->animate()Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              const/4 v2, 0x0
+              invoke-virtual {v1, v2}, Landroid/view/ViewPropertyAnimator;->alpha(F)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              const-wide/16 v2, 0x2bc
+              invoke-virtual {v1, v2, v3}, Landroid/view/ViewPropertyAnimator;->setDuration(J)Landroid/view/ViewPropertyAnimator;
+              new-instance v2, Lcom/jivara/tv/SplashHideRunnable;
+              invoke-direct {v2, v0}, Lcom/jivara/tv/SplashHideRunnable;-><init>(Landroid/view/View;)V
+              invoke-virtual {v1, v2}, Landroid/view/ViewPropertyAnimator;->withEndAction(Ljava/lang/Runnable;)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              invoke-virtual {v1}, Landroid/view/ViewPropertyAnimator;->start()V
+              return-void
+          .end method
+          ''', encoding="utf-8")
+
+          (pkg / "SplashHideRunnable.smali").write_text('''.class public Lcom/jivara/tv/SplashHideRunnable;
+          .super Ljava/lang/Object;
+          .implements Ljava/lang/Runnable;
+
+          .field private final splash:Landroid/view/View;
+
+          .method public constructor <init>(Landroid/view/View;)V
+              .locals 0
+              invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+              iput-object p1, p0, Lcom/jivara/tv/SplashHideRunnable;->splash:Landroid/view/View;
+              return-void
+          .end method
+
+          .method public run()V
+              .locals 2
+              iget-object v0, p0, Lcom/jivara/tv/SplashHideRunnable;->splash:Landroid/view/View;
+              const/16 v1, 0x8
+              invoke-virtual {v0, v1}, Landroid/view/View;->setVisibility(I)V
+              return-void
+          .end method
+          ''', encoding="utf-8")
+          PY
+
+      - name: Rebuild and sign the patched APK
+        run: |
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
+          "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
+          PASS="$(openssl rand -hex 24)"
+          keytool -genkeypair -v -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
+          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_logo_splash.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_logo_splash.apk
+          test -s JIVARA_TV_logo_splash.apk
+
+      - name: Upload installable APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-logo-splash-5-seconds
+          path: JIVARA_TV_logo_splash.apk
+          retention-days: 30
