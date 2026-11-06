@@ -55,23 +55,40 @@ jobs:
           splash_dir.mkdir(parents=True, exist_ok=True)
           source_logo.save(splash_dir / "jivara_splash_logo.png", format="PNG", optimize=True)
 
-          # Launcher icon: the source artwork has already been cropped to its visible bounds on BOTH sides.
-          # Fill the square icon canvas completely so no blank strip remains at left or right.
-          icon_logo = source_logo.resize((1024,1024), Image.Resampling.LANCZOS)
+          # Compose launcher artwork so the complete logo stays inside Android's adaptive-icon safe area.
+          # A full-bleed background fills the square; the full original artwork is fitted over it without cropping.
+          canvas_size = 1024
+          bg_scale = max(canvas_size/source_logo.width, canvas_size/source_logo.height)
+          bg_fit = source_logo.resize((round(source_logo.width*bg_scale), round(source_logo.height*bg_scale)), Image.Resampling.LANCZOS)
+          bx = (bg_fit.width-canvas_size)//2
+          by = (bg_fit.height-canvas_size)//2
+          icon_background = bg_fit.crop((bx,by,bx+canvas_size,by+canvas_size)).convert("RGB")
+          icon_background.save(res / "drawable-nodpi" / "jivara_icon_background.png", format="PNG", optimize=True)
+
+          fg_canvas = Image.new("RGBA",(432,432),(0,0,0,0))
+          safe_w = 300
+          safe_h = 300
+          fg_scale = min(safe_w/source_logo.width, safe_h/source_logo.height)
+          fg_fit = source_logo.resize((max(1,round(source_logo.width*fg_scale)), max(1,round(source_logo.height*fg_scale))), Image.Resampling.LANCZOS)
+          fg_canvas.alpha_composite(fg_fit,((432-fg_fit.width)//2,(432-fg_fit.height)//2))
+          fg_canvas.save(res / "drawable-nodpi" / "jivara_icon_foreground.png", format="PNG", optimize=True)
+
+          # Legacy launcher PNGs use the same full-bleed background + complete, uncropped logo.
           for density, size in [("mdpi",48),("hdpi",72),("xhdpi",96),("xxhdpi",144),("xxxhdpi",192)]:
               folder = res / ("mipmap-" + density)
               folder.mkdir(parents=True, exist_ok=True)
-              icon_logo.resize((size,size), Image.Resampling.LANCZOS).save(folder / "ic_launcher.png", format="PNG", optimize=True)
-          fg = res / "drawable-nodpi" / "jivara_icon_foreground.png"
-          icon_logo.resize((432,432), Image.Resampling.LANCZOS).save(fg, format="PNG", optimize=True)
+              bg = icon_background.resize((size,size), Image.Resampling.LANCZOS).convert("RGBA")
+              fg_small = fg_canvas.resize((size,size), Image.Resampling.LANCZOS)
+              bg.alpha_composite(fg_small)
+              bg.save(folder / "ic_launcher.png", format="PNG", optimize=True)
 
-          # Android 8+ launchers use adaptive XML, not the legacy PNGs above.
-          # Explicitly point BOTH adaptive icons at the newly generated JIVARA artwork.
+          # Android 8+ launchers use adaptive XML and may mask the outer edges.
+          # Keep all important logo artwork in the safe center while the background fills the mask.
           adaptive_dir = res / "mipmap-anydpi-v26"
           adaptive_dir.mkdir(parents=True, exist_ok=True)
           adaptive_xml = '''<?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@android:color/black"/>
+              <background android:drawable="@drawable/jivara_icon_background"/>
               <foreground android:drawable="@drawable/jivara_icon_foreground"/>
           </adaptive-icon>
           '''
