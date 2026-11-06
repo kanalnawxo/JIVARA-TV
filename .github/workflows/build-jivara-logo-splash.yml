@@ -31,31 +31,47 @@ jobs:
           cp "APK LOGO.png" logo.png
           apktool d -f original.apk -o decoded
 
-      - name: Replace launcher artwork only
+      - name: Set Android and Android TV launcher artwork
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import xml.etree.ElementTree as ET
-          from PIL import Image, ImageOps
+          from PIL import Image
 
           root = Path("decoded")
           res = root / "res"
-          logo = Path("logo.png")
           manifest = root / "AndroidManifest.xml"
+          ns = "{http://schemas.android.com/apk/res/android}"
 
-          # Change only the application launcher icon references.
+          # Android phone/tablet launcher icon plus Android TV banner.
           tree = ET.parse(manifest)
-          app = tree.getroot().find("application")
+          manifest_root = tree.getroot()
+          app = manifest_root.find("application")
           if app is None:
               raise SystemExit("AndroidManifest.xml has no application element")
-          ns = "{http://schemas.android.com/apk/res/android}"
           app.set(ns + "icon", "@mipmap/ic_launcher")
           app.set(ns + "roundIcon", "@mipmap/ic_launcher")
+          app.set(ns + "banner", "@drawable/jivara_tv_banner")
+
+          # Android TV launchers read the banner from the LEANBACK_LAUNCHER activity.
+          found_leanback = False
+          for activity in app.findall("activity") + app.findall("activity-alias"):
+              for intent in activity.findall("intent-filter"):
+                  categories = {
+                      node.get(ns + "name")
+                      for node in intent.findall("category")
+                  }
+                  if "android.intent.category.LEANBACK_LAUNCHER" in categories:
+                      activity.set(ns + "icon", "@mipmap/ic_launcher")
+                      activity.set(ns + "banner", "@drawable/jivara_tv_banner")
+                      found_leanback = True
+          if not found_leanback:
+              print("No LEANBACK_LAUNCHER activity found; application banner is still configured")
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
 
-          # Use the supplied LOGO.png as the sole source for every launcher density.
-          with Image.open(logo) as image:
+          with Image.open("logo.png") as image:
               source = image.convert("RGBA")
+              # Standard launcher bitmap icons for every density.
               for density, size in [
                   ("mdpi", 48), ("hdpi", 72), ("xhdpi", 96),
                   ("xxhdpi", 144), ("xxxhdpi", 192)
@@ -66,29 +82,39 @@ jobs:
                       folder / "ic_launcher.png", format="PNG", optimize=True
                   )
 
-              # Android adaptive icon: same logo artwork, no extra splash or app code.
+              # Adaptive icon foreground from the same approved LOGO.png.
               foreground = res / "drawable-nodpi" / "jivara_icon_foreground.png"
               foreground.parent.mkdir(parents=True, exist_ok=True)
               source.resize((432, 432), Image.Resampling.LANCZOS).save(
                   foreground, format="PNG", optimize=True
               )
 
+              # Android TV banner: 16:9 canvas, complete logo contained without cropping.
+              banner = Image.new("RGBA", (320, 180), (16, 16, 16, 255))
+              fitted = source.copy()
+              fitted.thumbnail((288, 148), Image.Resampling.LANCZOS)
+              x = (320 - fitted.width) // 2
+              y = (180 - fitted.height) // 2
+              banner.alpha_composite(fitted, (x, y))
+              banner_path = res / "drawable-nodpi" / "jivara_tv_banner.png"
+              banner.save(banner_path, format="PNG", optimize=True)
+
           adaptive_dir = res / "mipmap-anydpi-v26"
           adaptive_dir.mkdir(parents=True, exist_ok=True)
           background_dir = res / "drawable"
           background_dir.mkdir(parents=True, exist_ok=True)
           (background_dir / "jivara_icon_background.xml").write_text(
-              '<?xml version="1.0" encoding="utf-8"?>\n'
+              '<?xml version="1.0" encoding="utf-8"?>\\n'
               '<shape xmlns:android="http://schemas.android.com/apk/res/android">'
-              '<solid android:color="#101010"/></shape>\n',
+              '<solid android:color="#101010"/></shape>\\n',
               encoding="utf-8"
           )
           adaptive = (
-              '<?xml version="1.0" encoding="utf-8"?>\n'
+              '<?xml version="1.0" encoding="utf-8"?>\\n'
               '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">'
               '<background android:drawable="@drawable/jivara_icon_background"/>'
               '<foreground android:drawable="@drawable/jivara_icon_foreground"/>'
-              '</adaptive-icon>\n'
+              '</adaptive-icon>\\n'
           )
           for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
               (adaptive_dir / name).write_text(adaptive, encoding="utf-8")
