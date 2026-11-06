@@ -33,7 +33,7 @@ jobs:
           echo "Original dex files:"
           unzip -l original.apk | grep -E 'classes[0-9]*\.dex' || true
 
-      - name: Create native splash activity, logo resources, and startup sound
+      - name: Create native splash activity and logo resources
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -103,7 +103,7 @@ jobs:
           app.set(A("banner"),"@drawable/jivara_tv_banner")
           tree.write(manifest,encoding="utf-8",xml_declaration=True)
 
-          # Native Activity: show the image immediately, play sound, then open MainActivity after 5 sec.
+          # Native Activity: show the image silently, then open MainActivity after 5 sec.
           java = Path("JivaraSplashActivity.java")
           java.write_text(r"""
           package com.jivara.tv;
@@ -182,7 +182,7 @@ jobs:
           keytool -genkeypair -v -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
           "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_native_splash.apk aligned.apk
           "$BT/apksigner" verify --verbose JIVARA_TV_native_splash.apk
-          unzip -l JIVARA_TV_native_splash.apk | grep -E 'classes[0-9]*\.dex|res/drawable-nodpi/jivara_splash_logo.png|res/raw/jivara_intro.wav'
+          unzip -l JIVARA_TV_native_splash.apk | grep -E 'classes[0-9]*\.dex|res/drawable-nodpi/jivara_splash_logo.png'
 
       - name: Upload native splash APK artifact
         uses: actions/upload-artifact@v4
