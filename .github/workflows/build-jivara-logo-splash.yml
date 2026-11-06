@@ -35,8 +35,12 @@ jobs:
 
       - name: Inspect APK web app files before localization
         run: |
-          echo "=== DECODED WEB / ASSET FILES ==="
-          find decoded -type f | grep -Ei 'assets|html|javascript|\.js$|\.html$|\.css$|\.xml
+          echo "=== DECODED FILES ==="
+          find decoded -maxdepth 4 -type f | head -250
+          echo "=== MANIFEST ==="
+          sed -n '1,220p' decoded/AndroidManifest.xml
+          echo "=== APK ASSET PATHS ==="
+          unzip -l original.apk | grep 'assets/' | head -200 || true
       - name: Create native splash activity, logo resources, and intro music
         run: |
           python3 - <<'PY'
