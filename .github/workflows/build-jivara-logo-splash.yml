@@ -37,7 +37,6 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import math, struct, wave
           import xml.etree.ElementTree as ET
           from PIL import Image
 
@@ -57,8 +56,8 @@ jobs:
 
           # Square launcher artwork, tightly cropped from the same original logo.
           side = min(source_logo.width, source_logo.height)
-          left = (source_logo.width - side) // 2
-          top = (source_logo.height - side) // 2
+          left = max(0, source_logo.width - side)
+          top = max(0, (source_logo.height - side) // 2)
           icon_logo = source_logo.crop((left, top, left + side, top + side)).resize((1024,1024), Image.Resampling.LANCZOS)
           for density, size in [("mdpi",48),("hdpi",72),("xhdpi",96),("xxhdpi",144),("xxxhdpi",192)]:
               folder = res / ("mipmap-" + density)
@@ -71,35 +70,6 @@ jobs:
           fitted.thumbnail((316,176),Image.Resampling.LANCZOS)
           banner.alpha_composite(fitted,((320-fitted.width)//2,(180-fitted.height)//2))
           banner.save(res / "drawable-nodpi" / "jivara_tv_banner.png",format="PNG",optimize=True)
-
-          # Five-second futuristic electronic startup sting: pulsing bass, bright synth arpeggio and shimmer.
-          raw = res / "raw"
-          raw.mkdir(parents=True,exist_ok=True)
-          rate = 44100
-          duration = 5.0
-          samples = bytearray()
-          sequence = [587.33,739.99,880.00,1174.66,880.00,987.77,1174.66,1479.98]
-          total = int(rate * duration)
-          for n in range(total):
-              t = n / rate
-              beat = int(t / 0.3125)
-              local = t - beat * 0.3125
-              freq = sequence[beat % len(sequence)]
-              env = max(0.0, 1.0 - local / 0.29)
-              env = (env ** 0.55) * min(1.0, t / 0.025) * min(1.0, (duration-t) / 0.18)
-              lead = (0.62*math.sin(2*math.pi*freq*t) + 0.20*math.sin(2*math.pi*freq*2*t) + 0.10*math.sin(2*math.pi*freq*3*t))
-              bass_phase = t % 0.625
-              bass_env = max(0.0,1.0-bass_phase/0.42) * min(1.0,t/0.02) * min(1.0,(duration-t)/0.2)
-              bass = 0.32 * bass_env * math.sin(2*math.pi*55*t)
-              kick_env = math.exp(-bass_phase*22.0)
-              kick = 0.16 * kick_env * math.sin(2*math.pi*(85-28*min(1.0,bass_phase/0.12))*t)
-              shimmer = 0.07 * env * math.sin(2*math.pi*freq*4.02*t)
-              value = int(23000 * (0.50*env*lead + bass + kick + shimmer))
-              value = max(-32767,min(32767,value))
-              samples.extend(struct.pack("<h",value))
-          with wave.open(str(raw / "jivara_intro.wav"),"wb") as wav:
-              wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(rate)
-              wav.writeframes(samples)
 
           # Move launcher intent to a dedicated native SplashActivity; MainActivity remains intact.
           manifest = root / "AndroidManifest.xml"
@@ -147,19 +117,10 @@ jobs:
           import android.view.WindowManager;
           import android.widget.FrameLayout;
           import android.widget.ImageView;
-          import android.media.MediaPlayer;
 
           public final class JivaraSplashActivity extends Activity {
-              private MediaPlayer player;
               private final Handler handler = new Handler(Looper.getMainLooper());
               private Runnable launchTask;
-              private void releaseSound() {
-                  if (player != null) {
-                      try { if (player.isPlaying()) player.stop(); } catch (Exception ignored) {}
-                      try { player.release(); } catch (Exception ignored) {}
-                      player = null;
-                  }
-              }
               @Override public void onCreate(Bundle state) {
                   super.onCreate(state);
                   getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -175,14 +136,8 @@ jobs:
                   FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams((int)(w*.92f),(int)(h*.94f),Gravity.CENTER);
                   root.addView(logo,lp);
                   setContentView(root);
-                  int soundId = getResources().getIdentifier("jivara_intro","raw",getPackageName());
-                  if (soundId != 0) {
-                      try { player = MediaPlayer.create(this,soundId); if (player != null) player.start(); }
-                      catch (Exception ignored) { releaseSound(); }
-                  }
                   launchTask = new Runnable() {
                       @Override public void run() {
-                          releaseSound();
                           Intent intent = new Intent();
                           intent.setClassName(JivaraSplashActivity.this,"com.jivara.tv.MainActivity");
                           startActivity(intent);
@@ -193,7 +148,6 @@ jobs:
               }
               @Override protected void onDestroy() {
                   if (launchTask != null) handler.removeCallbacks(launchTask);
-                  releaseSound();
                   super.onDestroy();
               }
           }
