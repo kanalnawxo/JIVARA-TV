@@ -1118,7 +1118,7 @@ async function refreshRemoteChannels(showMessage=false){
     name,
     logo:String(item.logo||'').trim(),
     url,
-    group:normalizeRemoteGroup(item.group)
+    group:normalizeRemoteGroup(item.group,item.section,item.groupId,item.group)
    });
   }
   remoteChannels=next;
