@@ -357,7 +357,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     <div class="section-title"><span id="browseHeading">کەناڵەکان</span><small id="browseCount">٠ کەناڵ</small></div>
     <div class="browse-layout">
      <div class="panel">
-      <div class="panel-head"><span>لیستی کەناڵەکان</span></div>
+      <div class="panel-head"><span id="channelListHeading">لیستی کەناڵەکان</span></div>
       <div class="channel-scroll" id="channelList"></div>
       <div class="channel-reorder-help" role="note">بۆ گۆڕینی شوێنی کەناڵ و ڕێکخستنی لیستەکە بە دڵی خۆت، نیو چرکە دوگمەی ناوەڕاست (OK / Enter)ی ڕیمۆتەکەت لەسەر کەناڵەکە ڕابگرە؛ کاتێک ڕەنگەکەی زەرد بوو، بە تیرەکانی سەرەوە و خوارەوە بیگوازەرەوە، پاشان OK دووبارە دابگرە بۆ دانانی لە شوێنی نوێ؛ دوای ئەوە بە OK کەناڵەکە پخش بکە.</div>
      </div>
@@ -1234,7 +1234,15 @@ function switchPage(name){
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
 }
-function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
+function openGroup(id){
+ currentGroup=id;
+ const listHeading=$('#channelListHeading');
+ if(listHeading){
+  listHeading.textContent=id==='movies'?'لیستی فیلم':id==='drama'?'لیستی دراما':'لیستی کەناڵەکان';
+ }
+ switchPage('browse');
+ renderChannels();
+}
 function openMediaPage(id){
  // Movies and Drama use their own channel groups, just like the country/category lists.
  openGroup(id);
