@@ -23,7 +23,7 @@ jobs:
           from zipfile import ZipFile
           import shutil
 
-          preferred = [Path("JIVARA TV.zip"), Path("JIVARA-TV-main.zip")]
+          preferred = [Path("JIVARA_TV.zip"), Path("JIVARA TV.zip"), Path("JIVARA-TV-main.zip")]
           archives = [p for p in preferred if p.is_file()]
           if not archives:
               archives = sorted(Path(".").glob("*.zip"))
