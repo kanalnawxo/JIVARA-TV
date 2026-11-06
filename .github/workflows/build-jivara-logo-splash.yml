@@ -114,6 +114,18 @@ jobs:
           if not smali.exists():
               raise SystemExit("Could not locate com.jivara.tv.MainActivity in decoded APK")
           source_text = smali.read_text(encoding="utf-8")
+          # Reserve dedicated local registers for the injected code so v0-v4 never alias p0/p1.
+          import re
+          method = re.search(r'(?ms)^\\.method[^\\n]* onCreate\\(Landroid/os/Bundle;\\)V.*?^\\.end method', source_text)
+          if not method:
+              raise SystemExit("Could not locate MainActivity.onCreate(Bundle)")
+          block = method.group(0)
+          locals_match = re.search(r'(?m)^\\s*\\.locals\\s+(\\d+)', block)
+          if not locals_match:
+              raise SystemExit("MainActivity.onCreate has no .locals directive")
+          if int(locals_match.group(1)) < 8:
+              block = block[:locals_match.start(1)] + "8" + block[locals_match.end(1):]
+              source_text = source_text[:method.start()] + block + source_text[method.end():]
           marker = '    invoke-virtual {v1, v2}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V\n\n    .line 123\n    return-void'
           if marker not in source_text:
               raise SystemExit("MainActivity onCreate insertion point was not found; APK left unchanged")
