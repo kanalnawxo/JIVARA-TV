@@ -69,7 +69,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .verse-top{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:64%;text-align:center;color:#f0d79a;font-family:"Rabar 043",Tahoma,Arial,sans-serif;font-size:clamp(20px,2vw,30px);font-weight:700;line-height:1.55;text-shadow:0 0 12px #d5a84a35;pointer-events:none;white-space:normal}
 @media(max-width:700px){.verse-top{position:static;transform:none;flex:1;width:auto;max-width:none;font-size:clamp(15px,3.2vw,21px)}.page-title{display:none}.topbar{gap:7px;padding:0 8px}.clock{flex-shrink:0}}
 .page-title{font-size:17px;font-weight:bold;flex:1}
-.page-title small{display:block;font-size:10px;font-weight:normal;color:var(--muted);margin-top:4px}.home-meta{display:flex!important;align-items:center;gap:10px}.location-toggle{border:1px solid #34516a;border-radius:7px;background:#0a2239;color:#c5d7e8;padding:3px 9px;font:700 11px "Rabar 043",Tahoma,sans-serif;cursor:pointer;transition:all .18s ease}.location-toggle.active{color:#fff;background:#0b6b48;border-color:#39e69a;box-shadow:0 0 7px #39e69a,0 0 16px #39e69a66}
+.page-title small{display:block;font-size:10px;font-weight:normal;color:var(--muted);margin-top:4px}.home-meta{display:flex!important;align-items:center;gap:10px}.location-indicator{display:inline-flex;align-items:center;gap:4px;border:1px solid #34516a;border-radius:7px;background:#0a2239;color:#c5d7e8;padding:3px 9px;font:700 11px "Rabar 043",Tahoma,sans-serif;pointer-events:none;user-select:none}.location-indicator .pin{display:inline-block;animation:locationGlow 1.8s ease-in-out infinite}@keyframes locationGlow{0%,100%{opacity:.38;text-shadow:0 0 1px #39e69a}50%{opacity:1;text-shadow:0 0 5px #39e69a,0 0 11px #39e69a}}
 .topbtn,.btn{background:#0a2239;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
 .live-viewers{display:flex;align-items:center;gap:6px;white-space:nowrap;color:#e4c477;font-size:14px;font-weight:700;direction:rtl}.live-viewers small{font-size:10px;color:var(--muted);font-weight:400}.live-dot{width:7px;height:7px;border-radius:50%;background:#39c979;box-shadow:0 0 8px #39c979;display:inline-block}@media(max-width:700px){.live-viewers{gap:4px;font-size:12px}.live-viewers small{font-size:9px}}
 .clock{direction:ltr;text-align:center;font-size:14px}
@@ -307,7 +307,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
  </aside>
  <main class="main">
   <header class="topbar">
-   <div class="page-title" id="pageTitle">سەرەکی<small class="home-meta"><span>٢٠٢٦/١١/٦</span><button type="button" class="location-toggle" aria-pressed="false">📍 سلێمانی</button></small></div>
+   <div class="page-title" id="pageTitle">سەرەکی<small class="home-meta"><span>٢٠٢٦/١١/٦</span><span class="location-indicator" aria-hidden="true"><span class="pin">📍</span> سلێمانی</span></small></div>
    <div class="verse-top" aria-label="ئایەتی قورئان">ئەم ئەپە بەردەوام نوێ دەکرێتەوە</div>
    <div class="live-viewers" id="liveViewers" aria-label="بینەری ئێستا"><span class="live-dot"></span><span id="liveViewerCount">--</span><small>بینەری ئێستا</small></div>
    <div class="clock"><span id="clock">--:--</span><small id="weekday">---</small></div>
@@ -425,12 +425,6 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 'use strict';
 const $ = s => document.querySelector(s);
 const $ = s => [...document.querySelectorAll(s)];
-document.addEventListener('click',event=>{
- const locationButton=event.target.closest('.location-toggle');
- if(!locationButton)return;
- const active=locationButton.classList.toggle('active');
- locationButton.setAttribute('aria-pressed',active?'true':'false');
-});
 
 const groups = [
  {id:'local',name:'ناوخۆ',icon:'🏙️',art:'🏙️',colors:['#0878f9','#06408f']},
@@ -1235,7 +1229,7 @@ function switchPage(name){
  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
  const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',media:'فیلم',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
- $('#pageTitle').innerHTML=name==='home'?safe(titles[name])+'<small class="home-meta"><span>٢٠٢٦/١١/٦</span><button type="button" class="location-toggle" aria-pressed="false">📍 سلێمانی</button></small>':safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
+ $('#pageTitle').innerHTML=name==='home'?safe(titles[name])+'<small class="home-meta"><span>٢٠٢٦/١١/٦</span><span class="location-indicator" aria-hidden="true"><span class="pin">📍</span> سلێمانی</span></small>':safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
  if(name==='browse')renderChannels();
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
