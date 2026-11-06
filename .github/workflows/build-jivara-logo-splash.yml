@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - ".github/workflows/build-jivara-logo-splash.yml"
+      - "index.html"
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,9 @@ jobs:
           cp JIVARA_TV.zip original.apk
           cp "APK LOGO.png" logo.png
           apktool d -f original.apk -o decoded
+          test -f decoded/assets/index.html
+          cp index.html decoded/assets/index.html
+          echo "Updated embedded app interface: decoded/assets/index.html"
           echo "Original dex files:"
           unzip -l original.apk | grep -E 'classes[0-9]*\.dex' || true
 
