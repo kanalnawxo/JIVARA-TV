@@ -107,6 +107,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .country-categories{grid-template-columns:repeat(4,minmax(0,1fr));max-width:82%;margin:0 auto 8px}
 .country-categories .category{height:68px}
 .country-categories .category .symbol{font-size:23px}
+.media-categories{grid-template-columns:repeat(2,minmax(0,1fr));max-width:430px;margin:10px auto 8px;gap:12px}
+.media-categories .category{height:72px}
+.media-categories .category .symbol{font-size:25px}
 @media(max-width:700px){.country-categories{max-width:100%;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.country-categories .category{height:64px}}
 .project-message{margin:34px auto 0;padding:12px 16px;text-align:center;display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border:1px solid #c9a96a66;border-radius:9px;background:linear-gradient(100deg,#081a2b,#102c40,#081a2b);color:#e8d3a3;font-size:15px;line-height:1.9;letter-spacing:.1px;box-shadow:inset 0 0 18px #d5b46b0b}
 .project-message::before,.project-message::after{content:none;display:none}
@@ -249,7 +252,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 @media (min-width:701px) and (max-width:1366px){
  .app{grid-template-columns:150px minmax(0,1fr)}.sidebar{padding:9px 7px;gap:4px}.logo{font-size:22px;margin:5px 0 12px}.nav{padding:8px 7px;font-size:11px;gap:7px}.nav .ico{font-size:16px;width:21px}
  .topbar{height:48px;min-height:48px;padding:0 10px}.verse-top{font-size:clamp(17px,1.8vw,24px);max-width:62%}.clock{font-size:12px}.clock small{font-size:15px;margin-top:2px}
- .content{padding:0 8px 8px}.hero{height:100px;margin-bottom:9px}.hero-main{padding:12px 16px 18px}.hero h2{font-size:19px;margin:5px 0}.section-title{margin:8px 0 6px;font-size:12px}.categories{gap:6px}.category{height:58px;gap:3px}.category .symbol{font-size:21px}.category b{font-size:10px}.project-message{margin-top:12px;padding:8px 10px;font-size:12px;line-height:1.6}.lower{gap:8px;margin-top:9px}.panel{padding:9px}.group-cards{gap:7px}.group-card{min-height:88px}.channel-scroll{max-height:46vh}
+ .content{padding:0 8px 8px}.hero{height:100px;margin-bottom:9px}.hero-main{padding:12px 16px 18px}.hero h2{font-size:19px;margin:5px 0}.section-title{margin:8px 0 6px;font-size:12px}.categories{gap:6px}.category{height:58px;gap:3px}.category .symbol{font-size:21px}.category b{font-size:10px}.media-categories{max-width:100%;gap:8px}.media-categories .category{height:64px}.project-message{margin-top:12px;padding:8px 10px;font-size:12px;line-height:1.6}.lower{gap:8px;margin-top:9px}.panel{padding:9px}.group-cards{gap:7px}.group-card{min-height:88px}.channel-scroll{max-height:46vh}
 }
 @media (max-height:800px) and (min-width:701px){
  .settings-layout{grid-template-columns:132px minmax(0,1fr);gap:8px}
@@ -432,7 +435,9 @@ const groups = [
  {id:'iraq',name:'عێراق',icon:'🇮🇶',art:'🇮🇶',colors:['#13834b','#064b2b']},
  {id:'iran',name:'ئێران',icon:'🇮🇷',art:'🇮🇷',colors:['#15966a','#07543d']},
  {id:'turkey',name:'تورکیا',icon:'🇹🇷',art:'🇹🇷',colors:['#d52b3e','#821323']},
- {id:'israel',name:'ئیسرائیل',icon:'🇮🇱',art:'🇮🇱',colors:['#2877c7','#123c78']}
+ {id:'israel',name:'ئیسرائیل',icon:'🇮🇱',art:'🇮🇱',colors:['#2877c7','#123c78']},
+ {id:'movies',name:'فیلم',icon:'🎬',art:'🎬',colors:['#b52b45','#681329']},
+ {id:'drama',name:'دراما',icon:'🎭',art:'🎭',colors:['#7650bd','#39205f']}
 ];
 
 // ================================================================
@@ -1020,7 +1025,9 @@ function normalizeRemoteGroup(value){
   local:['local','ناوخۆ','local-ناوخۆ'],
   kurdish:['kurdish','کوردی','kurdistan'],
   arabic:['arabic','عەرەبی','عربي'],
-  foreign:['foreign','بیانی','فیلم','movies','movie','دراما','drama'],
+  foreign:['foreign','بیانی'],
+  movies:['movies','movie','فیلم','افلام','أفلام'],
+  drama:['drama','دراما','مسلسلات'],
   news:['news','هەواڵ','اخبار'],
   quran:['quran','قورئان','قرآن'],
   kids:['kids','children','منداڵان','اطفال'],
@@ -1129,8 +1136,10 @@ const worldMoviePosters = [
 ];
 function renderHome(){
  const countryIds=new Set(['iraq','iran','turkey','israel']);
- const mainGroups=groups.filter(g=>!countryIds.has(g.id));
+ const mediaIds=new Set(['movies','drama']);
+ const mainGroups=groups.filter(g=>!countryIds.has(g.id)&&!mediaIds.has(g.id));
  const countries=groups.filter(g=>countryIds.has(g.id));
+ const mediaGroups=groups.filter(g=>mediaIds.has(g.id));
  const makeTiles=items=>items.map(g=>
  `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
  <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span></button>`).join('');
@@ -1149,12 +1158,20 @@ function renderHome(){
   heading.insertAdjacentElement('afterend',countrySection);
  }
  countrySection.innerHTML=makeTiles(countries);
+ let mediaSection=$('#homeMediaCategories');
+ if(!mediaSection){
+  mediaSection=document.createElement('div');
+  mediaSection.id='homeMediaCategories';
+  mediaSection.className='categories media-categories';
+  countrySection.insertAdjacentElement('afterend',mediaSection);
+ }
+ mediaSection.innerHTML=makeTiles(mediaGroups);
  $('#page-home').querySelectorAll('[data-group]').forEach(b=>
  b.onclick=()=>openGroup(b.dataset.group));
 }
 function renderGroups(){
 
- $('#groupCards').innerHTML=groups.map(g=>
+ $('#groupCards').innerHTML=groups.filter(g=>!['movies','drama'].includes(g.id)).map(g=>
  `<button class="group-card" data-group="${g.id}">
  <span class="art">${g.art}</span><b>${g.name}</b>
  <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
