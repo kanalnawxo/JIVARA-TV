@@ -1797,13 +1797,13 @@ $('#playBtn').onclick=()=>{
 };
 $('#muteBtn').onclick=()=>{video.muted=!video.muted;$('#muteBtn').textContent=video.muted?'🔇 بێدەنگ':'🔊 دەنگ';};
 
-$$('.nav').forEach(b=>b.onclick=()=>switchPage(b.dataset.page));
+$('.nav').forEach(b=>b.onclick=()=>{if(b.dataset.page==='groups')currentSection=null;switchPage(b.dataset.page);});
 $$('[data-action]').forEach(b=>b.onclick=()=>{
  const a=b.dataset.action;
  if(a==='search'){switchPage('search');$('#searchInput').focus();}
  else if(a==='add'){switchPage('settings');settingsTab('manual');}
  else if(a==='edit'){switchPage('settings');settingsTab('edit');}
- else if(a==='groups'){switchPage('groups');}
+ else if(a==='groups'){currentSection=null;switchPage('groups');}
  else if(a==='settings'){switchPage('settings');settingsTab('manual');}
  else switchPage(a);
 });
