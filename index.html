@@ -266,14 +266,12 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}
 @keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}
 
-/* JIVARA TV language selector */
-.hero{height:158px}
-.hero-main{padding-bottom:14px}
-.language-switch{display:flex;align-self:stretch;width:100%;justify-content:flex-end;gap:8px;margin-top:9px;direction:rtl}
-.language-switch button{min-width:68px;padding:6px 13px;border:1px solid #d9c18a88;border-radius:7px;background:#07182acc;color:#fff;font-size:12px;font-weight:700}
-.language-switch button.active{background:#d8b66e;color:#07182a;border-color:#f5d99c;box-shadow:0 0 0 2px #f5d99c33}
-@media(max-width:900px){.hero{height:128px}.hero-main{padding:8px 12px 10px}.language-switch{margin-top:6px;gap:6px}.language-switch button{padding:4px 10px;font-size:11px;min-width:60px}}
-@media(max-height:520px){.hero{height:120px}.language-switch{margin-top:4px}}
+/* JIVARA TV language selector: compact buttons at the physical right, without enlarging the welcome box */
+.language-switch{display:flex;align-self:center;width:auto;margin-left:auto;margin-right:0;justify-content:flex-start;gap:4px;margin-top:6px;direction:rtl}
+.language-switch button{min-width:0;padding:3px 8px;border:1px solid #d9c18a88;border-radius:6px;background:#07182acc;color:#fff;font-size:10px;line-height:1.25;font-weight:700;white-space:nowrap}
+.language-switch button.active{background:#d8b66e;color:#07182a;border-color:#f5d99c;box-shadow:0 0 0 1px #f5d99c33}
+@media(max-width:900px){.language-switch{margin-top:4px;gap:3px}.language-switch button{padding:2px 6px;font-size:9px}}
+@media(max-height:520px){.language-switch{margin-top:3px}.language-switch button{padding:2px 6px;font-size:9px}}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
