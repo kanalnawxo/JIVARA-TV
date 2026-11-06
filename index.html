@@ -265,6 +265,16 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .radio-nav{position:relative;isolation:isolate;overflow:visible}
 .radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}
 @keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}
+
+/* JIVARA TV language selector */
+.hero{height:158px}
+.hero-main{padding-bottom:14px}
+.language-switch{display:flex;align-self:stretch;width:100%;justify-content:flex-end;gap:8px;margin-top:9px;direction:rtl}
+.language-switch button{min-width:68px;padding:6px 13px;border:1px solid #d9c18a88;border-radius:7px;background:#07182acc;color:#fff;font-size:12px;font-weight:700}
+.language-switch button.active{background:#d8b66e;color:#07182a;border-color:#f5d99c;box-shadow:0 0 0 2px #f5d99c33}
+@media(max-width:900px){.hero{height:128px}.hero-main{padding:8px 12px 10px}.language-switch{margin-top:6px;gap:6px}.language-switch button{padding:4px 10px;font-size:11px;min-width:60px}}
+@media(max-height:520px){.hero{height:120px}.language-switch{margin-top:4px}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dashjs@4.7.4/dist/dash.all.min.js"></script>
@@ -300,6 +310,11 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
      <div class="hero-main">
       <h2>بەخێربێیت بۆ جیهانی کەناڵەکان</h2>
       <p>گرووپێک هەڵبژێرە یان لینکەکانی خۆت زیاد بکە.</p>
+      <div class="language-switch" id="jivaraLanguageSwitch" data-no-translate="true" aria-label="App language">
+       <button type="button" data-language="ku" class="active">کوردی</button>
+       <button type="button" data-language="ar">عەرەبی</button>
+       <button type="button" data-language="en">ئینگلیزی</button>
+      </div>
      </div>
     </div>
     <div class="section-title">گرووپەکان <small>کلیک بکە بۆ کردنەوە</small></div>
@@ -1945,5 +1960,138 @@ document.addEventListener('visibilitychange',()=>{
 settingsTab('manual');
 })();
 </script>
+
+<script>
+(function(){
+ const dictionaries={
+  ar:{
+   'سەرەکی':'الرئيسية','کەناڵەکان':'القنوات','گرووپەکان':'المجموعات','ڕادیۆ':'الراديو','ڕێکخستنەکان':'الإعدادات','زانیاری':'معلومات',
+   'پلەیەری Smart TV':'مشغل Smart TV','بوخوردان و دوکەڵی بۆنخۆش':'مبخرة ودخان عطري','بۆ پەیوەندیکردن':'للتواصل',
+   'ئایەتی قورئان':'آية قرآنية','ئەم ئەپە بەردەوام نوێ دەکرێتەوە':'يتم تحديث هذا التطبيق باستمرار','بینەری ئێستا':'المشاهدون الآن',
+   'بەخێربێیت بۆ جیهانی کەناڵەکان':'مرحباً بك في عالم القنوات','گرووپێک هەڵبژێرە یان لینکەکانی خۆت زیاد بکە.':'اختر مجموعة أو أضف روابطك.',
+   'کلیک بکە بۆ کردنەوە':'اضغط للفتح','گرووپەکانی کەناڵەکان':'مجموعات القنوات','گرووپێک هەڵبژێرە':'اختر مجموعة',
+   'وڵاتەکان':'الدول','پەخشی ڕاستەوخۆی دەنگ':'بث صوتي مباشر','ئامادەی پەخشە':'جاهز للبث','ڕادیۆکان':'محطات الراديو',
+   '■ وەستاندن':'■ إيقاف','وەستاندن':'إيقاف','ڕادیۆیەک هەڵبژێرە بۆ دەستپێکردنی پەخش.':'اختر محطة راديو لبدء البث.',
+   'لیستی کەناڵەکان':'قائمة القنوات','پلەیەری ڤیدیۆ':'مشغل الفيديو','کەناڵێک هەڵبژێرە':'اختر قناة',
+   'کەناڵێک هەڵبژێرە بۆ بینین':'اختر قناة للمشاهدة','ئامادەی پەخشکردن':'جاهز للبث','لینکی کەناڵێک نییە.':'لا يوجد رابط قناة.',
+   '🔊 دەنگ':'🔊 الصوت','دەنگ':'الصوت','⚙ لینکەکان':'⚙ الروابط','گەڕان لە کەناڵەکان':'البحث في القنوات',
+   'ناوی کەناڵ بنووسە':'أدخل اسم القناة','گەڕان...':'بحث...','شوێنی گروپی لینکەکان':'موضع مجموعة الروابط',
+   '＋ زیادکردنی کەناڵ بە دەستی':'＋ إضافة قناة يدوياً','✎ گۆڕینی ناوی کەناڵ':'✎ تغيير اسم القناة',
+   '📻 بەڕێوەبردنی ڕادیۆ':'📻 إدارة الراديو','✖ سڕینەوەی کەناڵ':'✖ حذف قناة',
+   'ڕووکارێکی ئامادە بۆ گروپی کەناڵەکان و لینکەکانی IPTV.':'واجهة جاهزة لمجموعات القنوات وروابط IPTV.',
+   'ئەمە پڕۆژەیەکی نموونەییە و پڕۆژەیەکی تایبەتی JIVARA TV ـە.':'هذا مشروع تجريبي وخاص بـ JIVARA TV.',
+   'ناوخۆ':'محلي','کوردی':'كردي','عەرەبی':'عربي','بیانی':'أجنبي','هەواڵ':'أخبار','قورئان':'القرآن','منداڵان':'الأطفال',
+   'وەرزش':'الرياضة','موزیک':'الموسيقى','دۆکۆمێنتاری':'وثائقي','عێراق':'العراق','ئێران':'إيران','تورکیا':'تركيا','ئیسرائیل':'إسرائيل',
+   'کەناڵێک هەڵبژێرە بۆ بینین':'اختر قناة للمشاهدة','کەناڵەکان':'القنوات',
+   'نەتوانرا لیستی ڕادیۆکان باربکرێت.':'تعذر تحميل قائمة محطات الراديو.',
+   'هیچ کەناڵێک ئامادە نییە.':'لا توجد قناة جاهزة.','هیچ کەناڵێک هەڵنەبژێردراوە':'لم يتم اختيار قناة',
+   'کۆتایی لیست':'نهاية القائمة','کەناڵێکی لینکدار هەڵبژێرە.':'اختر قناة تحتوي على رابط.',
+   'کەناڵەکانی Cloudflare نوێکرانەوە.':'تم تحديث قنوات Cloudflare.',
+   'پەیوەندی بە سێرڤەری کەناڵەکان نەکرا؛ کەناڵە ناوخۆییەکان بەردەوامن.':'تعذر الاتصال بخادم القنوات؛ القنوات المحلية ما زالت متاحة.',
+   'ڕیزبەندی کەناڵەکان گۆڕدرا.':'تم تغيير ترتيب القنوات.',
+   'سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.':'أضف رابط بث لهذه القناة أولاً.',
+   'ناوی کەناڵ':'اسم القناة','ناوی کەناڵ بنووسە':'أدخل اسم القناة','لینکی لۆگۆی کەناڵ (URL)':'رابط شعار القناة (URL)',
+   'لینکی پەخش (URL)':'رابط البث (URL)','گرووپی کەناڵ':'مجموعة القناة','＋ زیادکردنی کەناڵ':'＋ إضافة قناة',
+   'دەستکاری':'تعديل','سڕینەوە':'حذف','نوێکردنەوە':'تحديث','پاشەکەوتکردن':'حفظ','وشەی نهێنی':'كلمة المرور','ئیمەیڵ':'البريد الإلكتروني'
+  },
+  en:{
+   'سەرەکی':'Home','کەناڵەکان':'Channels','گرووپەکان':'Groups','ڕادیۆ':'Radio','ڕێکخستنەکان':'Settings','زانیاری':'About',
+   'پلەیەری Smart TV':'Smart TV Player','بوخوردان و دوکەڵی بۆنخۆش':'Incense burner and fragrant smoke','بۆ پەیوەندیکردن':'Contact',
+   'ئایەتی قورئان':'Quran verse','ئەم ئەپە بەردەوام نوێ دەکرێتەوە':'This app is regularly updated','بینەری ئێستا':'Viewers now',
+   'بەخێربێیت بۆ جیهانی کەناڵەکان':'Welcome to the world of channels','گرووپێک هەڵبژێرە یان لینکەکانی خۆت زیاد بکە.':'Choose a group or add your own links.',
+   'کلیک بکە بۆ کردنەوە':'Click to open','گرووپەکانی کەناڵەکان':'Channel groups','گرووپێک هەڵبژێرە':'Choose a group',
+   'وڵاتەکان':'Countries','پەخشی ڕاستەوخۆی دەنگ':'Live audio broadcast','ئامادەی پەخشە':'Ready to play','ڕادیۆکان':'Radio stations',
+   '■ وەستاندن':'■ Stop','وەستاندن':'Stop','ڕادیۆیەک هەڵبژێرە بۆ دەستپێکردنی پەخش.':'Select a radio station to start playback.',
+   'لیستی کەناڵەکان':'Channel list','پلەیەری ڤیدیۆ':'Video player','کەناڵێک هەڵبژێرە':'Select a channel',
+   'کەناڵێک هەڵبژێرە بۆ بینین':'Select a channel to watch','ئامادەی پەخشکردن':'Ready to play','لینکی کەناڵێک نییە.':'No channel link.',
+   '🔊 دەنگ':'🔊 Sound','دەنگ':'Sound','⚙ لینکەکان':'⚙ Links','گەڕان لە کەناڵەکان':'Search channels',
+   'ناوی کەناڵ بنووسە':'Enter channel name','گەڕان...':'Search...','شوێنی گروپی لینکەکان':'Link group location',
+   '＋ زیادکردنی کەناڵ بە دەستی':'＋ Add channel manually','✎ گۆڕینی ناوی کەناڵ':'✎ Rename channel',
+   '📻 بەڕێوەبردنی ڕادیۆ':'📻 Manage radio','✖ سڕینەوەی کەناڵ':'✖ Delete channel',
+   'ڕووکارێکی ئامادە بۆ گروپی کەناڵەکان و لینکەکانی IPTV.':'A ready interface for channel groups and IPTV links.',
+   'ئەمە پڕۆژەیەکی نموونەییە و پڕۆژەیەکی تایبەتی JIVARA TV ـە.':'This is a sample project created specifically for JIVARA TV.',
+   'ناوخۆ':'Local','کوردی':'Kurdish','عەرەبی':'Arabic','بیانی':'Foreign','هەواڵ':'News','قورئان':'Quran','منداڵان':'Kids',
+   'وەرزش':'Sports','موزیک':'Music','دۆکۆمێنتاری':'Documentary','عێراق':'Iraq','ئێران':'Iran','تورکیا':'Turkey','ئیسرائیل':'Israel',
+   'نەتوانرا لیستی ڕادیۆکان باربکرێت.':'Could not load the radio list.',
+   'هیچ کەناڵێک ئامادە نییە.':'No channel is ready.','هیچ کەناڵێک هەڵنەبژێردراوە':'No channel selected',
+   'کۆتایی لیست':'End of list','کەناڵێکی لینکدار هەڵبژێرە.':'Select a channel with a link.',
+   'کەناڵەکانی Cloudflare نوێکرانەوە.':'Cloudflare channels updated.',
+   'پەیوەندی بە سێرڤەری کەناڵەکان نەکرا؛ کەناڵە ناوخۆییەکان بەردەوامن.':'Could not connect to the channel server; local channels remain available.',
+   'ڕیزبەندی کەناڵەکان گۆڕدرا.':'Channel order updated.',
+   'سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.':'Add a stream link for this channel first.',
+   'ناوی کەناڵ':'Channel name','لینکی لۆگۆی کەناڵ (URL)':'Channel logo URL',
+   'لینکی پەخش (URL)':'Stream URL','گرووپی کەناڵ':'Channel group','＋ زیادکردنی کەناڵ':'＋ Add channel',
+   'دەستکاری':'Edit','سڕینەوە':'Delete','نوێکردنەوە':'Update','پاشەکەوتکردن':'Save','وشەی نهێنی':'Password','ئیمەیڵ':'Email'
+  }
+ };
+ const languageKeys=['ku','ar','en'];
+ const reverse={ar:{},en:{}};
+ Object.keys(dictionaries.ar).forEach(k=>reverse.ar[dictionaries.ar[k]]=k);
+ Object.keys(dictionaries.en).forEach(k=>reverse.en[dictionaries.en[k]]=k);
+ const normalize=value=>String(value).replace(/\s+/g,' ').trim();
+ function translateValue(value,lang){
+  const original=normalize(value);
+  if(lang==='ku') return reverse.ar[original]||reverse.en[original]||original;
+  const key=dictionaries[lang][original]?original:(reverse[lang][original]||original);
+  return dictionaries[lang][key]||original;
+ }
+ function translateTree(root,lang){
+  if(!root)return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+  nodes.forEach(node=>{
+   const parent=node.parentElement;
+   if(!parent||parent.closest('[data-no-translate="true"],script,style'))return;
+   const raw=node.nodeValue,trimmed=normalize(raw);
+   if(!trimmed)return;
+   const translated=translateValue(trimmed,lang);
+   if(translated!==trimmed){
+    const lead=(raw.match(/^\s*/)||[''])[0],tail=(raw.match(/\s*$/)||[''])[0];
+    node.nodeValue=lead+translated+tail;
+   }
+  });
+  if(root.nodeType===1){
+   root.querySelectorAll('*').forEach(el=>{
+    if(el.closest('[data-no-translate="true"]'))return;
+    ['placeholder','title','aria-label','alt'].forEach(attr=>{
+     if(el.hasAttribute(attr)){
+      const old=el.getAttribute(attr),next=translateValue(old,lang);
+      if(next!==normalize(old))el.setAttribute(attr,next);
+     }
+    });
+   });
+  }
+ }
+ function applyLanguage(lang){
+  if(!languageKeys.includes(lang))lang='ku';
+  const dir=lang==='en'?'ltr':'rtl';
+  document.documentElement.lang=lang==='ku'?'ckb':lang;
+  document.documentElement.dir=dir;
+  document.body.dir=dir;
+  translateTree(document.body,lang);
+  document.querySelectorAll('#jivaraLanguageSwitch [data-language]').forEach(btn=>{
+   btn.classList.toggle('active',btn.dataset.language===lang);
+   btn.setAttribute('aria-pressed',btn.dataset.language===lang?'true':'false');
+  });
+  try{localStorage.setItem('jivara-tv-language',lang);}catch(e){}
+  window.jivaraLanguage=lang;
+ }
+ let saved='ku';try{saved=localStorage.getItem('jivara-tv-language')||'ku';}catch(e){}
+ document.querySelectorAll('#jivaraLanguageSwitch [data-language]').forEach(btn=>{
+  btn.addEventListener('click',()=>applyLanguage(btn.dataset.language));
+ });
+ const observer=new MutationObserver(records=>{
+  const lang=window.jivaraLanguage||saved;
+  records.forEach(record=>{
+   if(record.type==='characterData')translateTree(record.target.parentElement,lang);
+   else record.addedNodes.forEach(node=>{if(node.nodeType===1)translateTree(node,lang);});
+   if(record.type==='attributes'&&record.target&&record.target.nodeType===1)translateTree(record.target,lang);
+  });
+ });
+ observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','title','aria-label','alt']});
+ applyLanguage(saved);
+})();
+</script>
+
 </body>
 </html>
