@@ -1,0 +1,59 @@
+name: Temporary JIVARA ZIP inspection
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-jivara-zip.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Extract source ZIP safely
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import shutil
+
+          preferred = [Path("JIVARA TV.zip"), Path("JIVARA-TV-main.zip")]
+          archives = [p for p in preferred if p.is_file()]
+          if not archives:
+              archives = sorted(Path(".").glob("*.zip"))
+          if not archives:
+              raise SystemExit("No source ZIP archive found in repository root.")
+
+          archive = archives[0]
+          out = Path("inspection/source")
+          if out.exists():
+              shutil.rmtree(out)
+          out.mkdir(parents=True)
+
+          with ZipFile(archive) as zf:
+              root = out.resolve()
+              for member in zf.infolist():
+                  target = (out / member.filename).resolve()
+                  if target != root and root not in target.parents:
+                      raise SystemExit(f"Unsafe ZIP entry: {member.filename}")
+              zf.extractall(out)
+
+          print(f"Extracted {archive} into {out}")
+          for p in sorted(out.rglob("*")):
+              if p.is_file():
+                  print(p.relative_to(out))
+          PY
+
+      - name: Upload extracted source for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: jivara-source-inspection
+          path: inspection/source/
+          if-no-files-found: error
+          retention-days: 2
