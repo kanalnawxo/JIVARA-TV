@@ -2068,6 +2068,27 @@ settingsTab('manual');
  });
 
  ['ناوخۆ','کوردی','عەرەبی','بیانی','هەواڵ','قورئان','منداڵان','وەرزش','موزیک','دۆکۆمێنتاری','عێراق','ئێران','تورکیا','ئیسرائیل'].forEach(k=>{delete dictionaries.ar[k];delete dictionaries.en[k];});
+ Object.assign(dictionaries.ar,{
+  'لینکی نهێنی ڕادیۆ':'رابط الراديو السري','ناوی نوێ بنووسە':'أدخل الاسم الجديد','ناوی ڕادیۆ بنووسە':'أدخل اسم محطة الراديو',
+  'نەتوانرا سڕینەوە هەڵبگیرێت؛ بیرگەی ئامێر پڕە.':'تعذر حفظ الحذف؛ مساحة تخزين الجهاز ممتلئة.',
+  'نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.':'تعذر حفظ اسم القناة.',
+  'نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.':'تعذر حفظ تغييرات القنوات؛ مساحة تخزين المتصفح ممتلئة أو معطلة.',
+  'شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.':'تم تثبيت موضع القناة؛ اضغط OK الآن لتشغيلها.',
+  'پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.':'تعذر الاتصال بخدمة الراديو؛ تحقق من إعدادات Firebase.',
+  'بەڕێوەبردنی ڕادیۆکان':'إدارة محطات الراديو','ئەم گرووپە کەناڵی نییە':'لا توجد قنوات في هذه المجموعة',
+  'هەڵەی چوونەژوورەوە: ':'خطأ في تسجيل الدخول: '
+ });
+ Object.assign(dictionaries.en,{
+  'لینکی نهێنی ڕادیۆ':'Radio stream URL','ناوی نوێ بنووسە':'Enter new name','ناوی ڕادیۆ بنووسە':'Enter radio station name',
+  'نەتوانرا سڕینەوە هەڵبگیرێت؛ بیرگەی ئامێر پڕە.':'Could not save deletion; device storage is full.',
+  'نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.':'Could not save the channel name.',
+  'نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.':'Could not save channel changes; browser storage is full or unavailable.',
+  'شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.':'Channel position saved; press OK now to play it.',
+  'پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.':'Could not connect to the radio service; check Firebase settings.',
+  'بەڕێوەبردنی ڕادیۆکان':'Manage radio stations','ئەم گرووپە کەناڵی نییە':'There are no channels in this group',
+  'هەڵەی چوونەژوورەوە: ':'Login error: '
+ });
+
  const groupNames={
   'ناوخۆ':{ar:'محلي',en:'Local'},'کوردی':{ar:'كردي',en:'Kurdish'},'عەرەبی':{ar:'عربي',en:'Arabic'},
   'بیانی':{ar:'أجنبي',en:'Foreign'},'هەواڵ':{ar:'أخبار',en:'News'},'قورئان':{ar:'القرآن',en:'Quran'},
@@ -2096,10 +2117,10 @@ settingsTab('manual');
   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
   nodes.forEach(node=>{
    const parent=node.parentElement;
-   if(!parent||parent.closest('[data-no-translate="true"],script,style'))return;
+   if(!parent||parent.closest('[data-no-translate="true"],script,style,.channel,.ch-name,.channel-name,.channel-item,.channel-row'))return;
    const raw=node.nodeValue,trimmed=normalize(raw);
    if(!trimmed)return;
-   const translated=translateValue(trimmed,lang,!!parent.closest('.category,.group-card,.group-btn,select'));
+   const translated=translateValue(trimmed,lang,!!parent.closest('.category,.group-card,.group-btn') || !!parent.closest('select#manualChannelGroup,select#deleteGroupSelect,select#renameGroupSelect'));
    if(translated!==trimmed){
     const lead=(raw.match(/^\s*/)||[''])[0],tail=(raw.match(/\s*$/)||[''])[0];
     node.nodeValue=lead+translated+tail;
