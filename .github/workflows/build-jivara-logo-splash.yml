@@ -58,6 +58,28 @@ jobs:
                   element.set(ns + "banner", "@drawable/jivara_tv_banner")
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
 
+          # Create a short, original three-note startup melody (no external music asset).
+          import math, struct, wave
+          raw_dir = root / "res" / "raw"
+          raw_dir.mkdir(parents=True, exist_ok=True)
+          wav_path = raw_dir / "jivara_intro.wav"
+          rate = 22050
+          notes = [(523.25, 0.34), (659.25, 0.34), (783.99, 0.62)]
+          with wave.open(str(wav_path), "wb") as wav:
+              wav.setnchannels(1)
+              wav.setsampwidth(2)
+              wav.setframerate(rate)
+              samples = bytearray()
+              for freq, duration in notes:
+                  count = int(rate * duration)
+                  for i in range(count):
+                      t = i / rate
+                      fade = min(1.0, i / (rate * 0.025), (count - i) / (rate * 0.08))
+                      value = int(5200 * fade * math.sin(2 * math.pi * freq * t))
+                      samples.extend(struct.pack("<h", value))
+                  samples.extend(b"\\x00\\x00" * int(rate * 0.045))
+              wav.writeframes(samples)
+
           res = root / "res"
           with Image.open(logo) as im:
               source = im.convert("RGBA")
@@ -114,16 +136,60 @@ jobs:
               const/4 v1, 0x0
               invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setClickable(Z)V
               invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setFocusable(Z)V
+              # Compact centered logo with generous clear space around it.
               new-instance v1, Landroid/widget/FrameLayout$LayoutParams;
-              const/4 v2, -0x1
-              invoke-direct {v1, v2, v2}, Landroid/widget/FrameLayout$LayoutParams;-><init>(II)V
+              const/16 v2, 0x104
+              const/16 v3, 0xa0
+              invoke-direct {v1, v2, v3}, Landroid/widget/FrameLayout$LayoutParams;-><init>(II)V
+              const/16 v2, 0x11
+              iput v2, v1, Landroid/widget/FrameLayout$LayoutParams;->gravity:I
               iget-object v2, p0, Lcom/jivara/tv/MainActivity;->root:Landroid/widget/FrameLayout;
               invoke-virtual {v2, v0, v1}, Landroid/widget/FrameLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
+
+              # Start small and slightly transparent, then smoothly zoom into place.
+              const v1, 0x3f0ccccd
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setScaleX(F)V
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setScaleY(F)V
+              const v1, 0x3ecccccd
+              invoke-virtual {v0, v1}, Landroid/widget/ImageView;->setAlpha(F)V
+              invoke-virtual {v0}, Landroid/view/View;->animate()Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              const/high16 v2, 0x3f800000
+              invoke-virtual {v1, v2}, Landroid/view/ViewPropertyAnimator;->scaleX(F)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              invoke-virtual {v1, v2}, Landroid/view/ViewPropertyAnimator;->scaleY(F)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              invoke-virtual {v1, v2}, Landroid/view/ViewPropertyAnimator;->alpha(F)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              const-wide/16 v2, 0x384
+              invoke-virtual {v1, v2, v3}, Landroid/view/ViewPropertyAnimator;->setDuration(J)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              new-instance v2, Landroid/view/animation/OvershootInterpolator;
+              invoke-direct {v2}, Landroid/view/animation/OvershootInterpolator;-><init>()V
+              invoke-virtual {v1, v2}, Landroid/view/ViewPropertyAnimator;->setInterpolator(Landroid/animation/TimeInterpolator;)Landroid/view/ViewPropertyAnimator;
+              move-result-object v1
+              invoke-virtual {v1}, Landroid/view/ViewPropertyAnimator;->start()V
+
+              # Play a short original JIVARA startup melody.
+              invoke-virtual {p0}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;
+              move-result-object v1
+              const-string v2, "jivara_intro"
+              const-string v3, "raw"
+              invoke-virtual {p0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
+              move-result-object v4
+              invoke-virtual {v1, v2, v3, v4}, Landroid/content/res/Resources;->getIdentifier(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
+              move-result v1
+              invoke-static {p0, v1}, Landroid/media/MediaPlayer;->create(Landroid/content/Context;I)Landroid/media/MediaPlayer;
+              move-result-object v1
+              if-eqz v1, :splash_sound_done
+              invoke-virtual {v1}, Landroid/media/MediaPlayer;->start()V
+              :splash_sound_done
+
               new-instance v1, Landroid/os/Handler;
               invoke-direct {v1}, Landroid/os/Handler;-><init>()V
               new-instance v2, Lcom/jivara/tv/SplashFadeRunnable;
               invoke-direct {v2, v0}, Lcom/jivara/tv/SplashFadeRunnable;-><init>(Landroid/view/View;)V
-              const-wide/16 v3, 0x1388
+              const-wide/16 v3, 0x170c
               invoke-virtual {v1, v2, v3, v4}, Landroid/os/Handler;->postDelayed(Ljava/lang/Runnable;J)Z
               .line 123
               return-void'''
