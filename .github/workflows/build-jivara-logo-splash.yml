@@ -1,4 +1,4 @@
-name: Build JIVARA TV with logo icon only
+name: Build JIVARA TV safe icon-only test APK
 
 on:
   push:
