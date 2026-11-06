@@ -446,17 +446,6 @@ const groups = [
  {id:'drama',name:'دراما',icon:'🎭',art:'🎭',colors:['#7650bd','#39205f']}
 ];
 
-// Dynamic subgroups managed from the Cloudflare dashboard.
-let dynamicGroups = [];
-let remoteGroupCatalog = [];
-let currentSection = null;
-const nestedSectionIds = new Set(['iraq','iran','turkey','israel','movies','drama']);
-function allGroups(){ return [...groups, ...dynamicGroups]; }
-function nestedGroupId(section,id){ return 'remote-group-'+section+'-'+id; }
-function sectionChannelCount(section){
- return channels.filter(c=>dynamicGroups.some(g=>g.id===c.group&&g.section===section)).length;
-}
-
 // ================================================================
 // شوێنی سەرەکی دانانی لینکی کەناڵەکان: هەر گروپێک پاکێجی تایبەتی خۆی هەیە.
 // بۆ زیادکردن: تۆماری {id, name, logo, url, group} لە ناو پاکێجی گروپی خۆی دابنێ.
@@ -1003,7 +992,7 @@ function rememberChannelDeletion(channel){
 function loadManualChannels(){
  try{
   const saved=JSON.parse(localStorage.getItem(MANUAL_CHANNELS_STORAGE_KEY)||'[]');
-  const kept=Array.isArray(saved)?saved.filter(c=>c&&typeof c.name==='string'&&typeof c.url==='string'&&(allGroups().some(g=>g.id===c.group)||String(c.group).startsWith('remote-group-'))).map(c=>({...c,id:String(c.id||('manual-'+Date.now())),logo:String(c.logo||'')})) : [];
+  const kept=Array.isArray(saved)?saved.filter(c=>c&&typeof c.name==='string'&&typeof c.url==='string'&&groups.some(g=>g.id===c.group)).map(c=>({...c,id:String(c.id||('manual-'+Date.now())),logo:String(c.logo||'')})) : [];
   localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(kept));
   return kept;
  }catch(_){return [];}
@@ -1023,7 +1012,7 @@ function persistChannelName(channel,newName){
 function persistManualChannels(){
  try{
   localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));
-  for(const g of allGroups())channelOverrides.order[g.id]=channels.filter(c=>c.group===g.id).map(channelStableKey).filter(Boolean);
+  for(const g of groups)channelOverrides.order[g.id]=channels.filter(c=>c.group===g.id).map(channelStableKey).filter(Boolean);
   localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));
  }catch(_){toast('نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.');}
 }
@@ -1036,21 +1025,7 @@ const builtInChannels = [
 let remoteChannels = [];
 let remoteChannelsLoaded = false;
 
-function ensureRemoteGroup(section,id,name){
- const groupId=nestedGroupId(section,id);
- let found=dynamicGroups.find(g=>g.id===groupId);
- if(!found){
-  const sectionBase=groups.find(g=>g.id===section)||groups[0];
-  found={id:groupId,section,name:String(name||'گشتی'),icon:'📁',art:'📁',colors:sectionBase.colors};
-  dynamicGroups.push(found);
- }else if(name) found.name=String(name);
- return groupId;
-}
-function normalizeRemoteGroup(value,section='',groupId='',groupName=''){
- if(nestedSectionIds.has(String(section||''))){
-  const id=String(groupId||('legacy-'+String(groupName||value||'گشتی')));
-  return ensureRemoteGroup(section,id,groupName||value||'گشتی');
- }
+function normalizeRemoteGroup(value){
  const key=String(value||'').trim().toLowerCase();
  const aliases={
   local:['local','ناوخۆ','local-ناوخۆ'],
@@ -1094,16 +1069,6 @@ async function refreshRemoteChannels(showMessage=false){
   if(!response.ok) throw new Error('HTTP '+response.status);
   const data=await response.json();
   if(!Array.isArray(data.channels)) throw new Error('Invalid channel data');
-  let groupData={groups:[]};
-  try{
-   const groupResponse=await fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/groups',{method:'GET',cache:'no-store'});
-   if(groupResponse.ok) groupData=await groupResponse.json();
-  }catch(_){ }
-  remoteGroupCatalog=Array.isArray(groupData.groups)?groupData.groups:[];
-  dynamicGroups=remoteGroupCatalog.filter(g=>nestedSectionIds.has(g.section)).map(g=>({
-   id:nestedGroupId(g.section,g.id),section:g.section,name:String(g.name||'گرووپ'),icon:'📁',art:'📁',
-   colors:(groups.find(x=>x.id===g.section)||groups[0]).colors
-  }));
   const incoming=data.channels;
   // Cloudflare is authoritative after a successful fetch, so dashboard deletions stay deleted.
   const seen=new Set();
@@ -1118,7 +1083,7 @@ async function refreshRemoteChannels(showMessage=false){
     name,
     logo:String(item.logo||'').trim(),
     url,
-    group:normalizeRemoteGroup(item.group,item.section,item.groupId,item.group)
+    group:normalizeRemoteGroup(item.group)
    });
   }
   remoteChannels=next;
@@ -1153,7 +1118,7 @@ function safe(s){
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
  }[c]));
 }
-function group(id){return allGroups().find(g=>g.id===id)||groups[0];}
+function group(id){return groups.find(g=>g.id===id)||groups[0];}
 function groupChannels(id){return channels.filter(c=>c.group===id);}
 
 
@@ -1181,11 +1146,9 @@ function renderHome(){
  const mainGroups=groups.filter(g=>!countryIds.has(g.id)&&!mediaIds.has(g.id));
  const countries=groups.filter(g=>countryIds.has(g.id));
  const mediaGroups=groups.filter(g=>mediaIds.has(g.id));
- const makeTiles=items=>items.map(g=>{
- const count=nestedSectionIds.has(g.id)?sectionChannelCount(g.id):groupChannels(g.id).length;
- return `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
- <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${count} کەناڵ">${count}</span></button>`;
-}).join('');
+ const makeTiles=items=>items.map(g=>
+ `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
+ <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span></button>`).join('');
  $('#homeCategories').innerHTML=makeTiles(mainGroups);
  
  let countrySection=$('#homeCountryCategories');
@@ -1212,26 +1175,21 @@ function renderHome(){
  $('#page-home').querySelectorAll('[data-group]').forEach(b=>{
   b.onclick=()=>{
    const id=b.dataset.group;
-   if(nestedSectionIds.has(id))openSection(id);
+   if(id==='movies'||id==='drama')openMediaPage(id);
    else openGroup(id);
   };
  });
 }
 function renderGroups(){
- const heading=$('#page-groups .section-title');
- if(currentSection){
-  const sectionName=group(currentSection).name;
-  if(heading)heading.innerHTML=safe(sectionName)+' <small>گرووپەکان</small>';
-  const children=dynamicGroups.filter(g=>g.section===currentSection);
-  $('#groupCards').innerHTML=children.length?children.map(g=>
-   `<button class="group-card" data-group="${safe(g.id)}"><span class="art">${g.art}</span><b>${safe(g.name)}</b><small>${groupChannels(g.id).length} ناوەڕۆک</small></button>`).join(''):
-   '<div class="empty">هێشتا گرووپێک بۆ ئەم بەشە زیاد نەکراوە. لە داشبۆرد گرووپێک زیاد بکە.</div>';
- }else{
-  if(heading)heading.innerHTML='گرووپەکانی کەناڵەکان <small>گرووپێک هەڵبژێرە</small>';
-  $('#groupCards').innerHTML=groups.filter(g=>!nestedSectionIds.has(g.id)).map(g=>
-   `<button class="group-card" data-group="${g.id}"><span class="art">${g.art}</span><b>${g.name}</b><small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
- }
- $('#page-groups').querySelectorAll('[data-group]').forEach(b=>b.onclick=()=>openGroup(b.dataset.group));
+
+ $('#groupCards').innerHTML=groups.filter(g=>!['movies','drama'].includes(g.id)).map(g=>
+ `<button class="group-card" data-group="${g.id}">
+ <span class="art">${g.art}</span><b>${g.name}</b>
+ <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
+ 
+
+ $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
+ b.onclick=()=>openGroup(b.dataset.group));
 }
 function renderChannels(){
  const list=groupChannels(currentGroup);
@@ -1276,18 +1234,11 @@ function switchPage(name){
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
 }
-function openSection(id){
- currentSection=id;
- switchPage('groups');
- renderGroups();
-}
 function openGroup(id){
  currentGroup=id;
- currentSection=null;
  const listHeading=$('#channelListHeading');
- const selectedGroup=group(id);
  if(listHeading){
-  listHeading.textContent=selectedGroup.section==='movies'?'لیستی فیلم':selectedGroup.section==='drama'?'لیستی دراما':'لیستی کەناڵەکان';
+  listHeading.textContent=id==='movies'?'لیستی فیلم':id==='drama'?'لیستی دراما':'لیستی کەناڵەکان';
  }
  switchPage('browse');
  renderChannels();
@@ -1797,13 +1748,13 @@ $('#playBtn').onclick=()=>{
 };
 $('#muteBtn').onclick=()=>{video.muted=!video.muted;$('#muteBtn').textContent=video.muted?'🔇 بێدەنگ':'🔊 دەنگ';};
 
-$('.nav').forEach(b=>b.onclick=()=>{if(b.dataset.page==='groups')currentSection=null;switchPage(b.dataset.page);});
+$$('.nav').forEach(b=>b.onclick=()=>switchPage(b.dataset.page));
 $$('[data-action]').forEach(b=>b.onclick=()=>{
  const a=b.dataset.action;
  if(a==='search'){switchPage('search');$('#searchInput').focus();}
  else if(a==='add'){switchPage('settings');settingsTab('manual');}
  else if(a==='edit'){switchPage('settings');settingsTab('edit');}
- else if(a==='groups'){currentSection=null;switchPage('groups');}
+ else if(a==='groups'){switchPage('groups');}
  else if(a==='settings'){switchPage('settings');settingsTab('manual');}
  else switchPage(a);
 });
@@ -1817,7 +1768,7 @@ function settingsTab(tab){
  }else if(tab==='edit'){
   body.innerHTML='<div class="panel-head">گۆڕینی ناوی کەناڵ</div><div class="form-grid"><label class="field full">گروپی کەناڵ<select id="renameGroupSelect"></select></label><label class="field full">کەناڵ<select id="renameChannelSelect"></select></label><label class="field full">ناوی نوێی کەناڵ<input id="renameChannelInput" type="text" placeholder="ناوی نوێ بنووسە"></label><button class="btn primary field full" id="saveChannelName" type="button">✓ پاشەکەوتکردنی ناو</button></div><div class="notice" id="renameChannelStatus">سەرەتا گروپ و کەناڵ دیاری بکە.</div>';
   const groupSelect=$('#renameGroupSelect'),channelSelect=$('#renameChannelSelect'),nameInput=$('#renameChannelInput'),status=$('#renameChannelStatus');
-  groupSelect.innerHTML=allGroups().map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
+  groupSelect.innerHTML=groups.map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
   const fillRenameChannels=()=>{const rows=groupChannels(groupSelect.value);channelSelect.innerHTML=rows.map(c=>'<option value="'+safe(c.id)+'">'+safe(c.name)+'</option>').join('');if(!rows.length){channelSelect.innerHTML='<option value="">ئەم گرووپە کەناڵی نییە</option>';nameInput.value='';return;}nameInput.value=rows[0].name;};
   groupSelect.onchange=fillRenameChannels;
   channelSelect.onchange=()=>{const c=channels.find(x=>x.id===channelSelect.value);nameInput.value=c?c.name:'';};
@@ -1826,7 +1777,7 @@ function settingsTab(tab){
  }else if(tab==='delete'){
   body.innerHTML='<div class="panel-head">سڕینەوەی کەناڵ</div><div class="notice">سەرەتا گرووپی کەناڵەکە هەڵبژێرە، پاشان کەناڵەکە دیاری بکە و دوگمەی سڕینەوە دابگرە.</div><div class="form-grid"><label class="field full">گرووپی کەناڵ<select id="deleteGroupSelect"></select></label><label class="field full">کەناڵی بۆ سڕینەوە<select id="deleteChannelSelect"></select></label><button class="btn danger field full" id="confirmDeleteChannel" type="button">✖ سڕینەوەی کەناڵی دیاریکراو</button></div><div class="notice" id="deleteChannelStatus">هیچ کەناڵێک نەسڕاوەتەوە.</div>';
   const groupSelect=$('#deleteGroupSelect'),channelSelect=$('#deleteChannelSelect'),status=$('#deleteChannelStatus');
-  groupSelect.innerHTML=allGroups().map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
+  groupSelect.innerHTML=groups.map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
   const fillDeleteChannels=()=>{const rows=groupChannels(groupSelect.value);channelSelect.innerHTML=rows.map(c=>'<option value="'+safe(c.id)+'">'+safe(c.name)+'</option>').join('');if(!rows.length)channelSelect.innerHTML='<option value="">ئەم گرووپە کەناڵی نییە</option>';};
   groupSelect.onchange=fillDeleteChannels;fillDeleteChannels();
   $('#confirmDeleteChannel').onclick=()=>{
@@ -1839,7 +1790,7 @@ function settingsTab(tab){
    renderAll();fillDeleteChannels();status.textContent='کەناڵەکە بە سەرکەوتوویی سڕایەوە.';toast('کەناڵەکە سڕایەوە.');
   };
  }else if(tab==='groups'){
-  body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   allGroups().map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
+  body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   groups.map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
  }else{
   body.innerHTML=`<div class="panel-head">زیادکردنی کەناڵ بە دەستی</div>
    <form id="manualChannelForm" class="form-grid">
@@ -1854,7 +1805,7 @@ function settingsTab(tab){
     </label>
     <label class="field full">گرووپی کەناڵ
      <select id="manualChannelGroup" name="channelGroup" required>
-      ${allGroups().map(g=>`<option value="${g.id}" ${g.id===currentGroup?'selected':''}>${safe(g.name)}</option>`).join('')}
+      ${groups.map(g=>`<option value="${g.id}" ${g.id===currentGroup?'selected':''}>${safe(g.name)}</option>`).join('')}
      </select>
     </label>
     <div class="field full"><button class="btn primary" type="submit">＋ زیادکردنی کەناڵ</button></div>
@@ -1866,7 +1817,7 @@ function settingsTab(tab){
    const logo=$('#manualChannelLogo').value.trim();
    const url=$('#manualChannelUrl').value.trim();
    const groupId=$('#manualChannelGroup').value;
-   if(!name||!url||!allGroups().some(g=>g.id===groupId)|| (logo&&!/^https?:\/\//i.test(logo))){toast('تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.');return;}
+   if(!name||!url||!groups.some(g=>g.id===groupId)|| (logo&&!/^https?:\/\//i.test(logo))){toast('تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.');return;}
    channels.push({id:'manual-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name,logo,url,group:groupId});
    persistManualChannels();
    currentGroup=groupId;
