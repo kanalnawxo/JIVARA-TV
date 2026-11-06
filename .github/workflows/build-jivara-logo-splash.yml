@@ -72,14 +72,10 @@ jobs:
                   folder.mkdir(parents=True, exist_ok=True)
                   ImageOps.fit(source, (size,size), method=Image.Resampling.LANCZOS).save(folder / "ic_launcher.png")
               fg = res / "drawable-nodpi" / "jivara_icon_foreground.png"
-              canvas = Image.new("RGBA", (432,432), (0,0,0,0))
-              contained = ImageOps.contain(source, (360,360), method=Image.Resampling.LANCZOS)
-              canvas.alpha_composite(contained, ((432-contained.width)//2, (432-contained.height)//2))
-              canvas.save(fg, format="PNG", optimize=True)
-              banner = Image.new("RGBA", (640,360), (16,16,16,255))
-              banner_logo = ImageOps.contain(source, (560,300), method=Image.Resampling.LANCZOS)
-              banner.alpha_composite(banner_logo, ((640-banner_logo.width)//2, (360-banner_logo.height)//2))
-              banner.save(res / "drawable-nodpi" / "jivara_tv_banner.png", format="PNG", optimize=True)
+              # Fill the complete launcher artwork area edge-to-edge: no transparent padding.
+              ImageOps.fit(source, (432,432), method=Image.Resampling.LANCZOS, centering=(0.5,0.5)).save(fg, format="PNG", optimize=True)
+              # Android TV banner also uses the same artwork edge-to-edge, with no empty border.
+              ImageOps.fit(source, (640,360), method=Image.Resampling.LANCZOS, centering=(0.5,0.5)).save(res / "drawable-nodpi" / "jivara_tv_banner.png", format="PNG", optimize=True)
               adaptive_dir = res / "mipmap-anydpi-v26"
               adaptive_dir.mkdir(parents=True, exist_ok=True)
               bg_dir = res / "drawable"
