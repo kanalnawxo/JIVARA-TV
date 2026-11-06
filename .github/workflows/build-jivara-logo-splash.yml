@@ -85,9 +85,9 @@ jobs:
               bg_dir = res / "drawable"
               bg_dir.mkdir(parents=True, exist_ok=True)
               (bg_dir / "jivara_icon_background.xml").write_text(
-                  '<?xml version="1.0" encoding="utf-8"?>\\n<shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#101010"/></shape>\\n',
+                  '<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#101010"/></shape>\n',
                   encoding="utf-8")
-              adaptive = '<?xml version="1.0" encoding="utf-8"?>\\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/jivara_icon_background"/><foreground android:drawable="@drawable/jivara_icon_foreground"/></adaptive-icon>\\n'
+              adaptive = '<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/jivara_icon_background"/><foreground android:drawable="@drawable/jivara_icon_foreground"/></adaptive-icon>\n'
               for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
                   (adaptive_dir / name).write_text(adaptive, encoding="utf-8")
 
