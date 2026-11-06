@@ -59,7 +59,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .nav-bottom{margin-top:auto;flex:0 0 auto;flex-shrink:0;padding:13px 5px 10px;text-align:center;border-top:1px solid #24445b;color:#dcecff;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;box-sizing:border-box}.contact-number{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .contact-label{font-size:13px;font-weight:700;color:#39d98a;display:flex;align-items:center;justify-content:center;gap:7px}
 .whatsapp-icon{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:#19b96b;color:#fff;font:700 16px Arial,sans-serif}
-.contact-number{display:block;direction:ltr;text-align:center;white-space:nowrap;font:700 16px/1.4 Arial,Tahoma,sans-serif;letter-spacing:.5px;color:#fff;text-decoration:none;background:#0c2a3e;border:1px solid #24865e;border-radius:8px;padding:7px 9px;min-width:100%;box-shadow:0 0 12px #19b96b24}
+.contact-number{display:block;direction:ltr;text-align:center;white-space:nowrap;font:700 14px/1.35 Arial,Tahoma,sans-serif;letter-spacing:.35px;color:#fff;text-decoration:none;background:#0c2a3e;border:1px solid #24865e;border-radius:8px;padding:5px 7px;min-width:100%;box-shadow:0 0 12px #19b96b24}
+.media-landing-page{display:flex;align-items:center;justify-content:center;min-height:100%;text-align:center}
+.media-landing-title{font-family:"Rabar 043",Tahoma,Arial,sans-serif;font-size:clamp(34px,5vw,64px);font-weight:800;color:#f0d79a;text-shadow:0 0 18px #d5a84a55;padding:24px 42px;border:1px solid #d5a84a55;border-radius:18px;background:linear-gradient(145deg,#142d40,#0b1c2b);min-width:min(320px,70%);}
 .contact-number:focus,.contact-number:hover{background:#10452f;color:#fff;outline:2px solid #39d98a;outline-offset:2px}
 .main{min-width:0;min-height:0;display:flex;flex-direction:column}
 .topbar{height:58px;min-height:58px;flex-shrink:0;margin:0;border-top:0;border-bottom:1px solid var(--line);
@@ -322,6 +324,10 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     </div>
     <div class="section-title">گرووپەکان <small>کلیک بکە بۆ کردنەوە</small></div>
     <div class="categories" id="homeCategories"></div>
+   </section>
+
+   <section class="page media-landing-page" id="page-media">
+    <div class="media-landing-title" id="mediaLandingTitle">فیلم</div>
    </section>
 
    <section class="page" id="page-groups">
@@ -1166,8 +1172,13 @@ function renderHome(){
   countrySection.insertAdjacentElement('afterend',mediaSection);
  }
  mediaSection.innerHTML=makeTiles(mediaGroups);
- $('#page-home').querySelectorAll('[data-group]').forEach(b=>
- b.onclick=()=>openGroup(b.dataset.group));
+ $('#page-home').querySelectorAll('[data-group]').forEach(b=>{
+  b.onclick=()=>{
+   const id=b.dataset.group;
+   if(id==='movies'||id==='drama')openMediaPage(id);
+   else openGroup(id);
+  };
+ });
 }
 function renderGroups(){
 
@@ -1216,7 +1227,7 @@ function switchPage(name){
  activePage=name;
  $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
- const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',
+ const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',media:'فیلم',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
  if(name==='browse')renderChannels();
@@ -1224,6 +1235,12 @@ function switchPage(name){
  if(name==='home')renderHome();
 }
 function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
+function openMediaPage(id){
+ const label=id==='drama'?'دراما':'فیلم';
+ $('#mediaLandingTitle').textContent=label;
+ switchPage('media');
+ $('#pageTitle').innerHTML=safe(label)+'<small>JIVARA TV · Smart TV</small>';
+}
 
 function focusSelectedChannel(id){
  // Rendering the list replaces its buttons, so restore real keyboard/remote focus
