@@ -1190,15 +1190,20 @@ function renderSearch(q=''){
 }
 function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($('#searchInput').value||'');}
 
-function switchPage(name){
+const pageHistory=[];
+function switchPage(name,remember=true){
  if(!$('#page-'+name))name='home';
+ if(remember&&activePage!==name){
+  pageHistory.push(activePage);
+  if(pageHistory.length>30)pageHistory.shift();
+ }
  // Stop radio playback immediately when navigating away from its page.
  if(activePage==='radio'&&name!=='radio')stopRadioPlayback('بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.');
  // Leaving the live channel page must stop the native Android player completely.
  if(activePage==='browse'&&name!=='browse')cleanPlayer();
  activePage=name;
- $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
- $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+ $('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+ $('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
  const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
@@ -1206,6 +1211,28 @@ function switchPage(name){
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
 }
+function handleRemoteBack(){
+ if(isPlayerFullscreen()){fullscreen();return true;}
+ const previous=pageHistory.pop();
+ if(previous&&$('#page-'+previous)){switchPage(previous,false);}
+ else if(activePage!=='home'){pageHistory.length=0;switchPage('home',false);}
+ else return false;
+ const homeButton=$('.sidebar .nav[data-page="'+activePage+'"]');
+ if(homeButton)requestAnimationFrame(()=>homeButton.focus({preventScroll:true}));
+ return true;
+}
+// Android TV remotes may report Back, Escape, BrowserBack or Exit depending on the device.
+document.addEventListener('keydown',e=>{
+ const code=e.keyCode||e.which||0;
+ const key=String(e.key||'').toLowerCase();
+ const isBack=code===4||code===27||code===111||code===166||key==='back'||key==='escape'||key==='browserback'||key==='goback'||key==='exit';
+ if(!isBack||e.repeat)return;
+ // Preserve Escape's existing action while a channel is being reordered.
+ if((code===27||code===111||key==='escape')&&$('.channel.hold-selected'))return;
+ if(handleRemoteBack()){
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+ }
+},true);
 function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
 
 function focusSelectedChannel(id){
