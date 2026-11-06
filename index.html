@@ -424,7 +424,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
-const $ = s => [...document.querySelectorAll(s)];
+const $$ = s => [...document.querySelectorAll(s)];
 
 const groups = [
  {id:'local',name:'ناوخۆ',icon:'🏙️',art:'🏙️',colors:['#0878f9','#06408f']},
