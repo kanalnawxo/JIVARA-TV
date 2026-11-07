@@ -1104,7 +1104,16 @@ let currentGroup = 'kurdish';
 let currentChannel = null;
 let activePage = 'home';
 
-const video = $('#video');
+const videoA = $('#video');
+const playerScreen = $('#playerScreen');
+const videoB = document.createElement('video');
+videoB.id = 'videoStandby';
+videoB.playsInline = true;
+videoB.preload = 'auto';
+videoB.setAttribute('playsinline','');
+videoB.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;visibility:hidden;pointer-events:none;';
+playerScreen.insertBefore(videoB, $('#webStreamFrame'));
+let video = videoA;
 const idle = $('#idle');
 
 function toast(message){
@@ -1268,18 +1277,30 @@ function showChannelSwitch(c){
  clearTimeout(channelOverlayTimer);
  channelOverlayTimer=setTimeout(()=>overlay.classList.remove('visible'),2600);
 }
-let hlsPlayer=null, dashPlayer=null, mpegtsPlayer=null;
 const webStreamFrame=$('#webStreamFrame');
+const playerSlots=[
+ {video:videoA,hls:null,dash:null,mpegts:null,timer:null,session:0},
+ {video:videoB,hls:null,dash:null,mpegts:null,timer:null,session:0}
+];
+let activeSlot=playerSlots[0],pendingSlot=null,streamSession=0;
+function destroySlot(slot){
+ if(!slot)return;
+ clearTimeout(slot.timer);slot.timer=null;
+ try{if(slot.hls){slot.hls.destroy();slot.hls=null;}}catch(e){}
+ try{if(slot.dash){slot.dash.reset();slot.dash=null;}}catch(e){}
+ try{if(slot.mpegts){slot.mpegts.pause();slot.mpegts.unload();slot.mpegts.detachMediaElement();slot.mpegts.destroy();slot.mpegts=null;}}catch(e){}
+ try{slot.video.pause();slot.video.removeAttribute('src');slot.video.load();}catch(e){}
+ slot.session=0;
+}
 function cleanPlayer(){
- ++streamSession;
- try{if(hlsPlayer){hlsPlayer.destroy();hlsPlayer=null;}}catch(e){}
- try{if(dashPlayer){dashPlayer.reset();dashPlayer=null;}}catch(e){}
- try{if(mpegtsPlayer){mpegtsPlayer.pause();mpegtsPlayer.unload();mpegtsPlayer.detachMediaElement();mpegtsPlayer.destroy();mpegtsPlayer=null;}}catch(e){}
+ ++streamSession;pendingSlot=null;
+ playerSlots.forEach(destroySlot);
+ activeSlot=playerSlots[0];video=videoA;
+ videoA.style.opacity='1';videoA.style.visibility='visible';videoA.style.zIndex='1';
+ videoB.style.opacity='0';videoB.style.visibility='hidden';videoB.style.zIndex='0';
  try{if(window.AndroidPlayer&&AndroidPlayer.stop)AndroidPlayer.stop();}catch(e){}
- video.pause();video.removeAttribute('src');
- // Fully release the previous network/decode pipeline before attaching the next live stream.
- try{video.load();}catch(e){}
- webStreamFrame.src='about:blank';webStreamFrame.style.display='none';video.style.display='block';
+ webStreamFrame.src='about:blank';webStreamFrame.style.display='none';
+ videoA.style.display='block';videoB.style.display='block';
 }
 function looksLike(url,ext){return new RegExp('\\.'+ext+'(?:$|[?#])','i').test(url);}
 function streamKind(url){
@@ -1289,22 +1310,24 @@ function streamKind(url){
  if(looksLike(u,'m3u')||looksLike(u,'m3uplus'))return 'playlist';
  if(looksLike(u,'ts')||looksLike(u,'m2ts')||/[?&](type|format|output|container)=(?:ts|mpegts)(?:&|$)/i.test(u))return 'mpegts';
  if(looksLike(u,'flv'))return 'flv';
- // Many IPTV/Xtream-style links use numeric stream IDs without a file extension.
  if(/\/(?:live|movie|series)\/[^/]+\/[^/]+\/\d+(?:\.(?:ts|m3u8|mp4))?$/i.test(path)||/\/\d+(?:\.(?:ts|m3u8|mp4))?$/.test(path)||/[?&](stream|channel|id)=\d+(?:&|$)/i.test(u))return 'numeric';
  if(looksLike(u,'mp4')||looksLike(u,'m4v'))return 'mp4';
  if(looksLike(u,'webm'))return 'webm';
  return 'unknown';
 }
-let streamSession=0;
 async function startStream(rawUrl){
  let url=(rawUrl||'').trim();
  if(!url)return;
- cleanPlayer();
  const session=++streamSession;
+ const slot=activeSlot===playerSlots[0]?playerSlots[1]:playerSlots[0];
+ destroySlot(slot);
+ pendingSlot=slot;slot.session=session;
+ const target=slot.video;
+ target.muted=video.muted;target.volume=video.volume;target.playbackRate=video.playbackRate||1;
+ target.style.display='block';target.style.opacity='0';target.style.visibility='hidden';target.style.zIndex='2';
  if(!/^https?:\/\//i.test(url)){
-  toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;
+  pendingSlot=null;toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;
  }
- // .m3u is a playlist file; .m3u8 is an HLS video stream.
  if(streamKind(url)==='playlist'){
   try{
    const r=await fetch(url,{cache:'no-store'});
@@ -1315,13 +1338,13 @@ async function startStream(rawUrl){
    if(!first)throw new Error('empty playlist');
    url=new URL(first,url).href;
   }catch(e){
-   toast('فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.');return;
+   if(session===streamSession){pendingSlot=null;toast('فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.');}
+   return;
   }
  }
  if(session!==streamSession)return;
- video.style.display='block';webStreamFrame.style.display='none';
+ webStreamFrame.style.display='none';
  const kind=streamKind(url);
- // IBO-style IPTV compatibility: HLS (.m3u8), MPEG-TS (.ts), and extensionless numeric Xtream IDs. This is an HTML playback engine, not the proprietary IBO SDK.
  let engines=[];
  if(kind==='hls')engines=['hls','native'];
  else if(kind==='mpegts')engines=['mpegts','native'];
@@ -1330,98 +1353,74 @@ async function startStream(rawUrl){
  else if(kind==='flv')engines=['flv','native'];
  else if(kind==='mp4'||kind==='webm')engines=['native'];
  else engines=['hls','mpegts','native'];
- let attempt=0, finished=false, fallbackTimer=null;
- const stopEngines=()=>{
-  clearTimeout(fallbackTimer);
-  try{if(hlsPlayer){hlsPlayer.destroy();hlsPlayer=null;}}catch(e){}
-  try{if(dashPlayer){dashPlayer.reset();dashPlayer=null;}}catch(e){}
-  try{if(mpegtsPlayer){mpegtsPlayer.pause();mpegtsPlayer.unload();mpegtsPlayer.detachMediaElement();mpegtsPlayer.destroy();mpegtsPlayer=null;}}catch(e){}
-  video.pause();video.removeAttribute('src');video.load();
+ let attempt=0,finished=false,fallbackTimer=null;
+ const stopEngines=()=>destroySlot(slot);
+ const finishSwitch=()=>{
+  if(session!==streamSession||finished)return;
+  finished=true;clearTimeout(fallbackTimer);clearTimeout(slot.timer);
+  const previous=activeSlot;
+  activeSlot=slot;pendingSlot=null;video=target;
+  target.style.opacity='1';target.style.visibility='visible';target.style.zIndex='2';
+  previous.video.style.opacity='0';previous.video.style.visibility='hidden';previous.video.style.zIndex='1';
+  idle.style.display='none';
+  destroySlot(previous);
  };
- const onPlaying=()=>{
-  if(session!==streamSession)return;
-  finished=true;clearTimeout(fallbackTimer);idle.style.display='none';
- };
- const onError=()=>{
-  if(session===streamSession&&!finished)tryNext('video error');
- };
- video.addEventListener('playing',onPlaying);
- video.addEventListener('error',onError);
+ const onPlaying=()=>{if(session===streamSession)finishSwitch();};
+ const onError=()=>{if(session===streamSession&&!finished)tryNext('video error');};
+ target.addEventListener('playing',onPlaying);
+ target.addEventListener('error',onError);
  const done=()=>{
-  video.removeEventListener('playing',onPlaying);
-  video.removeEventListener('error',onError);
+  target.removeEventListener('playing',onPlaying);
+  target.removeEventListener('error',onError);
  };
  const tryNext=(reason)=>{
   if(session!==streamSession||finished)return;
   if(attempt>0)stopEngines();
   if(attempt>=engines.length){
-   finished=true;done();idle.style.display='flex';
+   finished=true;done();pendingSlot=null;
+   target.style.opacity='0';target.style.visibility='hidden';
+   if(activeSlot===playerSlots[0]&&activeSlot.video.paused)idle.style.display='flex';
    toast('پەخش نەکرا: لینکەکە، سێرڤەر، CORS/HTTPS یان فۆرماتی ڤیدیۆ پشکنە.');return;
   }
   const engine=engines[attempt++];
   try{
    if(engine==='hls'){
     if(window.Hls&&Hls.isSupported()){
-     hlsPlayer=new Hls({
-      enableWorker:true,
-      // Start quickly at the first available rendition, then let ABR adapt upward.
-      lowLatencyMode:true,
-      capLevelToPlayerSize:false,
-      startLevel:0,
-      testBandwidth:false,
-      maxBufferLength:12,
-      maxMaxBufferLength:24,
-      backBufferLength:8,
-      liveSyncDurationCount:2,
-      liveMaxLatencyDurationCount:4,
-      maxLoadingDelay:2,
-      maxStarvationDelay:2,
-      manifestLoadingTimeOut:12000,
-      levelLoadingTimeOut:12000,
-      fragLoadingTimeOut:20000,
-      manifestLoadingMaxRetry:4,
-      levelLoadingMaxRetry:4,
-      fragLoadingMaxRetry:6,
-      manifestLoadingRetryDelay:1000,
-      levelLoadingRetryDelay:1000,
-      fragLoadingRetryDelay:1000,
-      enableSoftwareAES:true
+     slot.hls=new Hls({
+      enableWorker:true,lowLatencyMode:true,capLevelToPlayerSize:false,
+      startLevel:0,testBandwidth:false,maxBufferLength:12,maxMaxBufferLength:24,
+      backBufferLength:8,liveSyncDurationCount:2,liveMaxLatencyDurationCount:4,
+      maxLoadingDelay:2,maxStarvationDelay:2,manifestLoadingTimeOut:12000,
+      levelLoadingTimeOut:12000,fragLoadingTimeOut:20000,manifestLoadingMaxRetry:4,
+      levelLoadingMaxRetry:4,fragLoadingMaxRetry:6,manifestLoadingRetryDelay:1000,
+      levelLoadingRetryDelay:1000,fragLoadingRetryDelay:1000,enableSoftwareAES:true
      });
-     hlsPlayer.on(Hls.Events.MANIFEST_PARSED,()=>{if(session===streamSession)video.play().catch(()=>{});});
-     hlsPlayer.on(Hls.Events.ERROR,(_,data)=>{
-      if(session!==streamSession||finished)return;
-      if(!data.fatal)return;
-      if(data.type===Hls.ErrorTypes.NETWORK_ERROR){try{hlsPlayer.startLoad();}catch(e){tryNext('hls network error');}}
-      else if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{hlsPlayer.recoverMediaError();}catch(e){tryNext('hls media error');}}
+     slot.hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(session===streamSession)target.play().catch(()=>{});});
+     slot.hls.on(Hls.Events.ERROR,(_,data)=>{
+      if(session!==streamSession||finished||!data.fatal)return;
+      if(data.type===Hls.ErrorTypes.NETWORK_ERROR){try{slot.hls.startLoad();}catch(e){tryNext('hls network error');}}
+      else if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{slot.hls.recoverMediaError();}catch(e){tryNext('hls media error');}}
       else tryNext('hls fatal error');
      });
-     hlsPlayer.loadSource(url);hlsPlayer.attachMedia(video);
-    }else if(video.canPlayType('application/vnd.apple.mpegurl')){
-     video.src=url;video.load();video.play().catch(()=>{});
+     slot.hls.loadSource(url);slot.hls.attachMedia(target);
+    }else if(target.canPlayType('application/vnd.apple.mpegurl')){
+     target.src=url;target.load();target.play().catch(()=>{});
     }else{tryNext('HLS unsupported');return;}
    }else if(engine==='mpegts'||engine==='flv'){
     if(window.mpegts&&mpegts.isSupported()){
-     mpegtsPlayer=mpegts.createPlayer({type:engine==='flv'?'flv':'mpegts',isLive:true,url},{
-      enableWorker:true,
-      enableStashBuffer:true,
-      // A smaller initial stash reduces channel-change startup delay for live TS streams.
-      stashInitialSize:64*1024,
-      lazyLoad:false,
-      liveBufferLatencyChasing:true,
-      liveBufferLatencyMaxLatency:8,
-      liveBufferLatencyMinRemain:2,
-      autoCleanupSourceBuffer:true,
-      autoCleanupMaxBackwardDuration:30,
-      autoCleanupMinBackwardDuration:15
+     slot.mpegts=mpegts.createPlayer({type:engine==='flv'?'flv':'mpegts',isLive:true,url},{
+      enableWorker:true,enableStashBuffer:true,stashInitialSize:64*1024,lazyLoad:false,
+      liveBufferLatencyChasing:true,liveBufferLatencyMaxLatency:8,liveBufferLatencyMinRemain:2,
+      autoCleanupSourceBuffer:true,autoCleanupMaxBackwardDuration:30,autoCleanupMinBackwardDuration:15
      });
-     mpegtsPlayer.on(mpegts.Events.ERROR,()=>tryNext('mpegts error'));
-     mpegtsPlayer.attachMediaElement(video);mpegtsPlayer.load();mpegtsPlayer.play().catch(()=>{});
+     slot.mpegts.on(mpegts.Events.ERROR,()=>tryNext('mpegts error'));
+     slot.mpegts.attachMediaElement(target);slot.mpegts.load();slot.mpegts.play().catch(()=>{});
     }else{tryNext('MPEG-TS unsupported');return;}
    }else if(engine==='dash'){
-    if(window.dashjs){dashPlayer=dashjs.MediaPlayer().create();dashPlayer.on(dashjs.MediaPlayer.events.ERROR,()=>tryNext('DASH error'));dashPlayer.initialize(video,url,true);}
+    if(window.dashjs){slot.dash=dashjs.MediaPlayer().create();slot.dash.on(dashjs.MediaPlayer.events.ERROR,()=>tryNext('DASH error'));slot.dash.initialize(target,url,true);}
     else{tryNext('DASH unsupported');return;}
    }else{
-    video.src=url;video.load();video.play().catch(()=>{});
+    target.src=url;target.load();target.play().catch(()=>{});
    }
    fallbackTimer=setTimeout(()=>{if(!finished&&session===streamSession)tryNext('playback timeout');},14000);
   }catch(e){tryNext('engine exception');}
@@ -1429,7 +1428,6 @@ async function startStream(rawUrl){
  idle.style.display='none';
  tryNext('initial');
 }
-
 function playChannel(id){
  const c=channels.find(x=>x.id===id);if(!c)return;
  showChannelSwitch(c);
@@ -1455,11 +1453,12 @@ function playChannel(id){
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
 }
-video.addEventListener('playing',()=>idle.style.display='none');
-video.addEventListener('error',()=>{if(video.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
+for(const playerVideo of [videoA,videoB]){
+ playerVideo.addEventListener('playing',()=>idle.style.display='none');
+ playerVideo.addEventListener('error',()=>{if(playerVideo.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
+}
 
 let fullscreenBusy=false;
-const playerScreen=$('#playerScreen');
 const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen');
 // Use the app's CSS fullscreen state on Android WebView. Mixing the browser
 // Fullscreen API with WebView custom-view handling can leave the player stuck.
