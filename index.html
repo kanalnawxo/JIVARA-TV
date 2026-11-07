@@ -1277,6 +1277,8 @@ function cleanPlayer(){
  try{if(mpegtsPlayer){mpegtsPlayer.pause();mpegtsPlayer.unload();mpegtsPlayer.detachMediaElement();mpegtsPlayer.destroy();mpegtsPlayer=null;}}catch(e){}
  try{if(window.AndroidPlayer&&AndroidPlayer.stop)AndroidPlayer.stop();}catch(e){}
  video.pause();video.removeAttribute('src');
+ // Fully release the previous network/decode pipeline before attaching the next live stream.
+ try{video.load();}catch(e){}
  webStreamFrame.src='about:blank';webStreamFrame.style.display='none';video.style.display='block';
 }
 function looksLike(url,ext){return new RegExp('\\.'+ext+'(?:$|[?#])','i').test(url);}
@@ -1362,17 +1364,18 @@ async function startStream(rawUrl){
     if(window.Hls&&Hls.isSupported()){
      hlsPlayer=new Hls({
       enableWorker:true,
-      lowLatencyMode:false,
+      // Start quickly at the first available rendition, then let ABR adapt upward.
+      lowLatencyMode:true,
       capLevelToPlayerSize:false,
-      startLevel:-1,
-      testBandwidth:true,
-      maxBufferLength:24,
-      maxMaxBufferLength:48,
-      backBufferLength:20,
-      liveSyncDurationCount:3,
-      liveMaxLatencyDurationCount:6,
-      maxLoadingDelay:4,
-      maxStarvationDelay:4,
+      startLevel:0,
+      testBandwidth:false,
+      maxBufferLength:12,
+      maxMaxBufferLength:24,
+      backBufferLength:8,
+      liveSyncDurationCount:2,
+      liveMaxLatencyDurationCount:4,
+      maxLoadingDelay:2,
+      maxStarvationDelay:2,
       manifestLoadingTimeOut:12000,
       levelLoadingTimeOut:12000,
       fragLoadingTimeOut:20000,
@@ -1401,7 +1404,8 @@ async function startStream(rawUrl){
      mpegtsPlayer=mpegts.createPlayer({type:engine==='flv'?'flv':'mpegts',isLive:true,url},{
       enableWorker:true,
       enableStashBuffer:true,
-      stashInitialSize:128,
+      // A smaller initial stash reduces channel-change startup delay for live TS streams.
+      stashInitialSize:64*1024,
       lazyLoad:false,
       liveBufferLatencyChasing:true,
       liveBufferLatencyMaxLatency:8,
