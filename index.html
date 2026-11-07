@@ -171,7 +171,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
 .player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
  max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.player-screen video{width:100%;height:100%;object-fit:contain;background:#000}
+.player-screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
 /* Keep native playback icons/transport controls off the video surface; use the app controls and TV remote instead. */
 .player-screen video::-webkit-media-controls,.player-screen video::-webkit-media-controls-enclosure,.player-screen video::-webkit-media-controls-panel,.player-screen video::-webkit-media-controls-overlay-play-button{display:none !important;-webkit-appearance:none !important;opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
 .idle{position:absolute;inset:0;background:radial-gradient(ellipse,#10314d,#02070d 75%);
