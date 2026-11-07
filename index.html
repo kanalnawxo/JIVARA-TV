@@ -1324,7 +1324,7 @@ async function startStream(rawUrl){
  pendingSlot=slot;slot.session=session;
  const target=slot.video;
  target.muted=video.muted;target.volume=video.volume;target.playbackRate=video.playbackRate||1;
- target.style.display='block';target.style.opacity='0';target.style.visibility='hidden';target.style.zIndex='2';
+ target.style.display='block';target.style.visibility='visible';target.style.opacity='0';target.style.zIndex='2';
  if(!/^https?:\/\//i.test(url)){
   pendingSlot=null;toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;
  }
@@ -1365,7 +1365,21 @@ async function startStream(rawUrl){
   idle.style.display='none';
   destroySlot(previous);
  };
- const onPlaying=()=>{if(session===streamSession)finishSwitch();};
+ let frameSwapPending=false;
+ const onPlaying=()=>{
+  if(session!==streamSession||finished||frameSwapPending)return;
+  frameSwapPending=true;
+  const swapWhenFrameReady=()=>{
+   if(session!==streamSession||finished)return;
+   if(target.readyState<2){frameSwapPending=false;return;}
+   finishSwitch();
+  };
+  if(typeof target.requestVideoFrameCallback==='function'){
+   target.requestVideoFrameCallback(()=>swapWhenFrameReady());
+  }else{
+   requestAnimationFrame(()=>requestAnimationFrame(swapWhenFrameReady));
+  }
+ };
  const onError=()=>{if(session===streamSession&&!finished)tryNext('video error');};
  target.addEventListener('playing',onPlaying);
  target.addEventListener('error',onError);
