@@ -281,9 +281,9 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 @media(max-width:700px){.language-switch{flex-direction:row;gap:3px;width:auto;align-items:center}.language-switch .nav{flex:0 0 auto;width:auto;padding:6px 7px;font-size:9px;gap:3px}.language-switch .nav .ico{font-size:15px;width:19px}}
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dashjs@4.7.4/dist/dash.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js"></script>
+
+
+
 </head>
 <body>
 <div class="app">
@@ -1106,18 +1106,6 @@ let activePage = 'home';
 
 const videoA = $('#video');
 const playerScreen = $('#playerScreen');
-const videoB = document.createElement('video');
-videoB.id = 'videoStandby';
-videoB.playsInline = true;
-videoB.controls = false;
-videoB.removeAttribute('controls');
-videoB.controlsList = 'nodownload noplaybackrate noremoteplayback';
-videoB.disablePictureInPicture = true;
-videoB.disableRemotePlayback = true;
-videoB.preload = 'auto';
-videoB.setAttribute('playsinline','');
-videoB.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;visibility:hidden;pointer-events:none;';
-playerScreen.insertBefore(videoB, $('#webStreamFrame'));
 let video = videoA;
 const idle = $('#idle');
 
@@ -1283,57 +1271,21 @@ function showChannelSwitch(c){
  channelOverlayTimer=setTimeout(()=>overlay.classList.remove('visible'),2600);
 }
 const webStreamFrame=$('#webStreamFrame');
-const playerSlots=[
- {video:videoA,hls:null,dash:null,mpegts:null,timer:null,session:0},
- {video:videoB,hls:null,dash:null,mpegts:null,timer:null,session:0}
-];
-let activeSlot=playerSlots[0],pendingSlot=null,streamSession=0;
-function destroySlot(slot){
- if(!slot)return;
- clearTimeout(slot.timer);slot.timer=null;
- try{if(slot.hls){slot.hls.destroy();slot.hls=null;}}catch(e){}
- try{if(slot.dash){slot.dash.reset();slot.dash=null;}}catch(e){}
- try{if(slot.mpegts){slot.mpegts.pause();slot.mpegts.unload();slot.mpegts.detachMediaElement();slot.mpegts.destroy();slot.mpegts=null;}}catch(e){}
- try{slot.video.pause();slot.video.removeAttribute('src');slot.video.load();}catch(e){}
- slot.session=0;
-}
+let streamSession=0;
 function cleanPlayer(){
- ++streamSession;pendingSlot=null;
- playerSlots.forEach(destroySlot);
- activeSlot=playerSlots[0];video=videoA;
- videoA.style.opacity='1';videoA.style.visibility='visible';videoA.style.zIndex='1';
- videoB.style.opacity='0';videoB.style.visibility='hidden';videoB.style.zIndex='0';
+ ++streamSession;
+ try{videoA.pause();videoA.removeAttribute('src');videoA.load();}catch(e){}
  try{if(window.AndroidPlayer&&AndroidPlayer.stop)AndroidPlayer.stop();}catch(e){}
  webStreamFrame.src='about:blank';webStreamFrame.style.display='none';
- videoA.style.display='block';videoB.style.display='block';
+ videoA.style.display='block';videoA.style.opacity='1';videoA.style.visibility='visible';videoA.style.zIndex='1';
 }
 function looksLike(url,ext){return new RegExp('\\.'+ext+'(?:$|[?#])','i').test(url);}
-function streamKind(url){
- const u=url.split('#')[0], path=(u.split('?')[0]||'').replace(/\/+$/,'');
- if(looksLike(u,'m3u8')||/[?&](type|format|output|container)=(?:hls|m3u8)(?:&|$)/i.test(u))return 'hls';
- if(looksLike(u,'mpd'))return 'dash';
- if(looksLike(u,'m3u')||looksLike(u,'m3uplus'))return 'playlist';
- if(looksLike(u,'ts')||looksLike(u,'m2ts')||/[?&](type|format|output|container)=(?:ts|mpegts)(?:&|$)/i.test(u))return 'mpegts';
- if(looksLike(u,'flv'))return 'flv';
- if(/\/(?:live|movie|series)\/[^/]+\/[^/]+\/\d+(?:\.(?:ts|m3u8|mp4))?$/i.test(path)||/\/\d+(?:\.(?:ts|m3u8|mp4))?$/.test(path)||/[?&](stream|channel|id)=\d+(?:&|$)/i.test(u))return 'numeric';
- if(looksLike(u,'mp4')||looksLike(u,'m4v'))return 'mp4';
- if(looksLike(u,'webm'))return 'webm';
- return 'unknown';
-}
 async function startStream(rawUrl){
  let url=(rawUrl||'').trim();
  if(!url)return;
  const session=++streamSession;
- const slot=activeSlot===playerSlots[0]?playerSlots[1]:playerSlots[0];
- destroySlot(slot);
- pendingSlot=slot;slot.session=session;
- const target=slot.video;
- target.muted=video.muted;target.volume=video.volume;target.playbackRate=video.playbackRate||1;
- target.style.display='block';target.style.visibility='visible';target.style.opacity='0';target.style.zIndex='2';
- if(!/^https?:\/\//i.test(url)){
-  pendingSlot=null;toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;
- }
- if(streamKind(url)==='playlist'){
+ if(!/^https?:\/\//i.test(url)){toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;}
+ if(looksLike(url,'m3u')||looksLike(url,'m3uplus')){
   try{
    const r=await fetch(url,{cache:'no-store'});
    if(!r.ok)throw new Error('HTTP '+r.status);
@@ -1343,116 +1295,28 @@ async function startStream(rawUrl){
    if(!first)throw new Error('empty playlist');
    url=new URL(first,url).href;
   }catch(e){
-   if(session===streamSession){pendingSlot=null;toast('فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.');}
+   if(session===streamSession)toast('فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.');
    return;
   }
  }
  if(session!==streamSession)return;
- webStreamFrame.style.display='none';
- const kind=streamKind(url);
- let engines=[];
- if(kind==='hls')engines=['hls','native'];
- else if(kind==='mpegts')engines=['mpegts','native'];
- else if(kind==='numeric')engines=['mpegts','hls','native'];
- else if(kind==='dash')engines=['dash','native'];
- else if(kind==='flv')engines=['flv','native'];
- else if(kind==='mp4'||kind==='webm')engines=['native'];
- else engines=['hls','mpegts','native'];
- let attempt=0,finished=false,fallbackTimer=null;
- const stopEngines=()=>destroySlot(slot);
- const finishSwitch=()=>{
-  if(session!==streamSession||finished)return;
-  finished=true;clearTimeout(fallbackTimer);clearTimeout(slot.timer);
-  const previous=activeSlot;
-  activeSlot=slot;pendingSlot=null;video=target;
-  target.style.opacity='1';target.style.visibility='visible';target.style.zIndex='2';
-  previous.video.style.opacity='0';previous.video.style.visibility='hidden';previous.video.style.zIndex='1';
-  idle.style.display='none';
-  destroySlot(previous);
- };
- let frameSwapPending=false;
- const onPlaying=()=>{
-  if(session!==streamSession||finished||frameSwapPending)return;
-  frameSwapPending=true;
-  const swapWhenFrameReady=()=>{
-   if(session!==streamSession||finished)return;
-   if(target.readyState<2){
-    requestAnimationFrame(swapWhenFrameReady);
-    return;
-   }
-   finishSwitch();
-  };
-  if(typeof target.requestVideoFrameCallback==='function'){
-   target.requestVideoFrameCallback(()=>{
-    if(session!==streamSession||finished)return;
-    if(target.readyState>=2)finishSwitch();
-    else {frameSwapPending=false;onPlaying();}
-   });
-  }else{
-   requestAnimationFrame(()=>requestAnimationFrame(swapWhenFrameReady));
-  }
- };
- const onError=()=>{if(session===streamSession&&!finished)tryNext('video error');};
- target.addEventListener('playing',onPlaying);
- target.addEventListener('error',onError);
- const done=()=>{
-  target.removeEventListener('playing',onPlaying);
-  target.removeEventListener('error',onError);
- };
- const tryNext=(reason)=>{
-  if(session!==streamSession||finished)return;
-  if(attempt>0)stopEngines();
-  if(attempt>=engines.length){
-   finished=true;done();pendingSlot=null;
-   target.style.opacity='0';target.style.visibility='hidden';
-   if(activeSlot===playerSlots[0]&&activeSlot.video.paused)idle.style.display='flex';
-   toast('پەخش نەکرا: لینکەکە، سێرڤەر، CORS/HTTPS یان فۆرماتی ڤیدیۆ پشکنە.');return;
-  }
-  const engine=engines[attempt++];
-  try{
-   if(engine==='hls'){
-    if(window.Hls&&Hls.isSupported()){
-     slot.hls=new Hls({
-      enableWorker:true,lowLatencyMode:true,capLevelToPlayerSize:false,
-      startLevel:0,testBandwidth:false,maxBufferLength:12,maxMaxBufferLength:24,
-      backBufferLength:8,liveSyncDurationCount:2,liveMaxLatencyDurationCount:4,
-      maxLoadingDelay:2,maxStarvationDelay:2,manifestLoadingTimeOut:12000,
-      levelLoadingTimeOut:12000,fragLoadingTimeOut:20000,manifestLoadingMaxRetry:4,
-      levelLoadingMaxRetry:4,fragLoadingMaxRetry:6,manifestLoadingRetryDelay:1000,
-      levelLoadingRetryDelay:1000,fragLoadingRetryDelay:1000,enableSoftwareAES:true
-     });
-     slot.hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(session===streamSession)target.play().catch(()=>{});});
-     slot.hls.on(Hls.Events.ERROR,(_,data)=>{
-      if(session!==streamSession||finished||!data.fatal)return;
-      if(data.type===Hls.ErrorTypes.NETWORK_ERROR){try{slot.hls.startLoad();}catch(e){tryNext('hls network error');}}
-      else if(data.type===Hls.ErrorTypes.MEDIA_ERROR){try{slot.hls.recoverMediaError();}catch(e){tryNext('hls media error');}}
-      else tryNext('hls fatal error');
-     });
-     slot.hls.loadSource(url);slot.hls.attachMedia(target);
-    }else if(target.canPlayType('application/vnd.apple.mpegurl')){
-     target.src=url;target.load();target.play().catch(()=>{});
-    }else{tryNext('HLS unsupported');return;}
-   }else if(engine==='mpegts'||engine==='flv'){
-    if(window.mpegts&&mpegts.isSupported()){
-     slot.mpegts=mpegts.createPlayer({type:engine==='flv'?'flv':'mpegts',isLive:true,url},{
-      enableWorker:true,enableStashBuffer:true,stashInitialSize:64*1024,lazyLoad:false,
-      liveBufferLatencyChasing:true,liveBufferLatencyMaxLatency:8,liveBufferLatencyMinRemain:2,
-      autoCleanupSourceBuffer:true,autoCleanupMaxBackwardDuration:30,autoCleanupMinBackwardDuration:15
-     });
-     slot.mpegts.on(mpegts.Events.ERROR,()=>tryNext('mpegts error'));
-     slot.mpegts.attachMediaElement(target);slot.mpegts.load();slot.mpegts.play().catch(()=>{});
-    }else{tryNext('MPEG-TS unsupported');return;}
-   }else if(engine==='dash'){
-    if(window.dashjs){slot.dash=dashjs.MediaPlayer().create();slot.dash.on(dashjs.MediaPlayer.events.ERROR,()=>tryNext('DASH error'));slot.dash.initialize(target,url,true);}
-    else{tryNext('DASH unsupported');return;}
-   }else{
-    target.src=url;target.load();target.play().catch(()=>{});
-   }
-   fallbackTimer=setTimeout(()=>{if(!finished&&session===streamSession)tryNext('playback timeout');},14000);
-  }catch(e){tryNext('engine exception');}
- };
+ webStreamFrame.src='about:blank';webStreamFrame.style.display='none';
+ videoA.style.display='block';videoA.style.opacity='1';videoA.style.visibility='visible';videoA.style.zIndex='1';
  idle.style.display='none';
- tryNext('initial');
+ try{
+  // Every stream is sent directly to the native Android Media3 ExoPlayer bridge.
+  videoA.src=url;
+  videoA.play().catch(()=>{});
+  setTimeout(()=>{
+   if(session!==streamSession)return;
+   try{if(window.AndroidPlayer&&!AndroidPlayer.isPlaying()){
+    idle.style.display='flex';
+    toast('پەخش نەکرا؛ ExoPlayer نەتوانی ئەم فۆرماتە یان لینکە پەخش بکات.');
+   }}catch(e){}
+  },18000);
+ }catch(e){
+  if(session===streamSession){idle.style.display='flex';toast('هەڵە لە پەخشی ExoPlayer.');}
+ }
 }
 function playChannel(id){
  const c=channels.find(x=>x.id===id);if(!c)return;
@@ -1479,7 +1343,7 @@ function playChannel(id){
  if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
  startStream(c.url);
 }
-for(const playerVideo of [videoA,videoB]){
+for(const playerVideo of [videoA]){
  playerVideo.addEventListener('playing',()=>idle.style.display='none');
  playerVideo.addEventListener('error',()=>{if(playerVideo.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
 }
