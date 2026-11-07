@@ -171,7 +171,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
 .player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
  max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.player-screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.player-screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;transition:none!important;animation:none!important}
 /* Keep native playback icons/transport controls off the video surface; use the app controls and TV remote instead. */
 .player-screen video::-webkit-media-controls,.player-screen video::-webkit-media-controls-enclosure,.player-screen video::-webkit-media-controls-panel,.player-screen video::-webkit-media-controls-overlay-play-button{display:none !important;-webkit-appearance:none !important;opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
 .idle{position:absolute;inset:0;background:radial-gradient(ellipse,#10314d,#02070d 75%);
@@ -364,7 +364,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
      <div class="panel">
       <div class="panel-head"><span id="nowTitle">پلەیەری ڤیدیۆ</span></div>
       <div class="player-screen" id="playerScreen" tabindex="0" role="button" aria-label="کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە">
-       <video id="video" playsinline preload="auto" fetchpriority="high"></video>
+       <video id="video" playsinline preload="auto" fetchpriority="high" disablepictureinpicture disableremoteplayback></video>
        <iframe id="webStreamFrame" title="پەخشی کەناڵ" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="display:none;width:100%;height:100%;border:0;background:#000"></iframe>
        <div class="idle" id="idle"><div class="play">▶</div><strong>کەناڵێک هەڵبژێرە</strong><small>کەناڵێک هەڵبژێرە بۆ بینین</small></div>
       </div>
@@ -1109,6 +1109,11 @@ const playerScreen = $('#playerScreen');
 const videoB = document.createElement('video');
 videoB.id = 'videoStandby';
 videoB.playsInline = true;
+videoB.controls = false;
+videoB.removeAttribute('controls');
+videoB.controlsList = 'nodownload noplaybackrate noremoteplayback';
+videoB.disablePictureInPicture = true;
+videoB.disableRemotePlayback = true;
 videoB.preload = 'auto';
 videoB.setAttribute('playsinline','');
 videoB.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;visibility:hidden;pointer-events:none;';
@@ -1371,11 +1376,18 @@ async function startStream(rawUrl){
   frameSwapPending=true;
   const swapWhenFrameReady=()=>{
    if(session!==streamSession||finished)return;
-   if(target.readyState<2){frameSwapPending=false;return;}
+   if(target.readyState<2){
+    requestAnimationFrame(swapWhenFrameReady);
+    return;
+   }
    finishSwitch();
   };
   if(typeof target.requestVideoFrameCallback==='function'){
-   target.requestVideoFrameCallback(()=>swapWhenFrameReady());
+   target.requestVideoFrameCallback(()=>{
+    if(session!==streamSession||finished)return;
+    if(target.readyState>=2)finishSwitch();
+    else {frameSwapPending=false;onPlaying();}
+   });
   }else{
    requestAnimationFrame(()=>requestAnimationFrame(swapWhenFrameReady));
   }
