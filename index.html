@@ -1896,11 +1896,19 @@ function mergeChannelSources(){
  channels=applyChannelOverrides(merged);
  renderAll();
 }
+function firebaseGroupId(value){
+ const id=String(value||'').trim().toLowerCase();
+ if(groups.some(g=>g.id.toLowerCase()===id))return id;
+ const alias=normalizeRemoteGroup(id);
+ if(groups.some(g=>g.id===alias))return alias;
+ return id;
+}
 function syncFirebaseGroups(snapshot){
  let changed=false;
  snapshot.forEach(doc=>{
   const data=doc.data()||{};
-  const id=String(doc.id||'').trim().toLowerCase();
+  const rawId=String(doc.id||'').trim().toLowerCase();
+  const id=firebaseGroupId(rawId);
   const name=String(data.name||data.title||'').trim();
   if(!id||!name)return;
   const existing=groups.find(g=>g.id.toLowerCase()===id);
@@ -1923,7 +1931,7 @@ function initFirebaseCatalog(){
     const data=doc.data()||{};
     const name=String(data.name||'').trim();
     const url=String(data.url||'').trim();
-    if(!name||!/^https?:\\/\\//i.test(url)||/example\\.com/i.test(url))return null;
+    if(!name||!/^https?:\/\//i.test(url)||/example\.com/i.test(url))return null;
     if(seen.has(url))return null;
     seen.add(url);
     return {
@@ -1931,7 +1939,7 @@ function initFirebaseCatalog(){
      name,
      logo:String(data.logo||'').trim(),
      url,
-     group:normalizeRemoteGroup(data.group)
+     group:firebaseGroupId(data.group)
     };
    }).filter(Boolean);
    mergeChannelSources();
