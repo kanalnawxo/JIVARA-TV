@@ -1012,6 +1012,7 @@ const builtInChannels = [
  ...Object.entries(m3uPackages).flatMap(([id, text])=>parseM3UPackage(text,id))
 ];
 let remoteChannels = [];
+let firebaseChannels = [];
 let remoteChannelsLoaded = false;
 
 function normalizeRemoteGroup(value){
@@ -1044,6 +1045,19 @@ function remoteChannelId(url){
  return 'remote-'+(hash>>>0).toString(36);
 }
 
+// Cloudflare keeps priority; Firebase channels are added to the same channel array.
+function mergeChannelSources(){
+ const seen=new Set();
+ const combined=[...remoteChannels,...firebaseChannels,...loadManualChannels()];
+ const unique=combined.filter(channel=>{
+  const url=String(channel?.url||'').trim().toLowerCase();
+  if(!url||seen.has(url))return false;
+  seen.add(url);
+  return true;
+ });
+ return applyChannelOverrides(unique);
+}
+
 async function refreshRemoteChannels(showMessage=false){
  try{
   const response=await fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/channels',{
@@ -1071,7 +1085,7 @@ async function refreshRemoteChannels(showMessage=false){
   }
   remoteChannels=next;
   remoteChannelsLoaded=true;
-  channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
+  channels=mergeChannelSources();
   renderAll();
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
@@ -1937,6 +1951,57 @@ document.addEventListener('keydown',e=>{
 const ADMIN_EMAIL='jivarakamal8@gmail.com';
 let radioInitialized=false,radioStations=[],radioAuth=null,radioDb=null,radioCurrentUser=null,radioEditingId=null;
 let radioFirebaseReady=false;
+
+// Firebase groups extend the existing group list without changing the UI layout.
+let firebaseAddedGroupIds=new Set();
+const firebaseGroupStyles={
+ drama:{icon:'🎭',colors:['#8b3b78','#4d1c43']},
+ movie:{icon:'🎬',colors:['#365b8c','#1a3150']}
+};
+function syncFirebaseGroups(snapshot){
+ for(const id of firebaseAddedGroupIds){
+  const index=groups.findIndex(group=>group.id===id);
+  if(index>=0)groups.splice(index,1);
+ }
+ firebaseAddedGroupIds=new Set();
+ for(const doc of snapshot.docs){
+  const id=String(doc.id||'').trim().toLowerCase();
+  const name=String((doc.data()||{}).name||'').trim();
+  if(!/^[a-z0-9_-]+$/.test(id)||!name)continue;
+  const existing=groups.find(group=>group.id===id);
+  if(existing){existing.name=name;continue;}
+  const style=firebaseGroupStyles[id]||{icon:'📺',colors:['#0878f9','#06408f']};
+  groups.push({id,name,icon:style.icon,art:style.icon,colors:style.colors});
+  firebaseAddedGroupIds.add(id);
+ }
+ if(!groups.some(group=>group.id===currentGroup))currentGroup='kurdish';
+ renderAll();
+}
+function initFirebaseCatalog(){
+ if(!radioDb)return;
+ try{
+  radioDb.collection('groups').onSnapshot(syncFirebaseGroups,()=>{});
+  radioDb.collection('channels').onSnapshot(snapshot=>{
+   const seen=new Set();
+   const next=[];
+   for(const doc of snapshot.docs){
+    const data=doc.data()||{};
+    const name=String(data.name||'').trim();
+    const url=String(data.url||'').trim();
+    const groupId=String(data.group||'').trim().toLowerCase();
+    // Ignore the example.com placeholder channel created during Firebase setup.
+    if(!name||!/^https?:\/\//i.test(url)||/example\.com/i.test(url)||!groupId)continue;
+    const key=url.toLowerCase();
+    if(seen.has(key))continue;
+    seen.add(key);
+    next.push({id:'firebase-'+doc.id,name,logo:String(data.logo||'').trim(),url,group:groupId});
+   }
+   firebaseChannels=next;
+   channels=mergeChannelSources();
+   renderAll();
+  },()=>{});
+ }catch(_){/* Firebase catalog must never interfere with the existing radio/player flow. */}
+}
 function radioIsAdmin(){return !!(radioCurrentUser&&radioCurrentUser.email&&radioCurrentUser.email.toLowerCase()===ADMIN_EMAIL);}
 function renderRadioList(targetId='radioSavedList'){
  const box=$('#'+targetId);if(!box)return;
@@ -1997,6 +2062,7 @@ function initRadio(){
  renderRadioList();
 }
 initRadio();
+initFirebaseCatalog();
 renderAll();
 // لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
 refreshRemoteChannels(false);
