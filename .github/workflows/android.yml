@@ -2,7 +2,7 @@ name: Build JIVARA TV Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, firebase-channels-groups-b42b1e8 ]
   workflow_dispatch:
 
 permissions:
