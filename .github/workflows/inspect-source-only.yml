@@ -1,0 +1,41 @@
+name: Inspect JIVARA source archive only
+
+on:
+  push:
+    branches:
+      - inspect-jivara-source-zip
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  inspect-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout inspection branch
+        uses: actions/checkout@v4
+        with:
+          ref: inspect-jivara-source-zip
+
+      - name: Verify and list JIVARA-TV-main.zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f JIVARA-TV-main.zip
+          echo "Archive: JIVARA-TV-main.zip"
+          sha256sum JIVARA-TV-main.zip
+          echo "Archive contents:"
+          unzip -Z1 JIVARA-TV-main.zip | sed -n '1,400p'
+          mkdir -p inspection/source
+          unzip -q JIVARA-TV-main.zip -d inspection/source
+          echo "Extracted file summary:"
+          find inspection/source -type f -printf '%P\t%s bytes\n' | sort | sed -n '1,500p'
+
+      - name: Upload source archive inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: jivara-tv-main-source-inspection
+          path: inspection/source/
+          if-no-files-found: error
+          retention-days: 2
