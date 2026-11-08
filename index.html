@@ -1024,6 +1024,8 @@ const builtInChannels = [
 ];
 let remoteChannels = [];
 let remoteChannelsLoaded = false;
+// Firebase catalog is merged alongside Cloudflare and local channels; radio data remains separate.
+let firebaseChannels = [];
 
 function normalizeRemoteGroup(value){
  const key=String(value||'').trim().toLowerCase();
@@ -1088,8 +1090,7 @@ async function refreshRemoteChannels(showMessage=false){
   }
   remoteChannels=next;
   remoteChannelsLoaded=true;
-  channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
-  renderAll();
+  mergeChannelSources();
   if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
   return true;
  }catch(error){
@@ -1882,7 +1883,63 @@ function initRadio(){
  }catch(e){$('#radioStatus').textContent='پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.';}
  renderRadioList();
 }
+function mergeChannelSources(){
+ const primary=remoteChannelsLoaded?remoteChannels:builtInChannels;
+ const seen=new Set();
+ const merged=[];
+ for(const channel of [...primary,...firebaseChannels,...loadManualChannels()]){
+  const url=String(channel?.url||'').trim();
+  if(!url||seen.has(url))continue;
+  seen.add(url);
+  merged.push(channel);
+ }
+ channels=applyChannelOverrides(merged);
+ renderAll();
+}
+function syncFirebaseGroups(snapshot){
+ let changed=false;
+ snapshot.forEach(doc=>{
+  const data=doc.data()||{};
+  const id=String(doc.id||'').trim().toLowerCase();
+  const name=String(data.name||data.title||'').trim();
+  if(!id||!name)return;
+  const existing=groups.find(g=>g.id.toLowerCase()===id);
+  if(existing){
+   if(existing.name!==name){existing.name=name;changed=true;}
+  }else{
+   groups.push({id,name,icon:'📺',art:'📺',colors:['#0878f9','#06408f']});
+   changed=true;
+  }
+ });
+ if(changed)renderAll();
+}
+function initFirebaseCatalog(){
+ if(!radioDb)return;
+ try{
+  radioDb.collection('groups').onSnapshot(syncFirebaseGroups,()=>{});
+  radioDb.collection('channels').onSnapshot(snapshot=>{
+   const seen=new Set();
+   firebaseChannels=snapshot.docs.map(doc=>{
+    const data=doc.data()||{};
+    const name=String(data.name||'').trim();
+    const url=String(data.url||'').trim();
+    if(!name||!/^https?:\\/\\//i.test(url)||/example\\.com/i.test(url))return null;
+    if(seen.has(url))return null;
+    seen.add(url);
+    return {
+     id:'firebase-'+doc.id,
+     name,
+     logo:String(data.logo||'').trim(),
+     url,
+     group:normalizeRemoteGroup(data.group)
+    };
+   }).filter(Boolean);
+   mergeChannelSources();
+  },()=>{});
+ }catch(e){}
+}
 initRadio();
+initFirebaseCatalog();
 renderAll();
 // لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
 refreshRemoteChannels(false);
