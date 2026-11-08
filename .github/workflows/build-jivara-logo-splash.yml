@@ -2,7 +2,7 @@ name: Build JIVARA TV with native 5-second startup splash
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, firebase-catalog-v1.0.1 ]
     paths:
       - ".github/workflows/build-jivara-logo-splash.yml"
       - "index.html"
