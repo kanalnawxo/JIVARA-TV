@@ -1,0 +1,118 @@
+name: Build signed JIVARA TV update
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout drama feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/drama-series-episodes
+
+      - name: Check signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || (echo "Missing ANDROID_KEYSTORE_BASE64" && exit 1)
+          test -n "$STORE_PASS" || (echo "Missing ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$KEY_ALIAS" || (echo "Missing ANDROID_KEY_ALIAS" && exit 1)
+          test -n "$KEY_PASS" || (echo "Missing ANDROID_KEY_PASSWORD" && exit 1)
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK packages
+        run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Restore signing key and inspect official v1.0.1
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/jivara-release.keystore"
+          keytool -list -keystore "$RUNNER_TEMP/jivara-release.keystore" -storepass "$STORE_PASS" -alias "$KEY_ALIAS" >/dev/null
+          curl -fL "https://github.com/kanalnawxo/JIVARA-TV/releases/download/v1.0.1/JIVARA_TV.apk" -o "$RUNNER_TEMP/official-v1.0.1.apk"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$APKSIGNER" verify --print-certs "$RUNNER_TEMP/official-v1.0.1.apk" | tee "$RUNNER_TEMP/official-cert.txt"
+          "$APKSIGNER" verify --print-certs "$RUNNER_TEMP/official-v1.0.1.apk" | grep -E 'certificate SHA-256 digest:' | head -1 | awk '{print tolower($NF)}' > "$RUNNER_TEMP/official-fingerprint.txt"
+          "$APKSIGNER" verify --print-certs "$RUNNER_TEMP/official-v1.0.1.apk" >/dev/null
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$RUNNER_TEMP/official-v1.0.1.apk" | head -1 | tee "$RUNNER_TEMP/official-badging.txt"
+          python3 - "$RUNNER_TEMP/official-badging.txt" "$GITHUB_ENV" <<'PY'
+          import re,sys
+          line=open(sys.argv[1]).read()
+          m=re.search(r"versionCode='(\\d+)'",line)
+          if not m: raise SystemExit("Could not read official APK versionCode")
+          with open(sys.argv[2],"a") as f: f.write("OFFICIAL_VERSION_CODE="+m.group(1)+"\\n")
+          PY
+
+      - name: Ensure feature sources are valid
+        run: |
+          python3 - <<'PY'
+          import pathlib,re,subprocess
+          p=pathlib.Path("app/src/main/assets/index.html")
+          scripts=re.findall(r'<script\\b[^>]*>(.*?)</script\\s*>',p.read_text(encoding="utf-8"),re.I|re.S)
+          if not any(x.strip() for x in scripts): raise SystemExit("No app JavaScript found")
+          pathlib.Path("/tmp/jivara-check.js").write_text("\\n".join(scripts),encoding="utf-8")
+          subprocess.run(["node","--check","/tmp/jivara-check.js"],check=True)
+          PY
+
+      - name: Set update version and build release APK
+        run: |
+          python3 - "$OFFICIAL_VERSION_CODE" <<'PY'
+          import pathlib,re,sys
+          p=pathlib.Path("app/build.gradle")
+          s=p.read_text()
+          next_code=int(sys.argv[1])+1
+          s,n=re.subn(r'versionCode\\s+\\d+',f'versionCode {next_code}',s,count=1)
+          if n!=1: raise SystemExit("Could not update versionCode")
+          s,n=re.subn(r"versionName\\s+'[^']+'", "versionName '1.0.2'", s,count=1)
+          if n!=1: raise SystemExit("Could not update versionName")
+          p.write_text(s)
+          print(f"Building update versionCode={next_code}, versionName=1.0.2")
+          PY
+          gradle --no-daemon assembleRelease
+
+      - name: Sign and verify matching original certificate
+        env:
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
+          SIGNED="app/build/outputs/apk/release/JIVARA_TV_v1.0.2.apk"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$APKSIGNER" sign --ks "$RUNNER_TEMP/jivara-release.keystore" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASS --key-pass env:KEY_PASS --out "$SIGNED" "$UNSIGNED"
+          "$APKSIGNER" verify --print-certs "$SIGNED" | tee "$RUNNER_TEMP/new-cert.txt"
+          "$APKSIGNER" verify --print-certs "$SIGNED" | grep -E 'certificate SHA-256 digest:' | head -1 | awk '{print tolower($NF)}' > "$RUNNER_TEMP/new-fingerprint.txt"
+          if ! cmp -s "$RUNNER_TEMP/official-fingerprint.txt" "$RUNNER_TEMP/new-fingerprint.txt"; then
+            echo "STOP: signing certificate does not match official JIVARA TV v1.0.1"
+            exit 1
+          fi
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$SIGNED" | head -1
+          echo "Certificate matches official v1.0.1. Signed update verified."
+
+      - name: Upload verified signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-v1.0.2-SIGNED
+          path: app/build/outputs/apk/release/JIVARA_TV_v1.0.2.apk
+          if-no-files-found: error
+          retention-days: 14
