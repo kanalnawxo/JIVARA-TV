@@ -280,6 +280,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .radio-nav{position:relative;isolation:isolate;overflow:visible}
 .radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}
 @keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}
+.drama-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-content:start}.drama-card{min-width:0;min-height:145px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b2740,#06172a);padding:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}.drama-card:focus{outline:3px solid var(--focus);outline-offset:2px}.drama-card img{width:100%;height:92px;object-fit:contain;border-radius:7px;background:#020b16}.drama-card b{font-size:12px;max-width:100%;overflow-wrap:anywhere}.drama-toolbar{display:flex;align-items:center;gap:10px;margin:8px 0 12px}.drama-episode{width:100%;display:flex;align-items:center;gap:12px;min-height:52px;padding:9px 13px;border:1px solid var(--line);border-radius:8px;background:#071b2d;text-align:right}.drama-episode .episode-number{width:38px;flex:0 0 38px;text-align:center;color:#f0d18a;font-weight:800}.drama-episode .episode-name{flex:1;min-width:0}.drama-episode .episode-play{color:#8fc9ff}#dramaBackBtn{display:none}@media(max-width:700px){.drama-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.drama-card{min-height:105px;padding:6px}.drama-card img{height:65px}.drama-card b{font-size:10px}.drama-episode{min-height:42px;padding:7px 9px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dashjs@4.7.4/dist/dash.all.min.js"></script>
@@ -328,6 +329,22 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     </div>
    </section>
 
+   <section class="page" id="page-dramas">
+    <div class="section-title"><span>گرووپەکانی دراما</span><small id="dramaGroupCount">٠ گرووپ</small></div>
+    <div class="drama-toolbar"><button class="btn" id="dramaHomeBack" type="button">↩ گەڕانەوە</button></div>
+    <div class="drama-grid" id="dramaGroupGrid"><div class="empty">گرووپەکانی دراما بار دەکرێن...</div></div>
+   </section>
+   <section class="page" id="page-drama-series">
+    <div class="section-title"><span id="dramaSeriesHeading">زنجیرەکان</span><small id="dramaSeriesCount">٠ زنجیرە</small></div>
+    <div class="drama-toolbar"><button class="btn" id="dramaSeriesBack" type="button">↩ گەڕانەوە بۆ گرووپەکان</button></div>
+    <div class="drama-grid" id="dramaSeriesGrid"></div>
+   </section>
+   <section class="page" id="page-drama-episodes">
+    <div class="section-title"><span id="dramaEpisodesHeading">ئەڵقەکان</span><small id="dramaEpisodesCount">٠ ئەڵقە</small></div>
+    <div class="drama-toolbar"><button class="btn" id="dramaEpisodesBack" type="button">↩ گەڕانەوە بۆ زنجیرەکان</button></div>
+    <div class="channel-scroll" id="dramaEpisodeList"></div>
+   </section>
+
    <section class="page" id="page-radio">
     <div class="section-title"><span>ڕادیۆ</span><small>پەخشی ڕاستەوخۆی دەنگ</small></div>
     <div class="radio-panel panel">
@@ -362,6 +379,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
       <div class="program"><strong id="programTitle">ئامادەی پەخشکردن</strong><small id="programSub">لینکی کەناڵێک نییە.</small></div>
       <div class="player-tools">
        <button class="btn" id="playBtn">▶ / ❚❚</button>
+       <button class="btn" id="dramaBackBtn" type="button">↩ گەڕانەوە بۆ ئەڵقەکان</button>
        <button class="btn" id="muteBtn">🔊 دەنگ</button>
        <button class="btn" data-action="settings">⚙ لینکەکان</button>
       </div>
@@ -428,6 +446,7 @@ const groups = [
  {id:'sports',name:'وەرزش',icon:'⚽',art:'⚽',colors:['#ff8b16','#b84a00']},
  {id:'music',name:'موزیک',icon:'🎵',art:'🎵',colors:['#087cdd','#064281']},
  {id:'documentary',name:'دۆکۆمێنتاری',icon:'🎞️',art:'🎞️',colors:['#b17b22','#69430b']},
+ {id:'drama',name:'دراما',icon:'🎬',art:'🎬',colors:['#9b4bce','#542078']},
  // گرووپەکانی وڵاتەکان — لە ڕووکاری سەرەکی و لاپەڕەی گرووپەکان
  {id:'iraq',name:'عێراق',icon:'🇮🇶',art:'🇮🇶',colors:['#13834b','#064b2b']},
  {id:'iran',name:'ئێران',icon:'🇮🇷',art:'🇮🇷',colors:['#15966a','#07543d']},
@@ -1141,13 +1160,28 @@ function renderMovieStrips(){
  });
 }
 
+let dramaData={groups:[]},currentDramaGroupId=null,currentDramaId=null,dramaPlaybackMode=false;
+const DRAMAS_API='https://late-paper-d34e.jivarakamal8.workers.dev/api/dramas';
+function dramaGroups(){return Array.isArray(dramaData.groups)?dramaData.groups:[];}
+function selectedDramaGroup(){return dramaGroups().find(g=>String(g.id)===String(currentDramaGroupId))||null;}
+function selectedDrama(){const g=selectedDramaGroup();return g&&Array.isArray(g.dramas)?g.dramas.find(d=>String(d.id)===String(currentDramaId))||null:null;}
+function dramaTotal(){return dramaGroups().reduce((n,g)=>n+(Array.isArray(g.dramas)?g.dramas.length:0),0);}
+async function refreshRemoteDramas(showMessage=false){try{const r=await fetch(DRAMAS_API,{method:'GET',cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();if(!d||!Array.isArray(d.groups))throw Error('Invalid drama data');dramaData={groups:d.groups.map(g=>({id:String(g.id||''),name:String(g.name||''),dramas:Array.isArray(g.dramas)?g.dramas.map(x=>({id:String(x.id||''),name:String(x.name||''),poster:String(x.poster||''),episodes:Array.isArray(x.episodes)?x.episodes.map(e=>({id:String(e.id||''),number:Number(e.number)||0,name:String(e.name||''),url:String(e.url||'')})).sort((a,b)=>a.number-b.number):[]})):[]})).filter(g=>g.id&&g.name)};renderDramaGroups();renderHome();renderGroups();if(showMessage)toast('زانیارییەکانی دراما نوێکرانەوە.');return true;}catch(e){if(showMessage)toast('نەتوانرا زانیارییەکانی دراما لە سێرڤەر وەربگیرێت.');return false;}}
+function renderDramaGroups(){const box=$('#dramaGroupGrid');if(!box)return;const rows=dramaGroups();$('#dramaGroupCount').textContent=rows.length+' گرووپ';box.innerHTML=rows.length?rows.map(g=>`<button class="drama-card" data-drama-group="${safe(g.id)}"><span class="art">🎬</span><b>${safe(g.name)}</b><small class="muted">${Array.isArray(g.dramas)?g.dramas.length:0} زنجیرە</small></button>`).join(''):'<div class="empty">هیچ گرووپێکی دراما نییە؛ لە داشبۆرد گرووپ زیاد بکە.</div>';box.querySelectorAll('[data-drama-group]').forEach(b=>b.onclick=()=>openDramaGroup(b.dataset.dramaGroup));}
+function openDramaGroup(id){currentDramaGroupId=id;renderDramaSeries();switchPage('drama-series');}
+function renderDramaSeries(){const g=selectedDramaGroup(),box=$('#dramaSeriesGrid');if(!box)return;$('#dramaSeriesHeading').textContent=g?g.name:'زنجیرەکان';const rows=g&&Array.isArray(g.dramas)?g.dramas:[];$('#dramaSeriesCount').textContent=rows.length+' زنجیرە';box.innerHTML=rows.length?rows.map(d=>`<button class="drama-card" data-drama-id="${safe(d.id)}">${d.poster?`<img src="${safe(d.poster)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'<span class="art">🎞️</span>'}<b>${safe(d.name)}</b><small class="muted">${Array.isArray(d.episodes)?d.episodes.length:0} ئەڵقە</small></button>`).join(''):'<div class="empty">لە ئەم گرووپەدا هیچ زنجیرەیەک نییە.</div>';box.querySelectorAll('[data-drama-id]').forEach(b=>b.onclick=()=>openDramaSeries(b.dataset.dramaId));}
+function openDramaSeries(id){currentDramaId=id;renderDramaEpisodes();switchPage('drama-episodes');}
+function renderDramaEpisodes(){const d=selectedDrama(),box=$('#dramaEpisodeList');if(!box)return;$('#dramaEpisodesHeading').textContent=d?d.name:'ئەڵقەکان';const rows=d&&Array.isArray(d.episodes)?[...d.episodes].sort((a,b)=>a.number-b.number):[];$('#dramaEpisodesCount').textContent=rows.length+' ئەڵقە';box.innerHTML=rows.length?rows.map((e,i)=>`<button class="drama-episode" data-episode-id="${safe(e.id)}"><span class="episode-number">${String(e.number||i+1).padStart(2,'0')}</span><span class="episode-name">${safe(e.name||('ئەڵقە '+(e.number||i+1)))}</span><span class="episode-play">▶ پەخش</span></button>`).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم زنجیرەیە زیاد نەکراوە.</div>';box.querySelectorAll('[data-episode-id]').forEach(b=>b.onclick=()=>playDramaEpisode(b.dataset.episodeId));}
+function playDramaEpisode(id){const d=selectedDrama(),e=d&&Array.isArray(d.episodes)?d.episodes.find(x=>String(x.id)===String(id)):null;if(!e||!/^https?:\/\//i.test(e.url)){toast('لینکی ئەم ئەڵقەیە دروست نییە.');return;}dramaPlaybackMode=true;const title=(d.name||'دراما')+' — '+(e.name||('ئەڵقە '+e.number));$('#nowTitle').textContent=title;$('#programTitle').textContent=title;$('#programSub').textContent='ئەڵقەی دراما';$('#dramaBackBtn').style.display='inline-flex';switchPage('browse');renderChannels();startStream(e.url);}
+function setDramaPlaybackLayout(){const l=$('#page-browse .browse-layout');if(!l)return;const p=l.querySelectorAll(':scope > .panel');if(dramaPlaybackMode){if(p[0])p[0].style.display='none';l.style.gridTemplateColumns='minmax(0,1fr)';$('#browseHeading').textContent='دراما · '+(selectedDrama()?.name||'پەخش');$('#browseCount').textContent='پەخشی ئەڵقە';$('#dramaBackBtn').style.display='inline-flex';}else{if(p[0])p[0].style.display='';l.style.gridTemplateColumns='';$('#dramaBackBtn').style.display='none';}}
+
 function renderHome(){
  const countryIds=new Set(['iraq','iran','turkey','israel']);
  const mainGroups=groups.filter(g=>!countryIds.has(g.id));
  const countries=groups.filter(g=>countryIds.has(g.id));
  const makeTiles=items=>items.map(g=>
  `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
- <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span></button>`).join('');
+ <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${g.id==='drama'?dramaTotal()+' زنجیرە':groupChannels(g.id).length+' کەناڵ'}">${g.id==='drama'?dramaTotal():groupChannels(g.id).length}</span></button>`).join('');
  $('#homeCategories').innerHTML=makeTiles(mainGroups);
  
  let countrySection=$('#homeCountryCategories');
@@ -1171,13 +1205,14 @@ function renderGroups(){
  $('#groupCards').innerHTML=groups.map(g=>
  `<button class="group-card" data-group="${g.id}">
  <span class="art">${g.art}</span><b>${g.name}</b>
- <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
+ <small>${g.id==='drama'?dramaTotal()+' زنجیرە':groupChannels(g.id).length+' کەناڵ'}</small></button>`).join('');
  
 
  $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
  b.onclick=()=>openGroup(b.dataset.group));
 }
 function renderChannels(){
+ setDramaPlaybackLayout();
  const list=groupChannels(currentGroup);
  $('#browseHeading').textContent=group(currentGroup).name;
  $('#browseCount').textContent=list.length+' کەناڵ';
@@ -1209,18 +1244,21 @@ function switchPage(name){
  // Stop radio playback immediately when navigating away from its page.
  if(activePage==='radio'&&name!=='radio')stopRadioPlayback('بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.');
  // Leaving the live channel page must stop the native Android player completely.
- if(activePage==='browse'&&name!=='browse')cleanPlayer();
+ if(activePage==='browse'&&name!=='browse'){cleanPlayer();if(dramaPlaybackMode){dramaPlaybackMode=false;setDramaPlaybackLayout();}}
  activePage=name;
  $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
- const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',
+ const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',dramas:'دراما','drama-series':'زنجیرەکانی دراما','drama-episodes':'ئەڵقەکانی دراما',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
  if(name==='browse')renderChannels();
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
+ if(name==='dramas')renderDramaGroups();
+ if(name==='drama-series')renderDramaSeries();
+ if(name==='drama-episodes')renderDramaEpisodes();
 }
-function openGroup(id){currentGroup=id;switchPage('browse');renderChannels();}
+function openGroup(id){if(id==='drama'){refreshRemoteDramas(false);renderDramaGroups();switchPage('dramas');return;}currentGroup=id;switchPage('browse');renderChannels();}
 
 function focusSelectedChannel(id){
  // Rendering the list replaces its buttons, so restore real keyboard/remote focus
@@ -1755,7 +1793,11 @@ $('#playBtn').onclick=()=>{
 };
 $('#muteBtn').onclick=()=>{video.muted=!video.muted;$('#muteBtn').textContent=video.muted?'🔇 بێدەنگ':'🔊 دەنگ';};
 
-$$('.nav').forEach(b=>b.onclick=()=>switchPage(b.dataset.page));
+$('#dramaHomeBack').onclick=()=>switchPage('home');
+$('#dramaSeriesBack').onclick=()=>switchPage('dramas');
+$('#dramaEpisodesBack').onclick=()=>switchPage('drama-series');
+$('#dramaBackBtn').onclick=()=>{cleanPlayer();dramaPlaybackMode=false;switchPage('drama-episodes');};
+$('.nav').forEach(b=>b.onclick=()=>switchPage(b.dataset.page));
 $$('[data-action]').forEach(b=>b.onclick=()=>{
  const a=b.dataset.action;
  if(a==='search'){switchPage('search');$('#searchInput').focus();}
@@ -1998,6 +2040,7 @@ function initRadio(){
 }
 initRadio();
 renderAll();
+refreshRemoteDramas(false);
 // لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
 refreshRemoteChannels(false);
 setInterval(()=>refreshRemoteChannels(false),60000);
