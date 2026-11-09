@@ -1245,7 +1245,7 @@ function renderHome(){
  const mediaGroups=groups.filter(g=>mediaIds.has(g.id));
  const makeTiles=items=>items.map(g=>
  `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
- <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span>${g.section?`<small class="dashboard-section-label">${safe(g.section)}</small>`:''}</button>`).join('');
+ <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b>${g.id==='drama'?'':`<span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span>`}${g.section?`<small class="dashboard-section-label">${safe(g.section)}</small>`:''}</button>`).join('');
  $('#homeCategories').innerHTML=makeTiles(mainGroups);
  
  let countrySection=$('#homeCountryCategories');
