@@ -2,7 +2,7 @@ name: Build JIVARA TV Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/drama-series-episodes ]
   workflow_dispatch:
 
 permissions:
@@ -26,6 +26,22 @@ jobs:
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Validate JIVARA JavaScript sources
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, subprocess
+          html = pathlib.Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script\\b[^>]*>([\\s\\S]*?)</script\\s*>", html, re.I)
+          inline = [s for s in scripts if s.strip()]
+          if not inline:
+              raise SystemExit("No inline JavaScript found")
+          pathlib.Path("/tmp/jivara-app-check.js").write_text("\\n".join(inline), encoding="utf-8")
+          worker = pathlib.Path("JIVARA_Worker.txt").read_text(encoding="utf-8")
+          pathlib.Path("/tmp/jivara-worker-check.mjs").write_text(worker, encoding="utf-8")
+          subprocess.run(["node", "--check", "/tmp/jivara-app-check.js"], check=True)
+          subprocess.run(["node", "--check", "/tmp/jivara-worker-check.mjs"], check=True)
+          PY
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
