@@ -1270,7 +1270,7 @@ function renderDramaPage(){
   back.style.display='none';$('#dramaPageTitle').textContent='دراماکان';
   catalog.style.display='grid';episodeGrid.style.display='none';
   catalog.innerHTML=remoteDramas.length?remoteDramas.map(d=>{
-   const logo=d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\\'none\\'">':'🎭';
+   const logo=d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎭';
    return '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+logo+'</span><b>'+safe(d.name)+'</b><small>'+d.episodes.length+' ئەڵقە</small></button>';
   }).join(''):'<div class="empty">هیچ درامایەک لە داشبۆرد زیاد نەکراوە.</div>';
   catalog.querySelectorAll('[data-drama-id]').forEach(btn=>btn.onclick=()=>{
@@ -1281,7 +1281,7 @@ function renderDramaPage(){
   back.style.display='inline-flex';$('#dramaPageTitle').textContent=selected.name;
   catalog.style.display='none';episodeGrid.style.display='grid';
   const valid=selected.episodes
-   .filter(ep=>/^https?:\\/\\//i.test(String(ep.url||'').trim()))
+   .filter(ep=>/^https?:\/\//i.test(String(ep.url||'').trim()))
    .map((ep,index)=>({ep,index}))
    .sort((a,b)=>{
     const an=Number(a.ep.number),bn=Number(b.ep.number);
