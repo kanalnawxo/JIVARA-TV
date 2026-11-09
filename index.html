@@ -195,6 +195,19 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .player-screen:fullscreen,.player-screen.is-fullscreen{position:fixed;inset:0;z-index:99999;width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;border-radius:0;margin:0}
 .player-screen:fullscreen video,.player-screen.is-fullscreen video{width:100%;height:100%;object-fit:contain}
 .player-screen.is-fullscreen .idle{border-radius:0}
+/* Fullscreen drama playback controls stay above the native video surface. */
+.episode-player-controls{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:clamp(12px,2vw,26px);padding-bottom:calc(clamp(12px,2vw,26px) + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.94),rgba(0,0,0,.68) 72%,transparent);color:#fff;pointer-events:auto}
+.player-screen.is-fullscreen .episode-player-controls{display:block}
+.episode-seek-row{display:grid;grid-template-columns:auto minmax(100px,1fr) auto;align-items:center;gap:12px;font-size:clamp(11px,1.5vw,16px);font-variant-numeric:tabular-nums}
+.episode-seek-row input{width:100%;accent-color:#e6b84f;cursor:pointer}
+.episode-control-buttons{display:flex;justify-content:center;align-items:center;gap:clamp(7px,1.5vw,18px);margin-top:12px;flex-wrap:wrap}
+.episode-control-btn{min-width:clamp(76px,10vw,130px);padding:clamp(9px,1.2vw,15px) 16px;border:1px solid #d6b35b88;border-radius:9px;background:#102b43;color:#fff;font-size:clamp(12px,1.6vw,18px);font-weight:800}
+.episode-control-btn.primary{background:#b88627;color:#101010}
+.episode-control-btn.exit{background:#6f2020;border-color:#d77b7b}
+.episode-control-btn:focus,.episode-seek-row input:focus{outline:3px solid #fff;outline-offset:3px}
+.episode-number{width:100%;min-height:110px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66;color:#f0d79a;font-size:clamp(38px,5vw,64px);font-weight:900}
+.episode-card{min-height:150px}
+
 /* Fullscreen tap handling is captured by the player container itself. */
 .player-screen.is-fullscreen video,.player-screen.is-fullscreen iframe{pointer-events:none !important}
 .channel-switch-overlay{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap;padding:18px 22px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.88),rgba(0,0,0,.48) 70%,transparent);color:#fff;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .25s ease,transform .25s ease;font-size:clamp(14px,2.1vw,23px);text-shadow:0 2px 8px #000}
@@ -387,6 +400,15 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
       <div class="panel-head"><span id="nowTitle">پلەیەری ڤیدیۆ</span></div>
       <div class="player-screen" id="playerScreen" tabindex="0" role="button" aria-label="کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە">
        <video id="video" playsinline preload="auto" fetchpriority="high" disablepictureinpicture disableremoteplayback></video>
+       <div class="episode-player-controls" id="episodePlayerControls" aria-label="کۆنترۆڵی پەخشکردنی ئەڵقە">
+        <div class="episode-seek-row"><span id="episodeCurrentTime">00:00</span><input id="episodeSeek" type="range" min="0" max="100" step="1" value="0" aria-label="شوێنی پەخش"><span id="episodeDuration">00:00</span></div>
+        <div class="episode-control-buttons">
+         <button type="button" class="episode-control-btn" id="episodeBack10">↶ 10</button>
+         <button type="button" class="episode-control-btn primary" id="episodePlayPause">Ⅱ وەستاندن</button>
+         <button type="button" class="episode-control-btn" id="episodeForward10">10 ↷</button>
+         <button type="button" class="episode-control-btn exit" id="episodeExit">✕ دەرچوون</button>
+        </div>
+       </div>
        <iframe id="webStreamFrame" title="پەخشی کەناڵ" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="display:none;width:100%;height:100%;border:0;background:#000"></iframe>
        <div class="idle" id="idle"><div class="play">▶</div><strong>کەناڵێک هەڵبژێرە</strong><small>کەناڵێک هەڵبژێرە بۆ بینین</small></div>
       </div>
@@ -1282,30 +1304,37 @@ function renderDramaPage(){
   catalog.style.display='none';episodeGrid.style.display='grid';
   const valid=selected.episodes
    .filter(ep=>/^https?:\/\//i.test(String(ep.url||'').trim()))
-   .map((ep,index)=>({ep,index}))
-   .sort((a,b)=>{
-    const an=Number(a.ep.number),bn=Number(b.ep.number);
-    if(Number.isFinite(an)&&Number.isFinite(bn)&&an!==bn)return an-bn;
-    if(Number.isFinite(an)!==Number.isFinite(bn))return Number.isFinite(an)?-1:1;
-    return a.index-b.index;
-   });
-  episodeGrid.innerHTML=valid.length?valid.map(({ep},i)=>{
-   const number=String(ep.number||i+1);
-   const title=String(ep.name||('ئەڵقە '+number));
-   return '<button class="episode-card" data-drama-episode="'+safe(ep.id||remoteChannelId(String(ep.url)))+'"><span class="drama-poster" style="display:grid;place-items:center;font-size:clamp(24px,3vw,38px);font-weight:900;color:#f0d79a;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66">'+safe(number)+'</span><b>'+safe(title)+'</b><small>ئەڵقە '+safe(number)+'</small></button>';
+   .map((ep,index)=>{
+    const rawNumber=String(ep.number??'').trim();
+    const parsed=rawNumber!==''?Number(rawNumber):NaN;
+    return {ep,index,number:Number.isFinite(parsed)&&parsed>=0?parsed:index+1};
+   })
+   .sort((a,b)=>a.number-b.number||a.index-b.index);
+  episodeGrid.innerHTML=valid.length?valid.map(({ep,number},i)=>{
+   const episodeKey=String(ep.id||remoteChannelId(String(ep.url)));
+   const label=String(number);
+   const title=String(ep.name||('ئەڵقە '+label));
+   return '<button class="episode-card" data-drama-episode="'+safe(episodeKey)+'" aria-label="ئەڵقەی ژمارە '+safe(label)+'">'
+    +'<span class="episode-number">'+safe(label)+'</span>'
+    +'<b>'+safe(title)+'</b></button>';
   }).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم درامایە نییە.</div>';
   episodeGrid.querySelectorAll('[data-drama-episode]').forEach(btn=>btn.onclick=()=>{
    const episodeId=btn.dataset.dramaEpisode;
    const channel=channels.find(ch=>ch.id==='episode-'+episodeId||ch.id===episodeId);
    if(!channel){toast('ئەم ئەڵقەیە لینکێکی دروستی نییە.');return;}
+   lastDramaEpisodeKey=episodeId;
    playChannel(channel.id);
-   requestAnimationFrame(()=>fullscreen());
+   requestAnimationFrame(()=>{fullscreen();updateEpisodePlayerControls();});
   });
  }
 }
 function openDramaPage(){
  selectedDramaId=null;renderDramaPage();switchPage('drama');renderDramaPage();
 }
+$('#dramaBack').onclick=()=>{
+ selectedDramaId=null;renderDramaPage();
+};
+
 function renderChannels(){
  const list=groupChannels(currentGroup);
  $('#browseHeading').textContent=group(currentGroup).name;
@@ -1478,10 +1507,67 @@ function fullscreen(){
   if(expanded && currentChannel)focusSelectedChannel(currentChannel.id);
  });
 }
+let lastDramaEpisodeKey=null;
+const episodeSeek=$('#episodeSeek');
+const episodeCurrentTime=$('#episodeCurrentTime');
+const episodeDuration=$('#episodeDuration');
+const episodePlayPause=$('#episodePlayPause');
+function formatEpisodeTime(value){
+ const n=Number(value);
+ if(!Number.isFinite(n)||n<0)return '00:00';
+ const seconds=Math.floor(n),hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60),rest=seconds%60;
+ return hours?String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(rest).padStart(2,'0'):String(minutes).padStart(2,'0')+':'+String(rest).padStart(2,'0');
+}
+function updateEpisodePlayerControls(){
+ if(!episodeSeek)return;
+ const duration=Number(video.duration),current=Number(video.currentTime);
+ const seekable=Number.isFinite(duration)&&duration>0;
+ episodeSeek.disabled=!seekable;
+ episodeSeek.max=seekable?String(Math.floor(duration)):'100';
+ if(!episodeSeek.matches(':active'))episodeSeek.value=seekable?String(Math.min(duration,Math.max(0,current||0))):'0';
+ episodeCurrentTime.textContent=formatEpisodeTime(current);
+ episodeDuration.textContent=seekable?formatEpisodeTime(duration):'--:--';
+ if(episodePlayPause)episodePlayPause.textContent=video.paused?'▶ بەردەوامکردن':'Ⅱ وەستاندن';
+}
+function seekEpisodeBy(delta){
+ try{if(Number.isFinite(video.duration)&&video.duration>0)video.currentTime=Math.max(0,Math.min(video.duration,(video.currentTime||0)+delta));}catch(_){}
+ updateEpisodePlayerControls();
+}
+if(episodeSeek){
+ episodeSeek.addEventListener('input',()=>{
+  const duration=Number(video.duration);
+  if(Number.isFinite(duration)&&duration>0)episodeCurrentTime.textContent=formatEpisodeTime(Number(episodeSeek.value));
+ });
+ episodeSeek.addEventListener('change',()=>{
+  const duration=Number(video.duration);
+  if(Number.isFinite(duration)&&duration>0){try{video.currentTime=Math.max(0,Math.min(duration,Number(episodeSeek.value)));}catch(_){}}
+  updateEpisodePlayerControls();
+ });
+}
+['timeupdate','durationchange','loadedmetadata','play','pause','playing','waiting','ended','seeking','seeked'].forEach(eventName=>video.addEventListener(eventName,updateEpisodePlayerControls));
+episodePlayPause?.addEventListener('click',()=>{
+ if(!currentChannel)return;
+ if(video.paused)video.play().catch(()=>toast('نەتوانرا پەخشکردن بەردەوام بکرێت.'));
+ else video.pause();
+ updateEpisodePlayerControls();
+});
+$('#episodeBack10')?.addEventListener('click',()=>seekEpisodeBy(-10));
+$('#episodeForward10')?.addEventListener('click',()=>seekEpisodeBy(10));
+$('#episodeExit')?.addEventListener('click',()=>{
+ cleanPlayer();currentChannel=null;
+ if(isPlayerFullscreen())fullscreen();
+ switchPage('drama');renderDramaPage();
+ requestAnimationFrame(()=>{
+  const row=$('#dramaEpisodes [data-drama-episode="'+CSS.escape(String(lastDramaEpisodeKey||''))+'"]');
+  if(row)row.focus({preventScroll:true});
+ });
+});
+
 // Capture the first physical tap before iframe/video surfaces can consume it.
 // This works with touch screens, mouse clicks and Android TV pointer emulation.
 function exitFullscreenFromTap(e){
  if(!isPlayerFullscreen() || fullscreenBusy)return;
+ if(e.target?.closest?.('.episode-player-controls'))return;
  if(e.cancelable)e.preventDefault();
  e.stopPropagation();
  e.stopImmediatePropagation?.();
@@ -1491,8 +1577,12 @@ playerScreen.addEventListener('pointerdown',exitFullscreenFromTap,true);
 playerScreen.addEventListener('touchstart',exitFullscreenFromTap,{capture:true,passive:false});
 playerScreen.addEventListener('click',exitFullscreenFromTap,true);
 document.addEventListener('keydown',e=>{
- if(isPlayerFullscreen() && (e.key==='Enter' || e.key===' ' || e.keyCode===23 || e.keyCode===66)){
+ if(isPlayerFullscreen() && !e.target?.closest?.('.episode-player-controls') &&
+   (e.key==='Enter' || e.key===' ' || e.keyCode===23 || e.keyCode===66)){
   e.preventDefault();e.stopPropagation();fullscreen();
+ }
+ if(isPlayerFullscreen() && !e.target?.closest?.('button,input') && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
+  e.preventDefault();e.stopPropagation();seekEpisodeBy(e.key==='ArrowLeft'?-10:10);
  }
 },true);
 // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
