@@ -1080,9 +1080,19 @@ async function refreshRemoteChannels(showMessage=false){
   const base='https://late-paper-d34e.jivarakamal8.workers.dev';
   const responses=await Promise.all(['sections','groups','channels','dramas'].map(path=>
    fetch(base+'/api/'+path,{method:'GET',cache:'no-store'})));
-  if(responses.some(r=>!r.ok))throw new Error('Dashboard API unavailable');
-  const [sectionsData,groupsData,channelsData,dramasData]=await Promise.all(responses.map(r=>r.json()));
-  if(!Array.isArray(sectionsData)||!Array.isArray(groupsData)||!Array.isArray(channelsData)||!Array.isArray(dramasData))
+  // Drama catalogue is independent: a failure in another dashboard endpoint must not hide dramas.
+  if(responses[3].ok){
+   const dramasData=await responses[3].json();
+   if(Array.isArray(dramasData)){
+    remoteDramas=dramasData.filter(drama=>drama&&drama.id).map(drama=>({
+     id:String(drama.id),name:String(drama.name||'دراما'),logo:String(drama.logo||'').trim(),
+     episodes:Array.isArray(drama.episodes)?drama.episodes:[]
+    }));
+   }
+  }
+  if(responses.slice(0,3).some(r=>!r.ok))throw new Error('Dashboard API unavailable');
+  const [sectionsData,groupsData,channelsData]=await Promise.all(responses.slice(0,3).map(r=>r.json()));
+  if(!Array.isArray(sectionsData)||!Array.isArray(groupsData)||!Array.isArray(channelsData))
    throw new Error('Invalid dashboard data');
   // Remove only the dashboard-generated groups before rebuilding them from the live API.
   for(let i=groups.length-1;i>=0;i--)if(groups[i]._dashboard)groups.splice(i,1);
@@ -1120,10 +1130,6 @@ async function refreshRemoteChannels(showMessage=false){
    next.push({id:remoteChannelId(url,item.id),name,logo:String(item.logo||'').trim(),url,group:groupId});
   }
   // Keep the drama catalogue separate from the live-channel groups.
-  remoteDramas=dramasData.filter(drama=>drama&&drama.id).map(drama=>({
-   id:String(drama.id),name:String(drama.name||'دراما'),logo:String(drama.logo||'').trim(),
-   episodes:Array.isArray(drama.episodes)?drama.episodes:[]
-  }));
   // Each dashboard drama keeps a private stream group for playback from its episode list.
   for(const drama of remoteDramas){
    if(!drama||!drama.id)continue;
@@ -1142,6 +1148,8 @@ async function refreshRemoteChannels(showMessage=false){
   if(showMessage)toast('بەش و گرووپ و کەناڵ و ئەڵقەکانی داشبۆرد نوێکرانەوە.');
   return true;
  }catch(error){
+  // Even if sections/groups/channels fail, keep the independently loaded drama catalogue visible.
+  renderAll();
   if(showMessage)toast('زانیارییەکانی داشبۆرد نەخوێندرایەوە؛ کەناڵە ناوخۆییەکان بەردەوامن.');
   return false;
  }
