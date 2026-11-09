@@ -144,6 +144,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .group-card .art{font-size:32px}
 .group-card b{font-size:12px}
 .group-card small{font-size:10px;color:var(--muted)}
+.drama-toolbar{display:flex;align-items:center;gap:12px;margin:10px 0 16px}
+.drama-back{background:#0a2239;border:1px solid #31516d;border-radius:9px;padding:10px 18px;font-weight:700}
+.drama-page-heading{font-size:18px;font-weight:800;color:#f0d79a}
+.drama-catalog,.drama-episodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start}
+.drama-card,.episode-card{min-width:0;border:1px solid #25445f;border-radius:11px;background:linear-gradient(145deg,#0b2740,#06172a);padding:9px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;min-height:190px}
+.drama-card:focus,.episode-card:focus{border-color:#71c2ff;box-shadow:0 0 0 3px #71c2ff35}
+.drama-poster{width:100%;height:175px;border-radius:8px;background:#102d46;display:grid;place-items:center;overflow:hidden;color:#e8d3a3;font-size:46px}
+.drama-poster img{width:100%;height:100%;object-fit:cover;display:block}
+.drama-card b,.episode-card b{font-size:13px;line-height:1.5}
+.drama-card small,.episode-card small{font-size:10px;color:var(--muted)}
+.episode-card{min-height:145px;justify-content:flex-start}
+.episode-card .drama-poster{height:105px}
+@media(max-width:700px){.drama-catalog,.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px}.drama-poster{height:145px}}
 .browse-layout{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.4fr);gap:12px}
 /* Hide channel-list column and its heading; keep player full-width. */
 .browse-layout{align-items:stretch;min-height:0}
@@ -324,6 +337,15 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
     </div>
     <div class="section-title">گرووپەکان <small>کلیک بکە بۆ کردنەوە</small></div>
     <div class="categories" id="homeCategories"></div>
+   </section>
+
+   <section class="page" id="page-drama">
+    <div class="drama-toolbar">
+     <button class="drama-back" id="dramaBack" type="button" style="display:none">← گەڕانەوە</button>
+     <div class="drama-page-heading" id="dramaPageTitle">دراماکان</div>
+    </div>
+    <div class="drama-catalog" id="dramaCatalog"></div>
+    <div class="drama-episodes" id="dramaEpisodes" style="display:none"></div>
    </section>
 
    <section class="page media-landing-page" id="page-media">
@@ -1045,6 +1067,8 @@ function normalizeRemoteGroup(value){
  return 'kurdish';
 }
 let dashboardGroupMap=new Map();
+let remoteDramas=[];
+let selectedDramaId=null;
 function remoteChannelId(url,id=''){
  if(id)return 'remote-'+String(id);
  let hash=2166136261;
@@ -1095,8 +1119,13 @@ async function refreshRemoteChannels(showMessage=false){
    const groupId=mapped||normalizeRemoteGroup(item.group);
    next.push({id:remoteChannelId(url,item.id),name,logo:String(item.logo||'').trim(),url,group:groupId});
   }
-  // Each dashboard drama becomes its own page; its episodes are independently selectable streams.
-  for(const drama of dramasData){
+  // Keep the drama catalogue separate from the live-channel groups.
+  remoteDramas=dramasData.filter(drama=>drama&&drama.id).map(drama=>({
+   id:String(drama.id),name:String(drama.name||'دراما'),logo:String(drama.logo||'').trim(),
+   episodes:Array.isArray(drama.episodes)?drama.episodes:[]
+  }));
+  // Each dashboard drama keeps a private stream group for playback from its episode list.
+  for(const drama of remoteDramas){
    if(!drama||!drama.id)continue;
    const groupId='dashboard-drama-'+String(drama.id);
    if(!groups.some(g=>g.id===groupId))groups.push({id:groupId,name:String(drama.name||'دراما'),icon:'🎭',art:'🎭',
@@ -1165,7 +1194,7 @@ const worldMoviePosters = [
 function renderHome(){
  const countryIds=new Set(['iraq','iran','turkey','israel']);
  const mediaIds=new Set(['movies','drama']);
- const mainGroups=groups.filter(g=>!countryIds.has(g.id)&&!mediaIds.has(g.id));
+ const mainGroups=groups.filter(g=>!countryIds.has(g.id)&&!mediaIds.has(g.id)&&!String(g.id).startsWith('dashboard-drama-'));
  const countries=groups.filter(g=>countryIds.has(g.id));
  const mediaGroups=groups.filter(g=>mediaIds.has(g.id));
  const makeTiles=items=>items.map(g=>
@@ -1197,14 +1226,15 @@ function renderHome(){
  $('#page-home').querySelectorAll('[data-group]').forEach(b=>{
   b.onclick=()=>{
    const id=b.dataset.group;
-   if(id==='movies'||id==='drama')openMediaPage(id);
+   if(id==='drama')openDramaPage();
+   else if(id==='movies')openMediaPage(id);
    else openGroup(id);
   };
  });
 }
 function renderGroups(){
 
- $('#groupCards').innerHTML=groups.filter(g=>!['movies','drama'].includes(g.id)).map(g=>
+ $('#groupCards').innerHTML=groups.filter(g=>!['movies','drama'].includes(g.id)&&!String(g.id).startsWith('dashboard-drama-')).map(g=>
  `<button class="group-card" data-group="${g.id}">
  <span class="art">${g.art}</span><b>${g.name}</b>
  <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
@@ -1212,6 +1242,42 @@ function renderGroups(){
 
  $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
  b.onclick=()=>openGroup(b.dataset.group));
+}
+function renderDramaPage(){
+ const catalog=$('#dramaCatalog'),episodeGrid=$('#dramaEpisodes'),back=$('#dramaBack');
+ const selected=remoteDramas.find(d=>d.id===selectedDramaId);
+ if(!selected){
+  back.style.display='none';$('#dramaPageTitle').textContent='دراماکان';
+  catalog.style.display='grid';episodeGrid.style.display='none';
+  catalog.innerHTML=remoteDramas.length?remoteDramas.map(d=>{
+   const logo=d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎭';
+   return '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+logo+'</span><b>'+safe(d.name)+'</b><small>'+d.episodes.length+' ئەڵقە</small></button>';
+  }).join(''):'<div class="empty">هیچ درامایەک لە داشبۆرد زیاد نەکراوە.</div>';
+  catalog.querySelectorAll('[data-drama-id]').forEach(btn=>btn.onclick=()=>{
+   selectedDramaId=btn.dataset.dramaId;renderDramaPage();
+   const first=$('#dramaEpisodes .episode-card');if(first)first.focus({preventScroll:true});
+  });
+ }else{
+  back.style.display='inline-flex';$('#dramaPageTitle').textContent=selected.name;
+  catalog.style.display='none';episodeGrid.style.display='grid';
+  const valid=selected.episodes.filter(ep=>/^https?:\/\//i.test(String(ep.url||'').trim()));
+  episodeGrid.innerHTML=valid.length?valid.map((ep,i)=>{
+   const logo=String(ep.logo||selected.logo||'').trim();
+   const poster=logo?'<img src="'+safe(logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎬';
+   const title=String(ep.name||('ئەڵقە '+(ep.number||i+1)));
+   return '<button class="episode-card" data-drama-episode="'+safe(ep.id||remoteChannelId(String(ep.url)))+'"><span class="drama-poster">'+poster+'</span><b>'+safe(title)+'</b><small>ئەڵقە '+safe(ep.number||i+1)+'</small></button>';
+  }).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم درامایە نییە.</div>';
+  episodeGrid.querySelectorAll('[data-drama-episode]').forEach(btn=>btn.onclick=()=>{
+   const episodeId=btn.dataset.dramaEpisode;
+   const channel=channels.find(ch=>ch.id==='episode-'+episodeId||ch.id===episodeId);
+   const groupId='dashboard-drama-'+selected.id;
+   if(!channel){toast('ئەم ئەڵقەیە لینکێکی دروستی نییە.');return;}
+   currentGroup=groupId;currentChannel=null;switchPage('browse');renderChannels();focusSelectedChannel(channel.id);
+  });
+ }
+}
+function openDramaPage(){
+ selectedDramaId=null;renderDramaPage();switchPage('drama');renderDramaPage();
 }
 function renderChannels(){
  const list=groupChannels(currentGroup);
@@ -1238,7 +1304,7 @@ function renderSearch(q=''){
  '<div class="empty">هیچ کەناڵێک نییە. لینکەکان زیاد بکە.</div>';
  // Channel activation is delegated below so double-click can be detected reliably.
 }
-function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($('#searchInput').value||'');}
+function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($('#searchInput').value||'');if($('#page-drama'))renderDramaPage();}
 
 function switchPage(name){
  if(!$('#page-'+name))name='home';
@@ -1249,12 +1315,13 @@ function switchPage(name){
  activePage=name;
  $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
- const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',media:'فیلم',
+ const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',media:'فیلم',drama:'دراماکان',
  search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
  $('#pageTitle').innerHTML=name==='home'?safe(titles[name])+'<small>پلەیەری Smart TV</small>':safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
  if(name==='browse')renderChannels();
  if(name==='groups')renderGroups();
  if(name==='home')renderHome();
+ if(name==='drama')renderDramaPage();
 }
 function openGroup(id){
  currentGroup=id;
@@ -1266,7 +1333,8 @@ function openGroup(id){
  renderChannels();
 }
 function openMediaPage(id){
- // Movies and Drama use their own channel groups, just like the country/category lists.
+ if(id==='drama'){openDramaPage();return;}
+ // Movies retain their existing channel-group behavior.
  openGroup(id);
 }
 
@@ -1903,6 +1971,7 @@ function initRadio(){
  renderRadioList();
 }
 initRadio();
+$('#dramaBack').onclick=()=>{selectedDramaId=null;renderDramaPage();const first=$('#dramaCatalog .drama-card');if(first)first.focus({preventScroll:true});};
 renderAll();
 // لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
 refreshRemoteChannels(false);
