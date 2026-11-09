@@ -28,7 +28,9 @@ jobs:
 
       - name: Decode the original JIVARA APK
         run: |
-          cp JIVARA_TV.zip original.apk
+          curl -fL --retry 3 "https://github.com/kanalnawxo/JIVARA-TV/releases/download/v1.0.1/JIVARA_TV.apk" -o original.apk
+          echo "Using exact JIVARA TV v1.0.1 release APK"
+          echo "ca3d7a715bd9947e85f9dd1d9ca48de9d9cfc07d714ee63270d8758f00624eb6  original.apk" | sha256sum -c -
           cp "APK LOGO.png" logo.png
           apktool d -f original.apk -o decoded
           test -f decoded/assets/index.html

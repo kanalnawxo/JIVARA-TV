@@ -1028,72 +1028,92 @@ let remoteChannelsLoaded = false;
 function normalizeRemoteGroup(value){
  const key=String(value||'').trim().toLowerCase();
  const aliases={
-  local:['local','ناوخۆ','local-ناوخۆ'],
-  kurdish:['kurdish','کوردی','kurdistan'],
-  arabic:['arabic','عەرەبی','عربي'],
-  foreign:['foreign','بیانی'],
-  movies:['movies','movie','فیلم','افلام','أفلام'],
-  drama:['drama','دراما','مسلسلات'],
-  news:['news','هەواڵ','اخبار'],
-  quran:['quran','قورئان','قرآن'],
-  kids:['kids','children','منداڵان','اطفال'],
-  sports:['sports','sport','وەرزش','رياضة'],
-  music:['music','موزیک','موسيقى'],
-  documentary:['documentary','دۆکۆمێنتاری'],
-  iraq:['iraq','iq','عێراق','عراق','العراق','🇮🇶'],
-  iran:['iran','ir','ئێران','ایران','إيران','ايران','🇮🇷'],
+  local:['local','ناوخۆ','local-ناوخۆ'], kurdish:['kurdish','کوردی','kurdistan'],
+  arabic:['arabic','عەرەبی','عربي'], foreign:['foreign','بیانی'],
+  movies:['movies','movie','فیلم','افلام','أفلام'], drama:['drama','دراما','مسلسلات'],
+  news:['news','هەواڵ','اخبار'], quran:['quran','قورئان','قرآن'],
+  kids:['kids','children','منداڵان','اطفال'], sports:['sports','sport','وەرزش','رياضة'],
+  music:['music','موزیک','موسيقى'], documentary:['documentary','دۆکۆمێنتاری'],
+  iraq:['iraq','iq','عێراق','عراق','العراق','🇮🇶'], iran:['iran','ir','ئێران','ایران','إيران','ايران','🇮🇷'],
   turkey:['turkey','türkiye','turkiye','tr','تورکیا','توركيا','تركيا','🇹🇷'],
   israel:['israel','il','ئیسرائیل','اسرائیل','إسرائيل','اسرائيل','🇮🇱']
  };
  for(const g of groups){
-  if(key===g.id.toLowerCase()) return g.id;
+  if(key===String(g.id).toLowerCase() || key===String(g.name).trim().toLowerCase()) return g.id;
   if((aliases[g.id]||[]).some(x=>x.toLowerCase()===key)) return g.id;
  }
  return 'kurdish';
 }
-
-function remoteChannelId(url){
+let dashboardGroupMap=new Map();
+function remoteChannelId(url,id=''){
+ if(id)return 'remote-'+String(id);
  let hash=2166136261;
- for(let i=0;i<url.length;i++){
-  hash^=url.charCodeAt(i);
-  hash=Math.imul(hash,16777619);
- }
+ for(let i=0;i<url.length;i++){hash^=url.charCodeAt(i);hash=Math.imul(hash,16777619);}
  return 'remote-'+(hash>>>0).toString(36);
 }
-
 async function refreshRemoteChannels(showMessage=false){
  try{
-  const response=await fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/channels',{
-   method:'GET',cache:'no-store'
-  });
-  if(!response.ok) throw new Error('HTTP '+response.status);
-  const data=await response.json();
-  if(!Array.isArray(data.channels)) throw new Error('Invalid channel data');
-  const incoming=data.channels;
-  // Cloudflare is authoritative after a successful fetch, so dashboard deletions stay deleted.
-  const seen=new Set();
-  const next=[];
-  for(const item of incoming){
-   const url=String(item?.url||'').trim();
-   const name=String(item?.name||'').trim();
-   if(!name||!/^https?:\/\//i.test(url)||seen.has(url)) continue;
-   seen.add(url);
-   next.push({
-    id:remoteChannelId(url),
-    name,
-    logo:String(item.logo||'').trim(),
-    url,
-    group:normalizeRemoteGroup(item.group)
-   });
+  const base='https://late-paper-d34e.jivarakamal8.workers.dev';
+  const responses=await Promise.all(['sections','groups','channels','dramas'].map(path=>
+   fetch(base+'/api/'+path,{method:'GET',cache:'no-store'})));
+  if(responses.some(r=>!r.ok))throw new Error('Dashboard API unavailable');
+  const [sectionsData,groupsData,channelsData,dramasData]=await Promise.all(responses.map(r=>r.json()));
+  if(!Array.isArray(sectionsData)||!Array.isArray(groupsData)||!Array.isArray(channelsData)||!Array.isArray(dramasData))
+   throw new Error('Invalid dashboard data');
+  // Remove only the dashboard-generated groups before rebuilding them from the live API.
+  for(let i=groups.length-1;i>=0;i--)if(groups[i]._dashboard)groups.splice(i,1);
+  dashboardGroupMap=new Map();
+  const sectionNames=new Map(sectionsData.map(s=>[String(s.id),String(s.name||'')]));
+  const sourceGroups=new Map(groupsData.map(g=>[String(g.id),g]));
+  const makeDashboardGroup=(g)=>{
+   const id='dashboard-group-'+String(g.id);
+   if(dashboardGroupMap.has(String(g.id)))return dashboardGroupMap.get(String(g.id));
+   const parent=g.parentId?sourceGroups.get(String(g.parentId)):null;
+   const section=sectionNames.get(String(g.sectionId||''))||String(g.section||'');
+   const item={id,name:String(g.name||'گرووپ'),icon:'📺',art:'📺',colors:['#176f9e','#123e65'],
+    section,sectionId:String(g.sectionId||''),parentName:parent?String(parent.name||''):'',_dashboard:true};
+   dashboardGroupMap.set(String(g.id),id);groups.push(item);return id;
+  };
+  // Parent-first ordering keeps nested group labels understandable even if the API order differs.
+  const pending=[...groupsData];let guard=0;
+  while(pending.length&&guard++<groupsData.length+2){
+   let progressed=false;
+   for(let i=pending.length-1;i>=0;i--){
+    const g=pending[i];
+    if(!g.parentId||dashboardGroupMap.has(String(g.parentId))||!sourceGroups.has(String(g.parentId))){
+     makeDashboardGroup(g);pending.splice(i,1);progressed=true;
+    }
+   }
+   if(!progressed){for(const g of pending)makeDashboardGroup(g);pending.length=0;}
   }
-  remoteChannels=next;
-  remoteChannelsLoaded=true;
+  const next=[];const seen=new Set();
+  for(const item of channelsData){
+   const url=String(item?.url||'').trim(),name=String(item?.name||'').trim();
+   if(!name||!/^https?:\/\//i.test(url)||seen.has(String(item.id||url)))continue;
+   seen.add(String(item.id||url));
+   const mapped=item.groupId?dashboardGroupMap.get(String(item.groupId)):null;
+   const groupId=mapped||normalizeRemoteGroup(item.group);
+   next.push({id:remoteChannelId(url,item.id),name,logo:String(item.logo||'').trim(),url,group:groupId});
+  }
+  // Each dashboard drama becomes its own page; its episodes are independently selectable streams.
+  for(const drama of dramasData){
+   if(!drama||!drama.id)continue;
+   const groupId='dashboard-drama-'+String(drama.id);
+   if(!groups.some(g=>g.id===groupId))groups.push({id:groupId,name:String(drama.name||'دراما'),icon:'🎭',art:'🎭',
+    colors:['#7650bd','#39205f'],section:'دراما',sectionId:'dashboard-drama',_dashboard:true});
+   for(const ep of (Array.isArray(drama.episodes)?drama.episodes:[])){
+    const url=String(ep.url||'').trim(),name=String(ep.name||('ئەڵقە '+(ep.number||''))).trim();
+    if(!url||!/^https?:\/\//i.test(url))continue;
+    next.push({id:'episode-'+String(ep.id||remoteChannelId(url)),name,logo:String(ep.logo||drama.logo||'').trim(),url,group:groupId});
+   }
+  }
+  remoteChannels=next;remoteChannelsLoaded=true;
   channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
   renderAll();
-  if(showMessage) toast('کەناڵەکانی Cloudflare نوێکرانەوە.');
+  if(showMessage)toast('بەش و گرووپ و کەناڵ و ئەڵقەکانی داشبۆرد نوێکرانەوە.');
   return true;
  }catch(error){
-  if(showMessage) toast('پەیوەندی بە سێرڤەری کەناڵەکان نەکرا؛ کەناڵە ناوخۆییەکان بەردەوامن.');
+  if(showMessage)toast('زانیارییەکانی داشبۆرد نەخوێندرایەوە؛ کەناڵە ناوخۆییەکان بەردەوامن.');
   return false;
  }
 }
@@ -1150,7 +1170,7 @@ function renderHome(){
  const mediaGroups=groups.filter(g=>mediaIds.has(g.id));
  const makeTiles=items=>items.map(g=>
  `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
- <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span></button>`).join('');
+ <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span>${g.section?`<small class="dashboard-section-label">${safe(g.section)}</small>`:''}</button>`).join('');
  $('#homeCategories').innerHTML=makeTiles(mainGroups);
  
  let countrySection=$('#homeCountryCategories');
