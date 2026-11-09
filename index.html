@@ -1105,23 +1105,26 @@ async function refreshRemoteChannels(showMessage=false){
   // Drama catalogue is independent: a failure in another dashboard endpoint must not hide dramas.
   if(responses[3].ok){
    const dramaPayload=await responses[3].json();
-   // Support both flat drama arrays and the dashboard's grouped response.
-   const dramaGroups=Array.isArray(dramaPayload)?dramaPayload:
-    (Array.isArray(dramaPayload?.groups)?dramaPayload.groups:[]);
-   const flatDramas=Array.isArray(dramaPayload?.dramas)?dramaPayload.dramas:[];
-   const groupedDramas=dramaGroups.flatMap(group=>
-    Array.isArray(group?.dramas)?group.dramas:[]);
-   const directDramas=Array.isArray(dramaPayload)?
-    dramaPayload.filter(item=>item&&item.id&&!Array.isArray(item.dramas)):[];
-   const sourceDramas=[...flatDramas,...groupedDramas,...directDramas];
+   // Accept all known Worker response shapes and dashboard field names.
+   const grouped=Array.isArray(dramaPayload?.groups)?dramaPayload.groups.flatMap(g=>Array.isArray(g?.dramas)?g.dramas:[]):[];
+   const sourceDramas=[
+    ...(Array.isArray(dramaPayload)?dramaPayload:[]),
+    ...(Array.isArray(dramaPayload?.series)?dramaPayload.series:[]),
+    ...(Array.isArray(dramaPayload?.dramas)?dramaPayload.dramas:[]),
+    ...grouped
+   ];
    const seenDramaIds=new Set();
-   remoteDramas=sourceDramas.filter(drama=>{
-    if(!drama||!drama.id||seenDramaIds.has(String(drama.id)))return false;
-    seenDramaIds.add(String(drama.id));return true;
-   }).map(drama=>({
-    id:String(drama.id),name:String(drama.name||'دراما'),
-    logo:String(drama.logo||drama.poster||drama.image||'').trim(),
-    episodes:Array.isArray(drama.episodes)?drama.episodes:[]
+   remoteDramas=sourceDramas.filter(d=>{
+    if(!d||!d.id||seenDramaIds.has(String(d.id)))return false;
+    seenDramaIds.add(String(d.id));return true;
+   }).map(d=>({
+    id:String(d.id),name:String(d.name||d.title||d.seriesTitle||'دراما'),
+    logo:String(d.logo||d.poster||d.image||d.seriesPoster||'').trim(),
+    episodes:(Array.isArray(d.episodes)?d.episodes:[]).map((ep,index)=>({
+     ...ep,id:String(ep?.id||''),number:ep?.number??ep?.episodeNumber??index+1,
+     name:String(ep?.name||ep?.title||ep?.episodeTitle||''),
+     url:String(ep?.url||ep?.streamUrl||ep?.episodeUrl||'').trim()
+    }))
    }));
   }
   if(responses.slice(0,3).some(r=>!r.ok))throw new Error('Dashboard API unavailable');
@@ -1171,9 +1174,11 @@ async function refreshRemoteChannels(showMessage=false){
    if(!groups.some(g=>g.id===groupId))groups.push({id:groupId,name:String(drama.name||'دراما'),icon:'🎭',art:'🎭',
     colors:['#7650bd','#39205f'],section:'دراما',sectionId:'dashboard-drama',_dashboard:true});
    for(const ep of (Array.isArray(drama.episodes)?drama.episodes:[])){
-    const url=String(ep.url||'').trim(),name=String(ep.name||('ئەڵقە '+(ep.number||''))).trim();
+    const url=String(ep.url||ep.streamUrl||ep.episodeUrl||'').trim();
+    const name=String(ep.name||ep.title||('ئەڵقە '+(ep.number||''))).trim();
     if(!url||!/^https?:\/\//i.test(url))continue;
     next.push({id:'episode-'+String(ep.id||remoteChannelId(url)),name,logo:String(ep.logo||drama.logo||'').trim(),url,group:groupId});
+   }
    }
   }
   remoteChannels=next;remoteChannelsLoaded=true;
@@ -1300,32 +1305,26 @@ function renderDramaPage(){
    const first=$('#dramaEpisodes .episode-card');if(first)first.focus({preventScroll:true});
   });
  }else{
-  back.style.display='inline-flex';$('#dramaPageTitle').textContent=selected.name;
+  back.style.display='inline-flex';$('#dramaPageTitle').textContent='';
   catalog.style.display='none';episodeGrid.style.display='grid';
-  const valid=selected.episodes
-   .filter(ep=>/^https?:\/\//i.test(String(ep.url||'').trim()))
+  const ordered=(Array.isArray(selected.episodes)?selected.episodes:[])
    .map((ep,index)=>{
-    const rawNumber=String(ep.number??'').trim();
-    const parsed=rawNumber!==''?Number(rawNumber):NaN;
-    return {ep,index,number:Number.isFinite(parsed)&&parsed>=0?parsed:index+1};
-   })
-   .sort((a,b)=>a.number-b.number||a.index-b.index);
-  episodeGrid.innerHTML=valid.length?valid.map(({ep,number},i)=>{
-   const episodeKey=String(ep.id||remoteChannelId(String(ep.url)));
-   const label=String(number);
-   const title=String(ep.name||('ئەڵقە '+label));
-   return '<button class="episode-card" data-drama-episode="'+safe(episodeKey)+'" aria-label="ئەڵقەی ژمارە '+safe(label)+'">'
-    +'<span class="episode-number">'+safe(label)+'</span>'
-    +'<b>'+safe(title)+'</b></button>';
-  }).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم درامایە نییە.</div>';
+    const raw=String(ep.number??ep.episodeNumber??'').trim(),parsed=raw!==''?Number(raw):NaN;
+    const url=String(ep.url||ep.streamUrl||ep.episodeUrl||'').trim();
+    return {ep,index,url,number:Number.isFinite(parsed)&&parsed>=0?parsed:index+1};
+   }).sort((a,b)=>a.number-b.number||a.index-b.index);
+  episodeGrid.innerHTML=ordered.length?ordered.map(({ep,url,number})=>{
+   const key=String(ep.id||remoteChannelId(url)),label=String(number);
+   return '<button class="episode-card" data-drama-episode="'+safe(key)+'" aria-label="ئەڵقەی ژمارە '+safe(label)+'"><span class="episode-number">'+safe(label)+'</span></button>';
+  }).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم درامایە تۆمار نەکراوە.</div>';
   episodeGrid.querySelectorAll('[data-drama-episode]').forEach(btn=>btn.onclick=()=>{
-   const episodeId=btn.dataset.dramaEpisode;
-   const channel=channels.find(ch=>ch.id==='episode-'+episodeId||ch.id===episodeId);
-   if(!channel){toast('ئەم ئەڵقەیە لینکێکی دروستی نییە.');return;}
-   lastDramaEpisodeKey=episodeId;
-   playChannel(channel.id);
+   const key=btn.dataset.dramaEpisode;
+   const channel=channels.find(ch=>ch.id==='episode-'+key||ch.id===key);
+   if(!channel){toast('لینکی ئەم ئەڵقەیە لە داشبۆرد دانەنراوە.');return;}
+   lastDramaEpisodeKey=key;playChannel(channel.id);
    requestAnimationFrame(()=>{fullscreen();updateEpisodePlayerControls();});
   });
+ }
  }
 }
 function openDramaPage(){
