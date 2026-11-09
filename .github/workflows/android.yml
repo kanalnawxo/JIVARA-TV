@@ -42,6 +42,54 @@ jobs:
           subprocess.run(["node", "--check", "/tmp/jivara-app-check.js"], check=True)
           subprocess.run(["node", "--check", "/tmp/jivara-worker-check.mjs"], check=True)
           PY
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import worker from "file:///tmp/jivara-worker-check.mjs";
+          const seeded = { sections: [], groups: [], channels: [], dramas: [
+            { id: "series-a", name: "Series A", logo: "https://example.com/a.png", episodes: [
+              { id: "episode-a", name: "Episode A", number: 1, url: "https://example.com/a.m3u8" }
+            ]},
+            { id: "series-b", name: "Series B", logo: "", episodes: [
+              { id: "episode-b", name: "Episode B", number: 2, url: "https://example.com/b.m3u8" }
+            ]}
+          ]};
+          const store = new Map([["channels", JSON.stringify(seeded)]]);
+          const env = { ADMIN_TOKEN: "test-token", CHANNELS: {
+            async get(key, type) { const value = store.get(key); return value == null ? null : (type === "json" ? JSON.parse(value) : value); },
+            async put(key, value) { store.set(key, value); }
+          }};
+          async function call(path, method = "GET", body = null, admin = false) {
+            const headers = {};
+            if (body) headers["Content-Type"] = "application/json";
+            if (admin) headers.Authorization = "Bearer test-token";
+            return worker.fetch(new Request("https://worker.test" + path, {
+              method, headers, body: body ? JSON.stringify(body) : undefined
+            }), env);
+          }
+          const publicResponse = await call("/api/dramas");
+          const publicData = await publicResponse.json();
+          assert.equal(publicResponse.status, 200);
+          assert.equal(publicData.groups[0].dramas.length, 2);
+          assert.equal(publicData.groups[0].dramas[0].episodes[0].dramaId, "series-a");
+          const crossSeries = await call("/api/admin/episodes", "PUT", {
+            id: "episode-a", dramaId: "series-b", name: "Wrong series", number: 1, url: "https://example.com/wrong.m3u8"
+          }, true);
+          assert.equal(crossSeries.status, 404);
+          const update = await call("/api/admin/episodes", "PUT", {
+            id: "episode-a", dramaId: "series-a", name: "Episode A edited", number: 3, url: "https://example.com/a2.m3u8"
+          }, true);
+          assert.equal(update.status, 200);
+          const created = await call("/api/admin/episodes", "POST", {
+            dramaId: "series-b", name: "Episode B2", number: 3, url: "https://example.com/b2.m3u8"
+          }, true);
+          assert.equal(created.status, 200);
+          const afterCreate = JSON.parse(store.get("channels"));
+          const newEpisode = afterCreate.dramas.find(x => x.id === "series-b").episodes.find(x => x.name === "Episode B2");
+          assert.equal(newEpisode.dramaId, "series-b");
+          const removed = await call("/api/admin/episodes?id=" + encodeURIComponent(newEpisode.id) + "&dramaId=series-b", "DELETE", null, true);
+          assert.equal(removed.status, 200);
+          console.log("Drama API smoke test passed: mapping, stable dramaId, edit, cross-series protection, delete.");
+          NODE
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
