@@ -1505,6 +1505,10 @@ function fullscreen(){
  requestAnimationFrame(()=>{
   fullscreenBusy=false;
   if(expanded && currentChannel)focusSelectedChannel(currentChannel.id);
+  else if(!expanded && currentChannel?.id?.startsWith('episode-')){
+   updateEpisodePlayerControls();
+   episodePlayPause?.focus({preventScroll:true});
+  }
  });
 }
 let lastDramaEpisodeKey=null;
