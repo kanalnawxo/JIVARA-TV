@@ -1270,7 +1270,7 @@ function renderDramaPage(){
   back.style.display='none';$('#dramaPageTitle').textContent='دراماکان';
   catalog.style.display='grid';episodeGrid.style.display='none';
   catalog.innerHTML=remoteDramas.length?remoteDramas.map(d=>{
-   const logo=d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎭';
+   const logo=d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\\'none\\'">':'🎭';
    return '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+logo+'</span><b>'+safe(d.name)+'</b><small>'+d.episodes.length+' ئەڵقە</small></button>';
   }).join(''):'<div class="empty">هیچ درامایەک لە داشبۆرد زیاد نەکراوە.</div>';
   catalog.querySelectorAll('[data-drama-id]').forEach(btn=>btn.onclick=()=>{
@@ -1280,19 +1280,26 @@ function renderDramaPage(){
  }else{
   back.style.display='inline-flex';$('#dramaPageTitle').textContent=selected.name;
   catalog.style.display='none';episodeGrid.style.display='grid';
-  const valid=selected.episodes.filter(ep=>/^https?:\/\//i.test(String(ep.url||'').trim()));
-  episodeGrid.innerHTML=valid.length?valid.map((ep,i)=>{
-   const logo=String(ep.logo||selected.logo||'').trim();
-   const poster=logo?'<img src="'+safe(logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎬';
-   const title=String(ep.name||('ئەڵقە '+(ep.number||i+1)));
-   return '<button class="episode-card" data-drama-episode="'+safe(ep.id||remoteChannelId(String(ep.url)))+'"><span class="drama-poster">'+poster+'</span><b>'+safe(title)+'</b><small>ئەڵقە '+safe(ep.number||i+1)+'</small></button>';
+  const valid=selected.episodes
+   .filter(ep=>/^https?:\\/\\//i.test(String(ep.url||'').trim()))
+   .map((ep,index)=>({ep,index}))
+   .sort((a,b)=>{
+    const an=Number(a.ep.number),bn=Number(b.ep.number);
+    if(Number.isFinite(an)&&Number.isFinite(bn)&&an!==bn)return an-bn;
+    if(Number.isFinite(an)!==Number.isFinite(bn))return Number.isFinite(an)?-1:1;
+    return a.index-b.index;
+   });
+  episodeGrid.innerHTML=valid.length?valid.map(({ep},i)=>{
+   const number=String(ep.number||i+1);
+   const title=String(ep.name||('ئەڵقە '+number));
+   return '<button class="episode-card" data-drama-episode="'+safe(ep.id||remoteChannelId(String(ep.url)))+'"><span class="drama-poster" style="display:grid;place-items:center;font-size:clamp(24px,3vw,38px);font-weight:900;color:#f0d79a;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66">'+safe(number)+'</span><b>'+safe(title)+'</b><small>ئەڵقە '+safe(number)+'</small></button>';
   }).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم درامایە نییە.</div>';
   episodeGrid.querySelectorAll('[data-drama-episode]').forEach(btn=>btn.onclick=()=>{
    const episodeId=btn.dataset.dramaEpisode;
    const channel=channels.find(ch=>ch.id==='episode-'+episodeId||ch.id===episodeId);
-   const groupId='dashboard-drama-'+selected.id;
    if(!channel){toast('ئەم ئەڵقەیە لینکێکی دروستی نییە.');return;}
-   currentGroup=groupId;currentChannel=null;switchPage('browse');renderChannels();focusSelectedChannel(channel.id);
+   playChannel(channel.id);
+   requestAnimationFrame(()=>fullscreen());
   });
  }
 }
