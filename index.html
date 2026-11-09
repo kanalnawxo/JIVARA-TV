@@ -1082,13 +1082,25 @@ async function refreshRemoteChannels(showMessage=false){
    fetch(base+'/api/'+path,{method:'GET',cache:'no-store'})));
   // Drama catalogue is independent: a failure in another dashboard endpoint must not hide dramas.
   if(responses[3].ok){
-   const dramasData=await responses[3].json();
-   if(Array.isArray(dramasData)){
-    remoteDramas=dramasData.filter(drama=>drama&&drama.id).map(drama=>({
-     id:String(drama.id),name:String(drama.name||'دراما'),logo:String(drama.logo||'').trim(),
-     episodes:Array.isArray(drama.episodes)?drama.episodes:[]
-    }));
-   }
+   const dramaPayload=await responses[3].json();
+   // Support both flat drama arrays and the dashboard's grouped response.
+   const dramaGroups=Array.isArray(dramaPayload)?dramaPayload:
+    (Array.isArray(dramaPayload?.groups)?dramaPayload.groups:[]);
+   const flatDramas=Array.isArray(dramaPayload?.dramas)?dramaPayload.dramas:[];
+   const groupedDramas=dramaGroups.flatMap(group=>
+    Array.isArray(group?.dramas)?group.dramas:[]);
+   const directDramas=Array.isArray(dramaPayload)?
+    dramaPayload.filter(item=>item&&item.id&&!Array.isArray(item.dramas)):[];
+   const sourceDramas=[...flatDramas,...groupedDramas,...directDramas];
+   const seenDramaIds=new Set();
+   remoteDramas=sourceDramas.filter(drama=>{
+    if(!drama||!drama.id||seenDramaIds.has(String(drama.id)))return false;
+    seenDramaIds.add(String(drama.id));return true;
+   }).map(drama=>({
+    id:String(drama.id),name:String(drama.name||'دراما'),
+    logo:String(drama.logo||drama.poster||drama.image||'').trim(),
+    episodes:Array.isArray(drama.episodes)?drama.episodes:[]
+   }));
   }
   if(responses.slice(0,3).some(r=>!r.ok))throw new Error('Dashboard API unavailable');
   const [sectionsData,groupsData,channelsData]=await Promise.all(responses.slice(0,3).map(r=>r.json()));
