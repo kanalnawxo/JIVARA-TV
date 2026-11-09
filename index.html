@@ -1179,7 +1179,6 @@ async function refreshRemoteChannels(showMessage=false){
     if(!url||!/^https?:\/\//i.test(url))continue;
     next.push({id:'episode-'+String(ep.id||remoteChannelId(url)),name,logo:String(ep.logo||drama.logo||'').trim(),url,group:groupId});
    }
-   }
   }
   remoteChannels=next;remoteChannelsLoaded=true;
   channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
