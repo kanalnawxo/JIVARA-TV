@@ -197,7 +197,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .player-screen.is-fullscreen .idle{border-radius:0}
 /* Fullscreen drama playback controls stay above the native video surface. */
 .episode-player-controls{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:clamp(12px,2vw,26px);padding-bottom:calc(clamp(12px,2vw,26px) + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.94),rgba(0,0,0,.68) 72%,transparent);color:#fff;pointer-events:auto}
-.player-screen.is-fullscreen .episode-player-controls{display:block}
+.player-screen.is-fullscreen .episode-player-controls.visible{display:block}
 .episode-seek-row{display:grid;grid-template-columns:auto minmax(100px,1fr) auto;align-items:center;gap:12px;font-size:clamp(11px,1.5vw,16px);font-variant-numeric:tabular-nums}
 .episode-seek-row input{width:100%;accent-color:#e6b84f;cursor:pointer}
 .episode-control-buttons{display:flex;justify-content:center;align-items:center;gap:clamp(7px,1.5vw,18px);margin-top:12px;flex-wrap:wrap}
@@ -406,7 +406,6 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
          <button type="button" class="episode-control-btn" id="episodeBack10">↶ 10</button>
          <button type="button" class="episode-control-btn primary" id="episodePlayPause">Ⅱ وەستاندن</button>
          <button type="button" class="episode-control-btn" id="episodeForward10">10 ↷</button>
-         <button type="button" class="episode-control-btn exit" id="episodeExit">✕ دەرچوون</button>
         </div>
        </div>
        <iframe id="webStreamFrame" title="پەخشی کەناڵ" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="display:none;width:100%;height:100%;border:0;background:#000"></iframe>
@@ -1091,6 +1090,7 @@ function normalizeRemoteGroup(value){
 let dashboardGroupMap=new Map();
 let remoteDramas=[];
 let selectedDramaId=null;
+let lastPlayedDramaId=null;
 function remoteChannelId(url,id=''){
  if(id)return 'remote-'+String(id);
  let hash=2166136261;
@@ -1300,7 +1300,7 @@ function renderDramaPage(){
    return '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+logo+'</span><b>'+safe(d.name)+'</b><small>'+d.episodes.length+' ئەڵقە</small></button>';
   }).join(''):'<div class="empty">هیچ درامایەک لە داشبۆرد زیاد نەکراوە.</div>';
   catalog.querySelectorAll('[data-drama-id]').forEach(btn=>btn.onclick=()=>{
-   selectedDramaId=btn.dataset.dramaId;renderDramaPage();
+   selectedDramaId=btn.dataset.dramaId;lastPlayedDramaId=selectedDramaId;renderDramaPage();
    const first=$('#dramaEpisodes .episode-card');if(first)first.focus({preventScroll:true});
   });
  }else{
@@ -1320,7 +1320,7 @@ function renderDramaPage(){
    const key=btn.dataset.dramaEpisode;
    const channel=channels.find(ch=>ch.id==='episode-'+key||ch.id===key);
    if(!channel){toast('لینکی ئەم ئەڵقەیە لە داشبۆرد دانەنراوە.');return;}
-   lastDramaEpisodeKey=key;playChannel(channel.id);
+   lastDramaEpisodeKey=key;lastPlayedDramaId=selectedDramaId;playChannel(channel.id);
    requestAnimationFrame(()=>{fullscreen();updateEpisodePlayerControls();});
   });
  }
@@ -1499,13 +1499,11 @@ function fullscreen(){
  const expanded=isPlayerFullscreen();
  playerScreen.classList.toggle('is-fullscreen',!expanded);
  document.body.classList.toggle('jivara-player-fullscreen',!expanded);
+ if(!expanded && currentChannel?.id?.startsWith('episode-'))$('#episodePlayerControls')?.classList.remove('visible');
  requestAnimationFrame(()=>{
   fullscreenBusy=false;
   if(expanded && currentChannel)focusSelectedChannel(currentChannel.id);
-  else if(!expanded && currentChannel?.id?.startsWith('episode-')){
-   updateEpisodePlayerControls();
-   episodePlayPause?.focus({preventScroll:true});
-  }
+  else if(!expanded && currentChannel?.id?.startsWith('episode-'))playerScreen.focus({preventScroll:true});
  });
 }
 let lastDramaEpisodeKey=null;
@@ -1554,15 +1552,24 @@ episodePlayPause?.addEventListener('click',()=>{
 });
 $('#episodeBack10')?.addEventListener('click',()=>seekEpisodeBy(-10));
 $('#episodeForward10')?.addEventListener('click',()=>seekEpisodeBy(10));
-$('#episodeExit')?.addEventListener('click',()=>{
+function toggleEpisodeControls(){
+ const controls=$('#episodePlayerControls');if(!controls||!isPlayerFullscreen())return;
+ const show=!controls.classList.contains('visible');
+ controls.classList.toggle('visible',show);
+ if(show){updateEpisodePlayerControls();requestAnimationFrame(()=>episodePlayPause?.focus({preventScroll:true}));}
+ else playerScreen.focus({preventScroll:true});
+}
+function returnToDramaLogoPage(){
+ const dramaId=lastPlayedDramaId||selectedDramaId;
  cleanPlayer();currentChannel=null;
  if(isPlayerFullscreen())fullscreen();
+ selectedDramaId=null;
  switchPage('drama');renderDramaPage();
  requestAnimationFrame(()=>{
-  const row=$('#dramaEpisodes [data-drama-episode="'+CSS.escape(String(lastDramaEpisodeKey||''))+'"]');
-  if(row)row.focus({preventScroll:true});
+  const poster=$('#dramaCatalog [data-drama-id="'+CSS.escape(String(dramaId||''))+'"]');
+  if(poster)poster.focus({preventScroll:true});
  });
-});
+}
 
 // Capture the first physical tap before iframe/video surfaces can consume it.
 // This works with touch screens, mouse clicks and Android TV pointer emulation.
@@ -1572,18 +1579,28 @@ function exitFullscreenFromTap(e){
  if(e.cancelable)e.preventDefault();
  e.stopPropagation();
  e.stopImmediatePropagation?.();
- fullscreen();
+ if(currentChannel?.id?.startsWith('episode-'))returnToDramaLogoPage();
+ else fullscreen();
 }
 playerScreen.addEventListener('pointerdown',exitFullscreenFromTap,true);
 playerScreen.addEventListener('touchstart',exitFullscreenFromTap,{capture:true,passive:false});
 playerScreen.addEventListener('click',exitFullscreenFromTap,true);
 document.addEventListener('keydown',e=>{
- if(isPlayerFullscreen() && !e.target?.closest?.('.episode-player-controls') &&
-   (e.key==='Enter' || e.key===' ' || e.keyCode===23 || e.keyCode===66)){
-  e.preventDefault();e.stopPropagation();fullscreen();
+ const episodeFullscreen=isPlayerFullscreen()&&currentChannel?.id?.startsWith('episode-');
+ const key=e.key||'',code=e.keyCode||e.which||0;
+ if(episodeFullscreen && (key==='ArrowDown'||code===40||key==='ArrowUp'||code===38)){
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  if(key==='ArrowDown'||code===40)toggleEpisodeControls();
+  return;
  }
- if(isPlayerFullscreen() && !e.target?.closest?.('button,input') && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
-  e.preventDefault();e.stopPropagation();seekEpisodeBy(e.key==='ArrowLeft'?-10:10);
+ if(isPlayerFullscreen() && !e.target?.closest?.('.episode-player-controls') &&
+   (key==='Enter' || key===' ' || code===23 || code===66)){
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  if(episodeFullscreen)returnToDramaLogoPage();else fullscreen();
+  return;
+ }
+ if(isPlayerFullscreen() && !e.target?.closest?.('button,input') && (key==='ArrowLeft'||key==='ArrowRight'||code===37||code===39)){
+  e.preventDefault();e.stopPropagation();seekEpisodeBy((key==='ArrowLeft'||code===37)?-10:10);
  }
 },true);
 // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
@@ -1985,6 +2002,7 @@ document.addEventListener('keydown',e=>{
  const tag=(e.target.tagName||'').toLowerCase();
  if(['input','textarea','select'].includes(tag))return;
  if(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen')){
+  if(currentChannel?.id?.startsWith('episode-')){e.preventDefault();return;}
   if(key==='ArrowUp'||key==='ArrowDown'){
    const now=Date.now();if(now-(window.__jivaraFullscreenSwitchAt||0)<320){e.preventDefault();return;}
    window.__jivaraFullscreenSwitchAt=now;
