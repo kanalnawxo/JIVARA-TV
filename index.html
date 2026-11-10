@@ -150,13 +150,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .drama-catalog,.drama-episodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start}
 .drama-card,.episode-card{min-width:0;border:1px solid #25445f;border-radius:11px;background:linear-gradient(145deg,#0b2740,#06172a);padding:7px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:145px}
 .drama-card:focus,.episode-card:focus{border-color:#71c2ff;box-shadow:0 0 0 3px #71c2ff35}
-.drama-poster{width:100%;height:90px;border-radius:8px;background:#102d46;display:grid;place-items:center;overflow:hidden;color:#e8d3a3;font-size:28px}
-.drama-poster img{width:auto;height:auto;max-width:88%;max-height:88%;object-fit:contain;object-position:center;display:block}
+.drama-poster{display:inline-flex;width:fit-content;max-width:100%;height:auto;min-height:0;margin:0 auto;border-radius:0;background:transparent;align-items:center;justify-content:center;overflow:visible;color:#e8d3a3;font-size:28px}
+.drama-poster img{display:block;width:auto;height:auto;max-width:100%;max-height:none;object-fit:contain;object-position:center}
 .drama-card b,.episode-card b{font-size:13px;line-height:1.5}
 .drama-card small,.episode-card small{font-size:10px;color:var(--muted)}
 .episode-card{min-height:56px;padding:5px;justify-content:center}
-.episode-card .drama-poster{height:54px}
-@media(max-width:700px){.drama-catalog,.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px}.drama-poster{height:84px}}
+.episode-card .drama-poster{height:auto}
+@media(max-width:700px){.drama-catalog,.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px}.drama-poster{height:auto}}
 .browse-layout{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.4fr);gap:12px}
 /* Hide channel-list column and its heading; keep player full-width. */
 .browse-layout{align-items:stretch;min-height:0}
