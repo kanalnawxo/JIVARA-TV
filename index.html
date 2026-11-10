@@ -148,15 +148,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .drama-back{background:#0a2239;border:1px solid #31516d;border-radius:9px;padding:10px 18px;font-weight:700}
 .drama-page-heading{font-size:18px;font-weight:800;color:#f0d79a}
 .drama-catalog,.drama-episodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start}
-.drama-card,.episode-card{min-width:0;border:1px solid #25445f;border-radius:11px;background:linear-gradient(145deg,#0b2740,#06172a);padding:9px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;min-height:190px}
+.drama-card,.episode-card{min-width:0;border:1px solid #25445f;border-radius:11px;background:linear-gradient(145deg,#0b2740,#06172a);padding:7px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:145px}
 .drama-card:focus,.episode-card:focus{border-color:#71c2ff;box-shadow:0 0 0 3px #71c2ff35}
-.drama-poster{width:100%;height:175px;border-radius:8px;background:#102d46;display:grid;place-items:center;overflow:hidden;color:#e8d3a3;font-size:46px}
+.drama-poster{width:100%;height:125px;border-radius:8px;background:#102d46;display:grid;place-items:center;overflow:hidden;color:#e8d3a3;font-size:34px}
 .drama-poster img{width:100%;height:100%;object-fit:cover;display:block}
 .drama-card b,.episode-card b{font-size:13px;line-height:1.5}
 .drama-card small,.episode-card small{font-size:10px;color:var(--muted)}
-.episode-card{min-height:145px;justify-content:flex-start}
-.episode-card .drama-poster{height:105px}
-@media(max-width:700px){.drama-catalog,.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px}.drama-poster{height:145px}}
+.episode-card{min-height:88px;justify-content:center}
+.episode-card .drama-poster{height:78px}
+@media(max-width:700px){.drama-catalog,.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px}.drama-poster{height:112px}}
 .browse-layout{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.4fr);gap:12px}
 /* Hide channel-list column and its heading; keep player full-width. */
 .browse-layout{align-items:stretch;min-height:0}
@@ -205,8 +205,8 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .episode-control-btn.primary{background:#b88627;color:#101010}
 .episode-control-btn.exit{background:#6f2020;border-color:#d77b7b}
 .episode-control-btn:focus,.episode-seek-row input:focus{outline:3px solid #fff;outline-offset:3px}
-.episode-number{width:100%;min-height:110px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66;color:#f0d79a;font-size:clamp(38px,5vw,64px);font-weight:900}
-.episode-card{min-height:150px}
+.episode-number{width:100%;min-height:66px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66;color:#f0d79a;font-size:clamp(25px,3vw,36px);font-weight:800}
+.episode-card{min-height:84px}
 
 /* Fullscreen tap handling is captured by the player container itself. */
 .player-screen.is-fullscreen video,.player-screen.is-fullscreen iframe{pointer-events:none !important}
@@ -1982,13 +1982,22 @@ function getPresenceDeviceId(){
 }
 const presenceDeviceId=getPresenceDeviceId();
 async function updateLiveViewerCount(){
+ const countElement=$('#liveViewerCount');
+ // Register this device, but never let a failed POST prevent the independent count request.
  try{
   await fetch(PRESENCE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:presenceDeviceId}),cache:'no-store'});
-  const response=await fetch(PRESENCE_API,{method:'GET',cache:'no-store'});
-  if(!response.ok)throw new Error('presence unavailable');
-  const data=await response.json();
-  if(Number.isFinite(data.active))$('#liveViewerCount').textContent=String(data.active);
  }catch{}
+ try{
+  const response=await fetch(PRESENCE_API,{method:'GET',cache:'no-store'});
+  if(!response.ok)throw new Error('presence count unavailable');
+  const data=await response.json();
+  const active=Number(data.active);
+  if(!Number.isFinite(active)||active<0)throw new Error('invalid presence count');
+  countElement.textContent=String(Math.floor(active));
+ }catch(error){
+  // Keep the last valid count visible; do not replace it with a misleading zero.
+  if(countElement.textContent==='--')countElement.textContent='—';
+ }
 }
 updateLiveViewerCount();
 setInterval(updateLiveViewerCount,60000);
