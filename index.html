@@ -154,6 +154,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .drama-poster img{display:block;width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain;object-position:center}
 .drama-card b,.episode-card b{font-size:13px;line-height:1.5}
 .drama-card small,.episode-card small{font-size:10px;color:var(--muted)}
+.drama-card .drama-views{font-size:10px;color:#e8c88b;line-height:1.4}
+#page-about .app-version{margin:-12px auto 12px;font-size:11px;color:var(--muted);letter-spacing:.6px}
 .episode-card{min-height:56px;padding:5px;justify-content:center}
 .episode-card .drama-poster{height:auto}
 @media(max-width:700px){.drama-catalog,.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px}.drama-poster{height:auto}}
@@ -449,6 +451,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
    <section class="page" id="page-about">
     <div class="about-content">
      <div class="logo">JIVARA<span>TV</span></div>
+     <div class="app-version">v1.0.2</div>
      <h2>Smart TV IPTV Player</h2>
      <p class="muted">ڕووکارێکی ئامادە بۆ گروپی کەناڵەکان و لینکەکانی IPTV.</p>
      <p class="muted">ئەمە پڕۆژەیەکی نموونەییە و پڕۆژەیەکی تایبەتی JIVARA TV ـە.</p>
@@ -1121,6 +1124,7 @@ async function refreshRemoteChannels(showMessage=false){
    }).map(d=>({
     id:String(d.id),name:String(d.name||d.title||d.seriesTitle||'دراما'),
     logo:String(d.logo||d.poster||d.image||d.seriesPoster||'').trim(),
+    views:Math.max(0,Number(d.views)||0),
     episodes:(Array.isArray(d.episodes)?d.episodes:[]).map((ep,index)=>({
      ...ep,id:String(ep?.id||''),number:ep?.number??ep?.episodeNumber??index+1,
      name:String(ep?.name||ep?.title||ep?.episodeTitle||''),
@@ -1298,7 +1302,7 @@ function renderDramaPage(){
   catalog.style.display='grid';episodeGrid.style.display='none';
   catalog.innerHTML=remoteDramas.length?remoteDramas.map(d=>{
    const logo=d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎭';
-   return '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+logo+'</span><b>'+safe(d.name)+'</b><small>'+d.episodes.length+' ئەڵقە</small></button>';
+   return '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+logo+'</span><small class="drama-views">بینراوە: '+d.views+' جار</small><b>'+safe(d.name)+'</b><small>'+d.episodes.length+' ئەڵقە</small></button>';
   }).join(''):'<div class="empty">هیچ درامایەک لە داشبۆرد زیاد نەکراوە.</div>';
   catalog.querySelectorAll('[data-drama-id]').forEach(btn=>btn.onclick=()=>{
    selectedDramaId=btn.dataset.dramaId;lastPlayedDramaId=selectedDramaId;renderDramaPage();
@@ -1322,6 +1326,15 @@ function renderDramaPage(){
    const channel=channels.find(ch=>ch.id==='episode-'+key||ch.id===key);
    if(!channel){toast('لینکی ئەم ئەڵقەیە لە داشبۆرد دانەنراوە.');return;}
    lastDramaEpisodeKey=key;lastPlayedDramaId=selectedDramaId;playChannel(channel.id);
+   const viewedDrama=remoteDramas.find(d=>d.id===selectedDramaId);
+   if(viewedDrama){
+    fetch('https://late-paper-d34e.jivarakamal8.workers.dev/api/dramas/'+encodeURIComponent(selectedDramaId)+'/view',{
+     method:'POST',cache:'no-store'
+    }).then(r=>r.ok?r.json():null).then(data=>{
+     if(data&&Number.isFinite(Number(data.views)))viewedDrama.views=Number(data.views);
+     else viewedDrama.views=(Number(viewedDrama.views)||0)+1;
+    }).catch(()=>{viewedDrama.views=(Number(viewedDrama.views)||0)+1;});
+   }
    requestAnimationFrame(()=>{fullscreen();updateEpisodePlayerControls();});
   });
  }
