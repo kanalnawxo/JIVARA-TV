@@ -151,7 +151,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .drama-card,.episode-card{min-width:0;border:1px solid #25445f;border-radius:11px;background:linear-gradient(145deg,#0b2740,#06172a);padding:7px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:145px}
 .drama-card:focus,.episode-card:focus{border-color:#71c2ff;box-shadow:0 0 0 3px #71c2ff35}
 .drama-poster{width:100%;height:90px;border-radius:8px;background:#102d46;display:grid;place-items:center;overflow:hidden;color:#e8d3a3;font-size:28px}
-.drama-poster img{width:100%;height:100%;object-fit:contain;display:block}
+.drama-poster img{width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;object-position:center;display:block}
 .drama-card b,.episode-card b{font-size:13px;line-height:1.5}
 .drama-card small,.episode-card small{font-size:10px;color:var(--muted)}
 .episode-card{min-height:56px;padding:5px;justify-content:center}
@@ -205,7 +205,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
 .episode-control-btn.primary{background:#b88627;color:#101010}
 .episode-control-btn.exit{background:#6f2020;border-color:#d77b7b}
 .episode-control-btn:focus,.episode-seek-row input:focus{outline:3px solid #fff;outline-offset:3px}
-.episode-number{width:44px;height:44px;min-height:44px;aspect-ratio:1;border-radius:6px;display:grid;place-items:center;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66;color:#f0d79a;font-size:18px;font-weight:800;line-height:1}
+.episode-number{display:inline-block;width:auto;height:auto;min-height:0;aspect-ratio:auto;border:0;border-radius:0;padding:0;background:transparent;color:#f0d79a;font-size:18px;font-weight:800;line-height:1.2}
 .episode-card{min-height:56px}
 
 /* Fullscreen tap handling is captured by the player container itself. */
@@ -335,7 +335,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
   <header class="topbar">
    <div class="page-title" id="pageTitle">سەرەکی<small>پلەیەری Smart TV</small></div>
    <div class="verse-top" aria-label="ئایەتی قورئان">ئەم ئەپە بەردەوام نوێ دەکرێتەوە</div>
-   <div class="live-viewers" id="liveViewers" aria-label="بینەری ئێستا"><span class="live-dot"></span><span id="liveViewerCount">--</span><small>بینەری ئێستا</small></div>
+   <div class="live-viewers" id="liveViewers" aria-label="بینەری ئێستا"><span class="live-dot"></span><span id="liveViewerCount">1</span><small>بینەری ئێستا</small></div>
    <div class="clock"><span id="clock">--:--</span><small id="weekday">---</small></div>
   </header>
   <section class="content">
@@ -2003,10 +2003,11 @@ async function updateLiveViewerCount(){
   const data=await response.json();
   const active=Number(data&&data.active);
   if(!Number.isSafeInteger(active)||active<0)throw new Error('invalid presence count');
-  countElement.textContent=String(active);
+  // This app instance is itself one viewer, so the visible count can never be below 1.
+  countElement.textContent=String(Math.max(1,active));
  }catch(error){
-  // Keep the last valid count visible; never invent a viewer count.
-  if(countElement.textContent==='--')countElement.textContent='—';
+  // Keep the app's own viewer included even when the presence endpoint is unavailable.
+  countElement.textContent='1';
   console.warn('JIVARA live viewer count unavailable:',error);
  }
 }
