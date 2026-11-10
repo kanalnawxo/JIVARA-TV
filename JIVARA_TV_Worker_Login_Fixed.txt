@@ -688,36 +688,109 @@ function renderAll() {
 
 function renderChannels() {
   const list = document.getElementById("channelList");
-  const search = (document.getElementById("channelSearch").value || "").toLowerCase();
-
+  const search = (document.getElementById("channelSearch").value || "").trim().toLowerCase();
   list.innerHTML = "";
 
-  db.channels
-    .filter(c => (c.name || "").toLowerCase().includes(search))
-    .forEach(c => {
-      const div = document.createElement("div");
-      div.className = "item";
+  const groups = db.groups || [];
+  const channels = (db.channels || []).filter(c =>
+    !search || String(c.name || "").toLowerCase().includes(search)
+  );
 
-      const name = document.createElement("strong");
-      name.textContent = c.name || "بێ ناو";
+  function belongsToGroup(channel, group) {
+    if (channel.groupId) return String(channel.groupId) === String(group.id);
+    const sameName = String(channel.group || "").trim() === String(group.name || "").trim();
+    const sameSection = String(channel.sectionId || "") === String(group.sectionId || "");
+    if (!sameName || !sameSection) return false;
+    return groups.filter(g =>
+      String(g.name || "").trim() === String(group.name || "").trim() &&
+      String(g.sectionId || "") === String(group.sectionId || "")
+    ).length === 1;
+  }
 
-      const info = document.createElement("div");
-      info.className = "small";
-      info.textContent = "گرووپ: " + (c.group || "-") +
-        " | بەش: " + (c.section || "-");
+  function makeChannelRow(channel) {
+    const row = document.createElement("div");
+    row.className = "item";
+    const name = document.createElement("strong");
+    name.textContent = channel.name || "بێ ناو";
+    const info = document.createElement("div");
+    info.className = "small";
+    info.textContent = "بەش: " + (channel.section || "-");
+    const edit = document.createElement("button");
+    edit.textContent = "دەستکاری";
+    edit.onclick = () => editChannel(channel.id);
+    const del = document.createElement("button");
+    del.textContent = "سڕینەوە";
+    del.className = "danger";
+    del.onclick = () => deleteChannel(channel.id);
+    row.append(name, info, edit, del);
+    return row;
+  }
 
-      const edit = document.createElement("button");
-      edit.textContent = "دەستکاری";
-      edit.onclick = () => editChannel(c.id);
+  const assigned = new Set();
+  groups.forEach(group => {
+    const ownChannels = channels.filter(channel => belongsToGroup(channel, group));
+    db.channels.filter(channel => belongsToGroup(channel, group)).forEach(channel => assigned.add(String(channel.id)));
+    if (search && !ownChannels.length) return;
 
-      const del = document.createElement("button");
-      del.textContent = "سڕینەوە";
-      del.className = "danger";
-      del.onclick = () => deleteChannel(c.id);
+    const card = document.createElement("div");
+    card.className = "group-card";
+    const heading = document.createElement("div");
+    heading.className = "group-heading";
+    const titleBox = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = group.name || "گرووپی بێ ناو";
+    const count = document.createElement("div");
+    count.className = "group-section-label";
+    count.textContent = "کۆی کەناڵەکان: " + ownChannels.length;
+    titleBox.append(title, count);
 
-      div.append(name, info, edit, del);
-      list.appendChild(div);
-    });
+    const clear = document.createElement("button");
+    clear.textContent = "سڕینەوەی هەموو کەناڵەکانی ئەم گرووپە";
+    clear.className = "delete-group";
+    clear.disabled = ownChannels.length === 0;
+    clear.onclick = () => deleteGroupChannels(group.id, group.name, ownChannels.length);
+
+    heading.append(titleBox, clear);
+    card.appendChild(heading);
+    const body = document.createElement("div");
+    body.className = "group-channels";
+    if (ownChannels.length) ownChannels.forEach(channel => body.appendChild(makeChannelRow(channel)));
+    else {
+      const empty = document.createElement("div");
+      empty.className = "empty-note";
+      empty.textContent = "هیچ کەناڵێک لەم گرووپەدا نییە";
+      body.appendChild(empty);
+    }
+    card.appendChild(body);
+    list.appendChild(card);
+  });
+
+  const unassigned = channels.filter(channel => !assigned.has(String(channel.id)));
+  if (unassigned.length) {
+    const card = document.createElement("div");
+    card.className = "group-card";
+    const heading = document.createElement("div");
+    heading.className = "group-heading";
+    const title = document.createElement("strong");
+    title.textContent = "کەناڵە بێ گرووپەکان";
+    const count = document.createElement("div");
+    count.className = "group-section-label";
+    count.textContent = "کۆی کەناڵەکان: " + unassigned.length;
+    heading.append(title, count);
+    card.appendChild(heading);
+    const body = document.createElement("div");
+    body.className = "group-channels";
+    unassigned.forEach(channel => body.appendChild(makeChannelRow(channel)));
+    card.appendChild(body);
+    list.appendChild(card);
+  }
+
+  if (!list.children.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-note";
+    empty.textContent = "هیچ کەناڵێک نەدۆزرایەوە";
+    list.appendChild(empty);
+  }
 }
 
 async function saveChannel() {
@@ -781,6 +854,26 @@ async function deleteChannel(id) {
     await loadDB();
   } catch (e) {
     alert(e.message);
+  }
+}
+
+async function deleteGroupChannels(groupId, groupName, channelCount) {
+  if (!channelCount) return;
+  const confirmed = confirm(
+    "ئاگاداری: هەموو کەناڵەکانی ئەم گرووپە بە یەکجار دەسڕدرێنەوە.\n\n" +
+    "گرووپ: " + (groupName || "بێ ناو") + "\n" +
+    "ژمارەی کەناڵەکان: " + channelCount + "\n\n" +
+    "خۆی گرووپەکە دەمێنێتەوە. دڵنیایت؟"
+  );
+  if (!confirmed) return;
+  try {
+    const result = await api("/api/admin/group-channels?groupId=" + encodeURIComponent(groupId), {
+      method: "DELETE"
+    });
+    await loadDB();
+    alert("هەموو کەناڵەکانی گرووپەکە سڕدرانەوە: " + Number(result.deletedChannels || 0));
+  } catch (e) {
+    alert("سڕینەوە سەرکەوتوو نەبوو: " + e.message);
   }
 }
 
@@ -1340,25 +1433,38 @@ async function handleRequest(request, env) {
 
   if (path === "/api/dramas" && method === "GET") {
     const db = await readDB(env);
+    const dramas = await Promise.all(db.dramas.map(async drama => ({
+      id: String(drama.id || ""),
+      name: String(drama.name || ""),
+      poster: String(drama.logo || drama.poster || ""),
+      views: Number(await env.CHANNELS.get("drama_views_" + String(drama.id || ""))) || 0,
+      episodes: (drama.episodes || []).map(episode => ({
+        ...episode,
+        id: String(episode.id || ""),
+        dramaId: String(drama.id || episode.dramaId || ""),
+        number: Number(episode.number || 1),
+        name: String(episode.name || ""),
+        url: String(episode.url || "")
+      }))
+    })));
     return json({
       groups: [{
         id: "jivara-dramas",
         name: "دراماکان",
-        dramas: db.dramas.map(drama => ({
-          id: String(drama.id || ""),
-          name: String(drama.name || ""),
-          poster: String(drama.logo || drama.poster || ""),
-          episodes: (drama.episodes || []).map(episode => ({
-            ...episode,
-            id: String(episode.id || ""),
-            dramaId: String(drama.id || episode.dramaId || ""),
-            number: Number(episode.number || 1),
-            name: String(episode.name || ""),
-            url: String(episode.url || "")
-          }))
-        }))
+        dramas
       }]
     });
+  }
+
+  // Public count: one view is recorded whenever a viewer starts an episode.
+  if (path.startsWith("/api/dramas/") && path.endsWith("/view") && method === "POST") {
+    const dramaId = decodeURIComponent(path.slice("/api/dramas/".length, -"/view".length));
+    if (!dramaId) return json({ error: "Drama ID پێویستە" }, 400);
+    const key = "drama_views_" + dramaId;
+    const current = Number(await env.CHANNELS.get(key)) || 0;
+    const views = current + 1;
+    await env.CHANNELS.put(key, String(views));
+    return json({ success: true, views });
   }
 
   if (path.startsWith("/api/admin/")) {
@@ -1437,6 +1543,31 @@ async function handleRequest(request, env) {
 
     await saveDB(env, db);
     return json({ success: true });
+  }
+
+  if (path === "/api/admin/group-channels" && method === "DELETE") {
+    const groupId = url.searchParams.get("groupId");
+    if (!groupId) return json({ error: "Group ID پێویستە" }, 400);
+    const db = await readDB(env);
+    const target = db.groups.find(g => String(g.id) === String(groupId));
+    if (!target) return json({ error: "گرووپ نەدۆزرایەوە" }, 404);
+    const duplicateGroups = db.groups.filter(g =>
+      String(g.name || "").trim() === String(target.name || "").trim() &&
+      String(g.sectionId || "") === String(target.sectionId || "")
+    );
+    const canMatchLegacy = duplicateGroups.length === 1;
+    const before = db.channels.length;
+    db.channels = db.channels.filter(channel => {
+      if (channel.groupId) return String(channel.groupId) !== String(groupId);
+      if (!canMatchLegacy) return true;
+      return !(
+        String(channel.group || "").trim() === String(target.name || "").trim() &&
+        String(channel.sectionId || "") === String(target.sectionId || "")
+      );
+    });
+    const deletedChannels = before - db.channels.length;
+    if (deletedChannels) await saveDB(env, db);
+    return json({ success: true, deletedChannels, groupPreserved: true });
   }
 
   /*
