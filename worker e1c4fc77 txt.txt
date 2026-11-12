@@ -686,6 +686,38 @@ function renderAll() {
   renderEpisodes();
 }
 
+function resolveChannelGroup(channel, groups) {
+  const channelGroupId = String(channel.groupId || "").trim();
+  if (channelGroupId) {
+    const exactGroup = groups.find(group =>
+      String(group.id) === channelGroupId
+    );
+    if (exactGroup) return exactGroup;
+  }
+
+  const channelGroupName = String(channel.group || "").trim();
+  if (!channelGroupName) return null;
+
+  let matches = groups.filter(group =>
+    String(group.name || "").trim() === channelGroupName
+  );
+
+  const channelSectionId = String(channel.sectionId || "").trim();
+  const channelSectionName = String(channel.section || "").trim();
+
+  if (channelSectionId) {
+    matches = matches.filter(group =>
+      String(group.sectionId || "").trim() === channelSectionId
+    );
+  } else if (channelSectionName) {
+    matches = matches.filter(group =>
+      String(group.section || "").trim() === channelSectionName
+    );
+  }
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
 function renderChannels() {
   const list = document.getElementById("channelList");
   const search = (document.getElementById("channelSearch").value || "").trim().toLowerCase();
@@ -697,34 +729,9 @@ function renderChannels() {
     !search || String(c.name || "").toLowerCase().includes(search)
   );
 
-  // groupId بنەمای سەرەکییە؛ بۆ داتای کۆن ناو + ناسنامەی بەش
-  // یان ناوی بەش بەکاردێت، تەنها کاتێک گرووپەکە بە یەکتایی دەناسرێتەوە.
   function belongsToGroup(channel, group) {
-    const channelGroupId = String(channel.groupId || "").trim();
-    if (channelGroupId) return channelGroupId === String(group.id);
-
-    const channelGroupName = String(channel.group || "").trim();
-    if (!channelGroupName ||
-        channelGroupName !== String(group.name || "").trim()) return false;
-
-    const candidates = groups.filter(g =>
-      String(g.name || "").trim() === channelGroupName
-    );
-    const channelSectionId = String(channel.sectionId || "").trim();
-    const channelSectionName = String(channel.section || "").trim();
-
-    let matches = candidates;
-    if (channelSectionId) {
-      matches = candidates.filter(g =>
-        String(g.sectionId || "").trim() === channelSectionId
-      );
-    } else if (channelSectionName) {
-      matches = candidates.filter(g =>
-        String(g.section || "").trim() === channelSectionName
-      );
-    }
-
-    return matches.length === 1 && String(matches[0].id) === String(group.id);
+    const resolved = resolveChannelGroup(channel, groups);
+    return !!resolved && String(resolved.id) === String(group.id);
   }
 
   function makeChannelRow(channel) {
@@ -996,20 +1003,8 @@ function renderGroups() {
 
   function groupChannels(group) {
     return channels.filter(channel => {
-      const channelGroupId = String(channel.groupId || "").trim();
-      if (channelGroupId) return channelGroupId === String(group.id);
-
-      const sameName =
-        String(channel.group || "").trim() === String(group.name || "").trim();
-      const sameSection =
-        String(channel.sectionId || "") === String(group.sectionId || "");
-      if (!sameName || !sameSection) return false;
-
-      const matches = groups.filter(g =>
-        String(g.name || "").trim() === String(group.name || "").trim() &&
-        String(g.sectionId || "") === String(group.sectionId || "")
-      );
-      return matches.length === 1;
+      const resolved = resolveChannelGroup(channel, groups);
+      return !!resolved && String(resolved.id) === String(group.id);
     });
   }
 
