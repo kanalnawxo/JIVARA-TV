@@ -938,8 +938,35 @@ async function clearSelectedGroupChannels() {
   }
 
   const count = (db.channels || []).filter(channel => {
-    const resolved = resolveChannelGroup(channel, db.groups || []);
-    return !!resolved && String(resolved.id) === String(group.id);
+    const channelGroupId = String(channel.groupId || "").trim();
+
+    // هەمان مەرجی سێرڤەر: ئەگەر groupId هەبێت، تەنها بەو ناسنامەیە دەژمێردرێت.
+    if (channelGroupId) return channelGroupId === String(group.id);
+
+    // بۆ داتای کۆن: ناوی گرووپ و بەشی یەکتایی بەکاربهێنە.
+    const channelGroupName = String(channel.group || "").trim();
+    if (!channelGroupName ||
+        channelGroupName !== String(group.name || "").trim()) return false;
+
+    const candidates = (db.groups || []).filter(item =>
+      String(item.name || "").trim() === channelGroupName
+    );
+    const channelSectionId = String(channel.sectionId || "").trim();
+    const channelSectionName = String(channel.section || "").trim();
+
+    let matches = candidates;
+    if (channelSectionId) {
+      matches = candidates.filter(item =>
+        String(item.sectionId || "").trim() === channelSectionId
+      );
+    } else if (channelSectionName) {
+      matches = candidates.filter(item =>
+        String(item.section || "").trim() === channelSectionName
+      );
+    }
+
+    return matches.length === 1 &&
+      String(matches[0].id) === String(group.id);
   }).length;
 
   if (!count) {
