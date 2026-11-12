@@ -697,23 +697,34 @@ function renderChannels() {
     !search || String(c.name || "").toLowerCase().includes(search)
   );
 
-  // groupId ـی دروست بنەمای سەرەکیی پەیوەندیی کەناڵ و گرووپە.
-  // بۆ داتای کۆن، ناو + بەش تەنها ئەگەر یەکتا بێت بەکاردێت.
+  // groupId بنەمای سەرەکییە؛ بۆ داتای کۆن ناو + ناسنامەی بەش
+  // یان ناوی بەش بەکاردێت، تەنها کاتێک گرووپەکە بە یەکتایی دەناسرێتەوە.
   function belongsToGroup(channel, group) {
     const channelGroupId = String(channel.groupId || "").trim();
     if (channelGroupId) return channelGroupId === String(group.id);
 
-    const sameName =
-      String(channel.group || "").trim() === String(group.name || "").trim();
-    const sameSection =
-      String(channel.sectionId || "") === String(group.sectionId || "");
-    if (!sameName || !sameSection) return false;
+    const channelGroupName = String(channel.group || "").trim();
+    if (!channelGroupName ||
+        channelGroupName !== String(group.name || "").trim()) return false;
 
-    const matches = groups.filter(g =>
-      String(g.name || "").trim() === String(group.name || "").trim() &&
-      String(g.sectionId || "") === String(group.sectionId || "")
+    const candidates = groups.filter(g =>
+      String(g.name || "").trim() === channelGroupName
     );
-    return matches.length === 1;
+    const channelSectionId = String(channel.sectionId || "").trim();
+    const channelSectionName = String(channel.section || "").trim();
+
+    let matches = candidates;
+    if (channelSectionId) {
+      matches = candidates.filter(g =>
+        String(g.sectionId || "").trim() === channelSectionId
+      );
+    } else if (channelSectionName) {
+      matches = candidates.filter(g =>
+        String(g.section || "").trim() === channelSectionName
+      );
+    }
+
+    return matches.length === 1 && String(matches[0].id) === String(group.id);
   }
 
   function makeChannelRow(channel) {
@@ -1596,30 +1607,38 @@ async function handleRequest(request, env) {
     );
     if (!target) return json({ error: "گرووپ نەدۆزرایەوە" }, 404);
 
-    const duplicateGroups = db.groups.filter(group =>
-      String(group.name || "").trim() === String(target.name || "").trim() &&
-      String(group.sectionId || "") === String(target.sectionId || "")
-    );
-    const canMatchLegacy = duplicateGroups.length === 1;
     const before = db.channels.length;
 
-    // تەنها groupId ـی یەکسان دەسڕدرێتەوە.
-    // داتای کۆن بە ناو + بەش تەنها ئەگەر گرووپەکە یەکتا بێت دەناسێنرێت.
+    // سڕینەوە تەنها بۆ groupId ـی ئامانجە؛
+    // داتای کۆن تەنها بە ناو و بەشی یەکتایی دەناسرێتەوە.
     db.channels = db.channels.filter(channel => {
       const channelGroupId = String(channel.groupId || "").trim();
+      if (channelGroupId) return channelGroupId !== String(groupId);
 
-      if (channelGroupId) {
-        return channelGroupId !== String(groupId);
+      const channelGroupName = String(channel.group || "").trim();
+      if (!channelGroupName ||
+          channelGroupName !== String(target.name || "").trim()) return true;
+
+      const candidates = db.groups.filter(group =>
+        String(group.name || "").trim() === channelGroupName
+      );
+      const channelSectionId = String(channel.sectionId || "").trim();
+      const channelSectionName = String(channel.section || "").trim();
+
+      let matches = candidates;
+      if (channelSectionId) {
+        matches = candidates.filter(group =>
+          String(group.sectionId || "").trim() === channelSectionId
+        );
+      } else if (channelSectionName) {
+        matches = candidates.filter(group =>
+          String(group.section || "").trim() === channelSectionName
+        );
       }
 
-      if (!canMatchLegacy) return true;
-
-      const sameName =
-        String(channel.group || "").trim() === String(target.name || "").trim();
-      const sameSection =
-        String(channel.sectionId || "") === String(target.sectionId || "");
-
-      return !(sameName && sameSection);
+      const belongsToTarget =
+        matches.length === 1 && String(matches[0].id) === String(groupId);
+      return !belongsToTarget;
     });
 
     const deletedChannels = before - db.channels.length;
