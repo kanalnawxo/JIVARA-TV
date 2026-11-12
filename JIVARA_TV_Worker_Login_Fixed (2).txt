@@ -692,65 +692,73 @@ function renderChannels() {
   list.innerHTML = "";
 
   const groups = db.groups || [];
-  const channels = (db.channels || []).filter(c =>
+  const allChannels = db.channels || [];
+  const channels = allChannels.filter(c =>
     !search || String(c.name || "").toLowerCase().includes(search)
   );
 
+  // groupId ـی دروست بنەمای سەرەکیی پەیوەندیی کەناڵ و گرووپە.
+  // بۆ داتای کۆن، ناو + بەش تەنها ئەگەر یەکتا بێت بەکاردێت.
   function belongsToGroup(channel, group) {
-    // A valid groupId is authoritative. Only recover legacy links when the
-    // old group-name + section pair identifies exactly one group.
-    if (channel.groupId) {
-      const linkedGroup = groups.find(g =>
-        String(g.id) === String(channel.groupId)
-      );
-      if (linkedGroup) return String(linkedGroup.id) === String(group.id);
-    }
+    const channelGroupId = String(channel.groupId || "").trim();
+    if (channelGroupId) return channelGroupId === String(group.id);
 
     const sameName =
       String(channel.group || "").trim() === String(group.name || "").trim();
     const sameSection =
       String(channel.sectionId || "") === String(group.sectionId || "");
-
     if (!sameName || !sameSection) return false;
 
-    return groups.filter(g =>
+    const matches = groups.filter(g =>
       String(g.name || "").trim() === String(group.name || "").trim() &&
       String(g.sectionId || "") === String(group.sectionId || "")
-    ).length === 1;
+    );
+    return matches.length === 1;
   }
 
   function makeChannelRow(channel) {
     const row = document.createElement("div");
     row.className = "item";
+
     const name = document.createElement("strong");
     name.textContent = channel.name || "بێ ناو";
+
     const info = document.createElement("div");
     info.className = "small";
     info.textContent = "بەش: " + (channel.section || "-");
+
     const edit = document.createElement("button");
     edit.textContent = "دەستکاری";
     edit.onclick = () => editChannel(channel.id);
+
     const del = document.createElement("button");
     del.textContent = "سڕینەوە";
     del.className = "danger";
     del.onclick = () => deleteChannel(channel.id);
+
     row.append(name, info, edit, del);
     return row;
   }
 
   const assigned = new Set();
+
   groups.forEach(group => {
+    const ownAll = allChannels.filter(channel => belongsToGroup(channel, group));
+    ownAll.forEach(channel => assigned.add(String(channel.id)));
+
     const ownChannels = channels.filter(channel => belongsToGroup(channel, group));
-    db.channels.filter(channel => belongsToGroup(channel, group)).forEach(channel => assigned.add(String(channel.id)));
     if (search && !ownChannels.length) return;
 
     const card = document.createElement("div");
     card.className = "group-card";
+
     const heading = document.createElement("div");
     heading.className = "group-heading";
+
     const titleBox = document.createElement("div");
     const title = document.createElement("strong");
     title.textContent = group.name || "گرووپی بێ ناو";
+
     const count = document.createElement("div");
     count.className = "group-section-label";
     count.textContent = "کۆی کەناڵەکان: " + ownChannels.length;
@@ -759,20 +767,24 @@ function renderChannels() {
     const clear = document.createElement("button");
     clear.textContent = "سڕینەوەی هەموو کەناڵەکانی ئەم گرووپە";
     clear.className = "delete-group";
-    clear.disabled = ownChannels.length === 0;
-    clear.onclick = () => deleteGroupChannels(group.id, group.name, ownChannels.length);
+    clear.disabled = ownAll.length === 0;
+    clear.onclick = () => deleteGroupChannels(group.id, group.name, ownAll.length);
 
     heading.append(titleBox, clear);
     card.appendChild(heading);
+
     const body = document.createElement("div");
     body.className = "group-channels";
-    if (ownChannels.length) ownChannels.forEach(channel => body.appendChild(makeChannelRow(channel)));
-    else {
+
+    if (ownChannels.length) {
+      ownChannels.forEach(channel => body.appendChild(makeChannelRow(channel)));
+    } else {
       const empty = document.createElement("div");
       empty.className = "empty-note";
       empty.textContent = "هیچ کەناڵێک لەم گرووپەدا نییە";
       body.appendChild(empty);
     }
+
     card.appendChild(body);
     list.appendChild(card);
   });
@@ -781,15 +793,20 @@ function renderChannels() {
   if (unassigned.length) {
     const card = document.createElement("div");
     card.className = "group-card";
+
     const heading = document.createElement("div");
     heading.className = "group-heading";
+
     const title = document.createElement("strong");
     title.textContent = "کەناڵە بێ گرووپەکان";
+
     const count = document.createElement("div");
     count.className = "group-section-label";
     count.textContent = "کۆی کەناڵەکان: " + unassigned.length;
+
     heading.append(title, count);
     card.appendChild(heading);
+
     const body = document.createElement("div");
     body.className = "group-channels";
     unassigned.forEach(channel => body.appendChild(makeChannelRow(channel)));
@@ -804,6 +821,7 @@ function renderChannels() {
     list.appendChild(empty);
   }
 }
+
 
 async function saveChannel() {
   const id = document.getElementById("editingChannel").value;
@@ -966,24 +984,22 @@ function renderGroups() {
   const channels = db.channels || [];
 
   function groupChannels(group) {
-    return channels.filter(c => {
-      if (c.groupId) return String(c.groupId) === String(group.id);
+    return channels.filter(channel => {
+      const channelGroupId = String(channel.groupId || "").trim();
+      if (channelGroupId) return channelGroupId === String(group.id);
 
-      // بۆ داتای کۆن: تەنها کاتێک ناو + بەش یەکتا بێت پەیوەندی دەدرێت.
-      const sameName = String(c.group || "").trim() === String(group.name || "").trim();
-      const sameSection = String(c.sectionId || "") === String(group.sectionId || "");
+      const sameName =
+        String(channel.group || "").trim() === String(group.name || "").trim();
+      const sameSection =
+        String(channel.sectionId || "") === String(group.sectionId || "");
       if (!sameName || !sameSection) return false;
 
       const matches = groups.filter(g =>
-        String(g.name || "").trim() === sameNameValue(group) &&
+        String(g.name || "").trim() === String(group.name || "").trim() &&
         String(g.sectionId || "") === String(group.sectionId || "")
       );
       return matches.length === 1;
     });
-  }
-
-  function sameNameValue(group) {
-    return String(group.name || "").trim();
   }
 
   function makeChannelRow(channel) {
@@ -1011,6 +1027,7 @@ function renderGroups() {
   }
 
   groups.forEach(group => {
+    const ownChannels = groupChannels(group);
     const card = document.createElement("div");
     card.className = "group-card";
 
@@ -1022,16 +1039,28 @@ function renderGroups() {
     title.textContent = group.name || "گرووپی بێ ناو";
     titleBox.appendChild(title);
 
-    const section = (db.sections || []).find(x => String(x.id) === String(group.sectionId || ""));
+    const section = (db.sections || []).find(x =>
+      String(x.id) === String(group.sectionId || "")
+    );
     const meta = document.createElement("div");
     meta.className = "group-section-label";
-    const parent = groups.find(x => String(x.id) === String(group.parentId || ""));
-    meta.textContent = "بەش: " + (section ? section.name : (group.section || "دیاری نەکراو")) +
+    const parent = groups.find(x =>
+      String(x.id) === String(group.parentId || "")
+    );
+    meta.textContent = "بەش: " +
+      (section ? section.name : (group.section || "دیاری نەکراو")) +
       (parent ? " | ژێرگرووپی: " + parent.name : " | گرووپی سەرەکی");
     titleBox.appendChild(meta);
 
     const buttons = document.createElement("div");
     buttons.className = "group-actions";
+
+    const clear = document.createElement("button");
+    clear.textContent = "سڕینەوەی هەموو کەناڵەکانی ئەم گرووپە";
+    clear.className = "delete-group";
+    clear.disabled = ownChannels.length === 0;
+    clear.onclick = () =>
+      deleteGroupChannels(group.id, group.name, ownChannels.length);
 
     const edit = document.createElement("button");
     edit.textContent = "دەستکاری گرووپ";
@@ -1048,11 +1077,10 @@ function renderGroups() {
     del.className = "delete-group";
     del.onclick = () => deleteGroup(group.id);
 
-    buttons.append(edit, del);
+    buttons.append(clear, edit, del);
     heading.append(titleBox, buttons);
     card.appendChild(heading);
 
-    const ownChannels = groupChannels(group);
     const channelBox = document.createElement("div");
     channelBox.className = "group-channels";
 
@@ -1062,7 +1090,7 @@ function renderGroups() {
     channelBox.appendChild(channelTitle);
 
     if (ownChannels.length) {
-      ownChannels.forEach(c => channelBox.appendChild(makeChannelRow(c)));
+      ownChannels.forEach(channel => channelBox.appendChild(makeChannelRow(channel)));
     } else {
       const empty = document.createElement("div");
       empty.className = "empty-note";
@@ -1081,6 +1109,7 @@ function renderGroups() {
     list.appendChild(empty);
   }
 }
+
 
 /*
  * پێش سڕینەوە:
@@ -1560,24 +1589,27 @@ async function handleRequest(request, env) {
   if (path === "/api/admin/group-channels" && method === "DELETE") {
     const groupId = url.searchParams.get("groupId");
     if (!groupId) return json({ error: "Group ID پێویستە" }, 400);
+
     const db = await readDB(env);
-    const target = db.groups.find(g => String(g.id) === String(groupId));
+    const target = db.groups.find(group =>
+      String(group.id) === String(groupId)
+    );
     if (!target) return json({ error: "گرووپ نەدۆزرایەوە" }, 404);
-    const duplicateGroups = db.groups.filter(g =>
-      String(g.name || "").trim() === String(target.name || "").trim() &&
-      String(g.sectionId || "") === String(target.sectionId || "")
+
+    const duplicateGroups = db.groups.filter(group =>
+      String(group.name || "").trim() === String(target.name || "").trim() &&
+      String(group.sectionId || "") === String(target.sectionId || "")
     );
     const canMatchLegacy = duplicateGroups.length === 1;
     const before = db.channels.length;
 
-    // Keep dashboard grouping and deletion on the same safe resolution rule:
-    // valid groupId first; stale IDs may fall back only to a unique legacy pair.
+    // تەنها groupId ـی یەکسان دەسڕدرێتەوە.
+    // داتای کۆن بە ناو + بەش تەنها ئەگەر گرووپەکە یەکتا بێت دەناسێنرێت.
     db.channels = db.channels.filter(channel => {
-      if (channel.groupId) {
-        const linkedGroup = db.groups.find(g =>
-          String(g.id) === String(channel.groupId)
-        );
-        if (linkedGroup) return String(linkedGroup.id) !== String(groupId);
+      const channelGroupId = String(channel.groupId || "").trim();
+
+      if (channelGroupId) {
+        return channelGroupId !== String(groupId);
       }
 
       if (!canMatchLegacy) return true;
@@ -1589,10 +1621,17 @@ async function handleRequest(request, env) {
 
       return !(sameName && sameSection);
     });
+
     const deletedChannels = before - db.channels.length;
     if (deletedChannels) await saveDB(env, db);
-    return json({ success: true, deletedChannels, groupPreserved: true });
+
+    return json({
+      success: true,
+      deletedChannels,
+      groupPreserved: true
+    });
   }
+
 
   /*
    * هاوردەکردن:
