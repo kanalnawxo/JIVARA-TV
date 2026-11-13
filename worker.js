@@ -1764,21 +1764,37 @@ async function handleRequest(request, env) {
       const groupName = String(channel.group || "کوردی").trim() || "کوردی";
       const normalizedName = normGroup(groupName);
 
-      // First, reuse a group with the same normalized name in the selected section.
-      let group = db.groups.find(item =>
-        normGroup(item.name) === normalizedName &&
+      // Reuse an existing group by normalized name. Prefer the selected section,
+      // but do not create a duplicate just because its section differs or is blank.
+      const sameNameGroups = db.groups.filter(item =>
+        normGroup(item.name) === normalizedName
+      );
+      let group = sameNameGroups.find(item =>
         String(item.sectionId || "").trim() === requestedSectionId
       );
 
-      // If no section was selected, reuse an existing same-name group from any section.
-      // This prevents imports without a section from creating duplicate groups.
-      if (!group && !requestedSectionId) {
-        group = db.groups.find(item =>
-          normGroup(item.name) === normalizedName
-        );
+      if (!group && sameNameGroups.length === 1) {
+        group = sameNameGroups[0];
       }
 
-      // Create a group only when no suitable existing group was found.
+      // If several same-name groups already exist, prefer the one already
+      // referenced by the most channels; this keeps imported channels with
+      // the established group instead of creating yet another duplicate.
+      if (!group && sameNameGroups.length > 1) {
+        const usage = new Map();
+        for (const existingChannel of db.channels) {
+          const existingId = String(existingChannel.groupId || existingChannel.group_id || "").trim();
+          if (sameNameGroups.some(item => String(item.id || "").trim() === existingId)) {
+            usage.set(existingId, (usage.get(existingId) || 0) + 1);
+          }
+        }
+        group = sameNameGroups.slice().sort((a, b) =>
+          (usage.get(String(b.id || "").trim()) || 0) -
+          (usage.get(String(a.id || "").trim()) || 0)
+        )[0];
+      }
+
+      // Create a group only when no existing group has this name.
       if (!group) {
         const section = db.sections.find(
           item => String(item.id || "").trim() === requestedSectionId
