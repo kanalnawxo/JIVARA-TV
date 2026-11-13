@@ -151,17 +151,17 @@ async function readBody(request) {
 function parseImport(content, defaultGroup = "کوردی") {
   // TXT ـی هەڵگیراو بە UTF-16/BOM و CRLF ـیش بە دروستی بخوێنەوە.
   const normalizedContent = String(content || "")
-    .replace(/^\\uFEFF/, "")
-    .replace(/\\u0000/g, "");
-  const lines = normalizedContent.split(/\\r\\n|\\n|\\r/);
+    .replace(/^\uFEFF/, "")
+    .replace(/\u0000/g, "");
+  const lines = normalizedContent.split(/\r\n|\n|\r/);
   const result = [];
   let current = null;
 
   for (const raw of lines) {
-    const line = raw.replace(/^\\uFEFF/, "").trim();
+    const line = raw.replace(/^\uFEFF/, "").trim();
     if (!line) continue;
 
-    if (/^#EXTINF\\b/i.test(line)) {
+    if (/^#EXTINF\b/i.test(line)) {
       const comma = line.lastIndexOf(",");
       const name = comma >= 0 ? line.slice(comma + 1).trim() : "بێ ناو";
 
@@ -297,8 +297,7 @@ h1, h2, h3 { color: #f3c44e; }
 
 input, select, textarea {
   width: 100%;
-  padding: 12px;
-  margin: 7px 0;
+  padding: 12px;  margin: 7px 0;
   border-radius: 7px;
   border: 1px solid #46516a;
   background: #111827;
@@ -598,7 +597,6 @@ label {
       <p>دوایین سەردان: <span id="statsLast">-</span></p>
     </div>
   </section>
-
 </div>
 </div>
 
@@ -897,8 +895,7 @@ function renderChannels() {
     buckets.get(key).all.push(channel);
   });
 
-  function sectionLabel(bucket) {
-    if (bucket.group) {
+  function sectionLabel(bucket) {    if (bucket.group) {
       const sec = (db.sections || []).find(x => String(x.id) === String(bucket.group.sectionId || ""));
       return sec ? sec.name : (bucket.group.section || "");
     }
@@ -1197,8 +1194,7 @@ function renderGroups() {
     const row = document.createElement("div");
     row.className = "channel-row";
 
-    const title = document.createElement("strong");
-    title.textContent = channel.name || "بێ ناو";
+    const title = document.createElement("strong");    title.textContent = channel.name || "بێ ناو";
 
     const info = document.createElement("div");
     info.className = "small";
@@ -1497,8 +1493,7 @@ async function deleteDrama(id) {
       method: "DELETE"
     });
     await loadDB();
-  } catch (e) {
-    alert(e.message);
+  } catch (e) {    alert(e.message);
   }
 }
 
@@ -1798,7 +1793,6 @@ async function handleRequest(request, env) {
     await saveDB(env, db);
     return json({ success: true });
   }
-
   if (path === "/api/admin/channels" && method === "DELETE") {
     const id = url.searchParams.get("id");
     const db = await readDB(env);
@@ -2097,8 +2091,7 @@ async function handleRequest(request, env) {
     db.dramas = db.dramas.filter(x => x.id !== id);
 
     await saveDB(env, db);
-    return json({ success: true });
-  }
+    return json({ success: true });  }
 
   if (path === "/api/admin/episodes" && method === "POST") {
     const body = await readBody(request);
