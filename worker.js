@@ -1107,7 +1107,12 @@ async function importChannels() {
       })
     });
 
-    message("importMessage", "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا");
+    const missingGroups = Object.entries(result.skippedGroups || {})
+      .map(([name, count]) => name + " (" + count + ")").join("، ");
+    let importSummary = "زیادکرا: " + Number(result.count || 0) + " کەناڵ";
+    if (result.skipped) importSummary += "؛ هاوردە نەکرا: " + result.skipped + (missingGroups ? "؛ گرووپی نەدۆزراوە: " + missingGroups : "");
+    else importSummary = "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا";
+    message("importMessage", importSummary);
     document.getElementById("importFile").value = "";
     selectedImportFile = null;
     const selectedFileLabel = document.getElementById("selectedImportFile");
@@ -1848,6 +1853,7 @@ async function handleRequest(request, env) {
     const sectionId = body.sectionId || "";
     const imported = [];
     let skipped = 0;
+    const skippedGroups = {};
 
     for (const c of parsed) {
       // ناوی بەتاڵ لە فایلدا بە گرووپی بنەڕەتیی هەڵبژێردراو دەگۆڕدرێت.
@@ -1873,6 +1879,7 @@ async function handleRequest(request, env) {
       // گرووپی هاوتا نەدۆزرایەوە: کەناڵەکە زیاد ناکرێت و گرووپیش دروست ناکرێت.
       if (!group) {
         skipped++;
+        skippedGroups[groupName] = (skippedGroups[groupName] || 0) + 1;
         continue;
       }
 
@@ -1892,6 +1899,8 @@ async function handleRequest(request, env) {
       success: true,
       count: imported.length,
       skipped,
+      skippedGroups,
+      parsed: parsed.length,
       groupsCreated: 0
     });
   }
