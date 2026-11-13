@@ -1192,13 +1192,23 @@ function applyDashboardPayload(payload){
  const sectionNames=new Map(sectionsData.map(s=>[String(s.id),String(s.name||'')]));
  const sourceGroups=new Map(groupsData.map(g=>[String(g.id),g]));
  const makeDashboardGroup=(g)=>{
-  const id='dashboard-group-'+String(g.id);
-  if(dashboardGroupMap.has(String(g.id)))return dashboardGroupMap.get(String(g.id));
+  const sourceId=String(g.id);
+  if(dashboardGroupMap.has(sourceId))return dashboardGroupMap.get(sourceId);
+
+  // The APK already has permanent built-in Kurdish and Local groups.
+  // Reuse those cards instead of creating duplicate dashboard cards.
+  const builtInId=matchRemoteGroup(g.name);
+  if(builtInId==='local'||builtInId==='kurdish'){
+   dashboardGroupMap.set(sourceId,builtInId);
+   return builtInId;
+  }
+
+  const id='dashboard-group-'+sourceId;
   const parent=g.parentId?sourceGroups.get(String(g.parentId)):null;
   const section=sectionNames.get(String(g.sectionId||''))||String(g.section||'');
   const item={id,name:String(g.name||'گرووپ'),icon:'📺',art:'📺',colors:['#176f9e','#123e65'],
    section,sectionId:String(g.sectionId||''),parentName:parent?String(parent.name||''):'',_dashboard:true};
-  dashboardGroupMap.set(String(g.id),id);groups.push(item);return id;
+  dashboardGroupMap.set(sourceId,id);groups.push(item);return id;
  };
  // Parent-first ordering keeps nested group labels understandable even if the API order differs.
  const pending=[...groupsData];let guard=0;
