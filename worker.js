@@ -149,15 +149,19 @@ async function readBody(request) {
 }
 
 function parseImport(content, defaultGroup = "کوردی") {
-  const lines = String(content || "").split(/\r?\n/);
+  // TXT ـی هەڵگیراو بە UTF-16/BOM و CRLF ـیش بە دروستی بخوێنەوە.
+  const normalizedContent = String(content || "")
+    .replace(/^\\uFEFF/, "")
+    .replace(/\\u0000/g, "");
+  const lines = normalizedContent.split(/\\r\\n|\\n|\\r/);
   const result = [];
   let current = null;
 
   for (const raw of lines) {
-    const line = raw.trim();
+    const line = raw.replace(/^\\uFEFF/, "").trim();
     if (!line) continue;
 
-    if (line.startsWith("#EXTINF")) {
+    if (/^#EXTINF\\b/i.test(line)) {
       const comma = line.lastIndexOf(",");
       const name = comma >= 0 ? line.slice(comma + 1).trim() : "بێ ناو";
 
@@ -1096,7 +1100,13 @@ async function importChannels() {
   }
 
   try {
-    const content = await file.text();
+    // دیاریکردنی UTF-8 و UTF-16 بەپێی BOM ـی فایل.
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let encoding = "utf-8";
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) encoding = "utf-16le";
+    else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) encoding = "utf-16be";
+    const content = new TextDecoder(encoding).decode(buffer).replace(/^\\uFEFF/, "");
 
     const result = await api("/api/admin/import", {
       method: "POST",
