@@ -1849,11 +1849,19 @@ async function handleRequest(request, env) {
     let skipped = 0;
 
     for (const c of parsed) {
+      // ناوی بەتاڵ لە فایلدا بە گرووپی بنەڕەتیی هەڵبژێردراو دەگۆڕدرێت.
       const groupName = String(c.group || body.defaultGroup || "کوردی").trim() || "کوردی";
       const wantedName = normGroup(groupName);
 
+      // هەندێک playlist ناوی LOCAL بە "ناوخۆ" دەنووسێت؛
+      // گرووپی پێشتر ئامادەکراو بە ID یان ناوی هاوتا بدۆزرێتەوە.
+      const aliases = new Set([wantedName]);
+      if (wantedName === normGroup("ناوخۆ")) aliases.add("local");
+      if (wantedName === "local") aliases.add(normGroup("ناوخۆ"));
+
       const sameNameGroups = db.groups.filter(x =>
-        normGroup(x.name || "") === wantedName
+        aliases.has(normGroup(x.name || "")) ||
+        aliases.has(normGroup(x.id || ""))
       );
 
       // ئەگەر چەند گرووپێکی هاوناو هەبن، ئەوەی بەشی هاوردەکردنەکەیە پێشترە.
@@ -1861,7 +1869,7 @@ async function handleRequest(request, env) {
         sameNameGroups.find(x => String(x.sectionId || "") === sectionId) ||
         sameNameGroups[0];
 
-      // گرووپی هاوناو نەدۆزرایەوە: کەناڵەکە زیاد ناکرێت و گرووپیش دروست ناکرێت.
+      // گرووپی هاوتا نەدۆزرایەوە: کەناڵەکە زیاد ناکرێت و گرووپیش دروست ناکرێت.
       if (!group) {
         skipped++;
         continue;
