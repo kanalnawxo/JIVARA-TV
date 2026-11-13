@@ -600,6 +600,7 @@ label {
 
 <script>
 let token = "";
+let selectedImportFile = null;
 let db = {
   sections: [],
   groups: [],
@@ -1077,14 +1078,17 @@ async function deleteGroupChannels(groupId, groupName, channelCount, nameKey) {
 function showSelectedImportFile() {
   const input = document.getElementById("importFile");
   const display = document.getElementById("selectedImportFile");
-  const file = input && input.files && input.files[0];
+  selectedImportFile = input && input.files && input.files.length ? input.files[0] : null;
   if (display) {
-    display.textContent = file ? "فایلی هەڵبژێردراو: " + file.name : "هیچ فایلێک هەڵنەبژێردراوە";
+    display.textContent = selectedImportFile
+      ? "فایلی هەڵبژێردراو: " + selectedImportFile.name
+      : "هیچ فایلێک هەڵنەبژێردراوە";
   }
 }
 
 async function importChannels() {
-  const file = document.getElementById("importFile").files[0];
+  const input = document.getElementById("importFile");
+  const file = selectedImportFile || (input && input.files && input.files.length ? input.files[0] : null);
 
   if (!file) {
     alert("فایلێک هەڵبژێرە");
@@ -1105,6 +1109,7 @@ async function importChannels() {
 
     message("importMessage", "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا");
     document.getElementById("importFile").value = "";
+    selectedImportFile = null;
     showSelectedImportFile();
     await loadDB();
 
