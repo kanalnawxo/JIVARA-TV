@@ -507,7 +507,9 @@ label {
     <div class="panel">
       <h2>هاوردەکردنی کەناڵ</h2>
       <label>فایلی M3U / M3U8 / TXT</label>
-      <input id="importFile" type="file" accept=".m3u,.m3u8,.txt">
+      <input id="importFile" type="file" accept=".m3u,.m3u8,.txt" style="display:none" onchange="showSelectedImportFile()">
+      <button type="button" onclick="document.getElementById('importFile').click()">📁 هەڵبژاردنی فایل</button>
+      <div id="selectedImportFile" class="small">هیچ فایلێک هەڵنەبژێردراوە</div>
       <input id="defaultGroup" placeholder="گرووپی بنەڕەتی">
       <select id="importSection"></select>
       <button onclick="importChannels()">هاوردەکردن</button>
@@ -1072,6 +1074,15 @@ async function deleteGroupChannels(groupId, groupName, channelCount, nameKey) {
   }
 }
 
+function showSelectedImportFile() {
+  const input = document.getElementById("importFile");
+  const display = document.getElementById("selectedImportFile");
+  const file = input && input.files && input.files[0];
+  if (display) {
+    display.textContent = file ? "فایلی هەڵبژێردراو: " + file.name : "هیچ فایلێک هەڵنەبژێردراوە";
+  }
+}
+
 async function importChannels() {
   const file = document.getElementById("importFile").files[0];
 
@@ -1094,6 +1105,7 @@ async function importChannels() {
 
     message("importMessage", "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا");
     document.getElementById("importFile").value = "";
+    showSelectedImportFile();
     await loadDB();
 
   } catch (e) {
