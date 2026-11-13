@@ -1831,12 +1831,21 @@ async function handleRequest(request, env) {
 
     for (const c of imported) {
       const groupName = String(c.group || "کوردی").trim() || "کوردی";
+      const wantedName = normGroup(groupName);
 
-      let group = db.groups.find(x =>
-        String(x.name || "").trim() === groupName &&
-        String(x.sectionId || "") === sectionId
+      // هەر گرووپێک بە هەمان ناو هەبێت بەکاری دەهێنین؛
+      // سەرەتا ئەوە هەڵدەبژێرین کە لە هەمان بەشی هاوردەکردندایە.
+      const sameNameGroups = db.groups.filter(x =>
+        normGroup(x.name || "") === wantedName
       );
 
+      let group =
+        sameNameGroups.find(x =>
+          String(x.sectionId || "") === sectionId
+        ) ||
+        sameNameGroups[0];
+
+      // تەنها ئەگەر گرووپی هاوناو نەبوو، گرووپی نوێ دروست دەکەین.
       if (!group) {
         group = {
           id: uid(),
@@ -1845,13 +1854,13 @@ async function handleRequest(request, env) {
           section: section ? section.name : "",
           parentId: ""
         };
-
         db.groups.push(group);
       }
 
-      c.group = groupName;
-      c.sectionId = sectionId;
-      c.section = section ? section.name : "";
+      // کەناڵەکە بە گرووپی دۆزراوەوە دەبەستین، نەک بە گرووپی نوێ.
+      c.group = group.name;
+      c.sectionId = String(group.sectionId || "");
+      c.section = String(group.section || "");
       c.groupId = group.id;
     }
 
