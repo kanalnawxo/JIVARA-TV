@@ -1817,59 +1817,56 @@ async function handleRequest(request, env) {
 
   /*
    * هاوردەکردن:
-   * گرووپ بە ناوی گرووپ + sectionId دەدۆزرێتەوە.
-   * ئەگەر نەبوو، گرووپێکی نوێ دروست دەکرێت.
-   * هەر کەناڵێک groupId ـی دروستی وەردەگرێت.
+   * هیچ گرووپێکی نوێ دروست ناکرێت.
+   * تەنها کەناڵی ئەو گرووپانە زیاد دەکرێت کە پێشتر
+   * بە هەمان ناو لە db.groups هەن؛ ناوی گرووپ بە تەنها
+   * پێوەرە و sectionId نابێتە هۆی دروستکردنی گرووپی دووبارە.
    */
   if (path === "/api/admin/import" && method === "POST") {
     const body = await readBody(request);
     const db = await readDB(env);
 
-    const imported = parseImport(body.content, body.defaultGroup || "کوردی");
+    const parsed = parseImport(body.content, body.defaultGroup || "کوردی");
     const sectionId = body.sectionId || "";
-    const section = db.sections.find(x => x.id === sectionId);
+    const imported = [];
+    let skipped = 0;
 
-    for (const c of imported) {
-      const groupName = String(c.group || "کوردی").trim() || "کوردی";
+    for (const c of parsed) {
+      const groupName = String(c.group || body.defaultGroup || "کوردی").trim() || "کوردی";
       const wantedName = normGroup(groupName);
 
-      // هەر گرووپێک بە هەمان ناو هەبێت بەکاری دەهێنین؛
-      // سەرەتا ئەوە هەڵدەبژێرین کە لە هەمان بەشی هاوردەکردندایە.
       const sameNameGroups = db.groups.filter(x =>
         normGroup(x.name || "") === wantedName
       );
 
-      let group =
-        sameNameGroups.find(x =>
-          String(x.sectionId || "") === sectionId
-        ) ||
+      // ئەگەر چەند گرووپێکی هاوناو هەبن، ئەوەی بەشی هاوردەکردنەکەیە پێشترە.
+      const group =
+        sameNameGroups.find(x => String(x.sectionId || "") === sectionId) ||
         sameNameGroups[0];
 
-      // تەنها ئەگەر گرووپی هاوناو نەبوو، گرووپی نوێ دروست دەکەین.
+      // گرووپی هاوناو نەدۆزرایەوە: کەناڵەکە زیاد ناکرێت و گرووپیش دروست ناکرێت.
       if (!group) {
-        group = {
-          id: uid(),
-          name: groupName,
-          sectionId,
-          section: section ? section.name : "",
-          parentId: ""
-        };
-        db.groups.push(group);
+        skipped++;
+        continue;
       }
 
-      // کەناڵەکە بە گرووپی دۆزراوەوە دەبەستین، نەک بە گرووپی نوێ.
       c.group = group.name;
       c.sectionId = String(group.sectionId || "");
       c.section = String(group.section || "");
       c.groupId = group.id;
+      imported.push(c);
     }
 
-    db.channels.push(...imported);
-    await saveDB(env, db);
+    if (imported.length) {
+      db.channels.push(...imported);
+      await saveDB(env, db);
+    }
 
     return json({
       success: true,
-      count: imported.length
+      count: imported.length,
+      skipped,
+      groupsCreated: 0
     });
   }
 
