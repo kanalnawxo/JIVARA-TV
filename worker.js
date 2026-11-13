@@ -1082,6 +1082,11 @@ async function saveGroup() {
  * ژێرگرووپەکانیش لە لیستی سەرەکی جیاواز دەردەکەون؛
  * کەناڵەکان تەنها لە کارتی گرووپی خۆیان پیشان دەدرێن.
  */
+function isProtectedBuiltinGroup(group) {
+  const id = String(group && group.id || "").trim().toLowerCase();
+  return id === "local" || id === "kurdish";
+}
+
 function renderGroups() {
   const list = document.getElementById("groupList");
   list.innerHTML = "";
@@ -1167,8 +1172,12 @@ function renderGroups() {
     };
 
     const del = document.createElement("button");
-    del.textContent = "سڕینەوەی ئەم گرووپە";
+    del.textContent = isProtectedBuiltinGroup(group)
+      ? "گرووپی بنەڕەتی (پارێزراوە)"
+      : "سڕینەوەی ئەم گرووپە";
     del.className = "delete-group";
+    del.disabled = isProtectedBuiltinGroup(group);
+    del.title = del.disabled ? "گرووپی بنەڕەتی ناسڕدرێتەوە" : "سڕینەوەی گرووپ و کەناڵەکانی";
     del.onclick = () => deleteGroup(group.id);
 
     buttons.append(clear, edit, del);
@@ -1215,6 +1224,10 @@ async function deleteGroup(id) {
   const target = db.groups.find(g => String(g.id) === String(id));
   if (!target) {
     alert("گرووپ نەدۆزرایەوە");
+    return;
+  }
+  if (isProtectedBuiltinGroup(target)) {
+    alert("گرووپی بنەڕەتی ناتوانرێت بسڕدرێتەوە");
     return;
   }
 
@@ -1844,6 +1857,11 @@ async function handleRequest(request, env) {
     const db = await readDB(env);
     const target = db.groups.find(g => String(g.id) === String(id));
     if (!target) return json({ error: "گرووپ نەدۆزرایەوە" }, 404);
+
+    const protectedId = String(target.id || "").trim().toLowerCase();
+    if (protectedId === "local" || protectedId === "kurdish") {
+      return json({ error: "گرووپی بنەڕەتی ناتوانرێت بسڕدرێتەوە" }, 403);
+    }
 
     const duplicateGroups = db.groups.filter(g =>
       String(g.name || "").trim() === String(target.name || "").trim() &&
