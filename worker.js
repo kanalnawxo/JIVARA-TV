@@ -487,7 +487,8 @@ label {
     <button data-tab="true" onclick="showTab('dramasTab',this)">دراما و ئەڵقەکان</button>
     <button data-tab="true" onclick="showTab('statsTab',this)">ئامار</button>
     <button type="button" class="secondary" onclick="addGroupFromTabs()">＋ زیادکردنی گرووپ</button>
-    <button type="button" class="danger" onclick="chooseGroupToDelete()">− سڕینەوەی گرووپ</button>
+    <input id="deleteGroupName" type="text" placeholder="ناوی گرووپ بۆ سڕینەوە" aria-label="ناوی گرووپ بۆ سڕینەوە" style="width:220px;max-width:100%;margin:5px">
+    <button type="button" class="danger" onclick="deleteGroupByName()">− سڕینەوەی گرووپ</button>
   </div>
 
   <section id="channelsTab">
@@ -730,28 +731,39 @@ async function addGroupFromTabs() {
   }
 }
 
-async function chooseGroupToDelete() {
-  const deletable = (db.groups || []).filter(group => !isProtectedBuiltinGroup(group));
-  if (!deletable.length) {
-    alert("هیچ گرووپێکی نوێ بۆ سڕینەوە نییە");
+async function deleteGroupByName() {
+  const input = document.getElementById("deleteGroupName");
+  const typedName = String(input && input.value || "").trim();
+
+  if (!typedName) {
+    alert("تکایە ناوی ئەو گرووپە بنووسە کە دەتەوێت بیسڕیتەوە");
+    if (input) input.focus();
     return;
   }
 
-  const choices = deletable.map((group, index) =>
-    (index + 1) + ". " + (group.name || "گرووپی بێ ناو")
-  ).join("\\n");
-  const answer = prompt(
-    "ژمارەی ئەو گرووپە بنووسە کە دەتەوێت بسڕدرێتەوە:\\n\\n" + choices
+  const wanted = normalizeGroupMatch(typedName);
+  const matches = (db.groups || []).filter(group =>
+    normalizeGroupMatch(group.name || "") === wanted
   );
-  if (answer === null) return;
 
-  const selectedNumber = Number(answer.trim());
-  if (!Number.isInteger(selectedNumber) || selectedNumber < 1 || selectedNumber > deletable.length) {
-    alert("ژمارەی گرووپ هەڵەیە");
+  if (!matches.length) {
+    alert("گرووپێک بەو ناوە نەدۆزرایەوە. ناوی گرووپەکە بە وردی بپشکنە.");
     return;
   }
 
-  await deleteGroup(deletable[selectedNumber - 1].id);
+  if (matches.length > 1) {
+    alert("زیاتر لە یەک گرووپ بەو ناوە هەیە. تکایە ناوی گرووپەکان لە بەشی گرووپەکان جیا بکەرەوە، پاشان هەوڵ بدەرەوە.");
+    return;
+  }
+
+  const target = matches[0];
+  if (isProtectedBuiltinGroup(target)) {
+    alert("گرووپی بنەڕەتی ناتوانرێت بسڕدرێتەوە");
+    return;
+  }
+
+  await deleteGroup(target.id);
+  if (input) input.value = "";
 }
 
 function fillSelect(id, items, includeEmpty = true) {
