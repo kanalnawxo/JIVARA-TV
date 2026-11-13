@@ -1110,7 +1110,8 @@ async function importChannels() {
     message("importMessage", "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا");
     document.getElementById("importFile").value = "";
     selectedImportFile = null;
-    showSelectedImportFile();
+    const selectedFileLabel = document.getElementById("selectedImportFile");
+    if (selectedFileLabel) selectedFileLabel.textContent = "";
     await loadDB();
 
   } catch (e) {
