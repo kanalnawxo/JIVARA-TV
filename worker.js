@@ -1753,23 +1753,41 @@ async function handleRequest(request, env) {
     const body = await readBody(request);
     const db = await readDB(env);
 
-    const imported = parseImport(body.content, body.defaultGroup || "کوردی");
-    const sectionId = body.sectionId || "";
-    const section = db.sections.find(x => x.id === sectionId);
+    const imported = parseImport(
+      body.content,
+      body.defaultGroup || "کوردی"
+    );
 
-    for (const c of imported) {
-      const groupName = String(c.group || "کوردی").trim() || "کوردی";
+    const requestedSectionId = String(body.sectionId || "").trim();
 
-      let group = db.groups.find(x =>
-        String(x.name || "").trim() === groupName &&
-        String(x.sectionId || "") === sectionId
+    for (const channel of imported) {
+      const groupName = String(channel.group || "کوردی").trim() || "کوردی";
+      const normalizedName = normGroup(groupName);
+
+      // First, reuse a group with the same normalized name in the selected section.
+      let group = db.groups.find(item =>
+        normGroup(item.name) === normalizedName &&
+        String(item.sectionId || "").trim() === requestedSectionId
       );
 
+      // If no section was selected, reuse an existing same-name group from any section.
+      // This prevents imports without a section from creating duplicate groups.
+      if (!group && !requestedSectionId) {
+        group = db.groups.find(item =>
+          normGroup(item.name) === normalizedName
+        );
+      }
+
+      // Create a group only when no suitable existing group was found.
       if (!group) {
+        const section = db.sections.find(
+          item => String(item.id || "").trim() === requestedSectionId
+        );
+
         group = {
           id: uid(),
           name: groupName,
-          sectionId,
+          sectionId: requestedSectionId,
           section: section ? section.name : "",
           parentId: ""
         };
@@ -1777,10 +1795,11 @@ async function handleRequest(request, env) {
         db.groups.push(group);
       }
 
-      c.group = groupName;
-      c.sectionId = sectionId;
-      c.section = section ? section.name : "";
-      c.groupId = group.id;
+      // Store the canonical group and section values on every imported channel.
+      channel.group = group.name;
+      channel.sectionId = String(group.sectionId || "");
+      channel.section = String(group.section || "");
+      channel.groupId = group.id;
     }
 
     db.channels.push(...imported);
