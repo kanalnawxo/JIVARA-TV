@@ -481,11 +481,13 @@ label {
   </div>
 
   <div class="tabs">
-    <button onclick="showTab('channelsTab',this)" class="active">کەناڵەکان</button>
-    <button onclick="showTab('groupsTab',this)">گرووپەکان</button>
-    <button onclick="showTab('sectionsTab',this)">بەشەکان</button>
-    <button onclick="showTab('dramasTab',this)">دراما و ئەڵقەکان</button>
-    <button onclick="showTab('statsTab',this)">ئامار</button>
+    <button data-tab="true" onclick="showTab('channelsTab',this)" class="active">کەناڵەکان</button>
+    <button data-tab="true" onclick="showTab('groupsTab',this)">گرووپەکان</button>
+    <button data-tab="true" onclick="showTab('sectionsTab',this)">بەشەکان</button>
+    <button data-tab="true" onclick="showTab('dramasTab',this)">دراما و ئەڵقەکان</button>
+    <button data-tab="true" onclick="showTab('statsTab',this)">ئامار</button>
+    <button type="button" class="secondary" onclick="addGroupFromTabs()">＋ زیادکردنی گرووپ</button>
+    <button type="button" class="danger" onclick="chooseGroupToDelete()">− سڕینەوەی گرووپ</button>
   </div>
 
   <section id="channelsTab">
@@ -703,8 +705,53 @@ function showTab(id, button) {
   document.querySelectorAll("#dashboard section").forEach(x => x.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
 
-  document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".tabs button[data-tab='true']").forEach(x => x.classList.remove("active"));
   button.classList.add("active");
+}
+
+async function addGroupFromTabs() {
+  const name = prompt("ناوی گرووپی نوێ بنووسە:");
+  if (name === null) return;
+  const cleanName = name.trim();
+  if (!cleanName) {
+    alert("ناوی گرووپ پێویستە");
+    return;
+  }
+
+  try {
+    await api("/api/admin/groups", {
+      method: "POST",
+      body: JSON.stringify({ name: cleanName, sectionId: "", parentId: "" })
+    });
+    await loadDB();
+    alert("گرووپ بە سەرکەوتوویی زیادکرا");
+  } catch (e) {
+    alert("زیادکردنی گرووپ سەرکەوتوو نەبوو: " + e.message);
+  }
+}
+
+async function chooseGroupToDelete() {
+  const deletable = (db.groups || []).filter(group => !isProtectedBuiltinGroup(group));
+  if (!deletable.length) {
+    alert("هیچ گرووپێکی نوێ بۆ سڕینەوە نییە");
+    return;
+  }
+
+  const choices = deletable.map((group, index) =>
+    (index + 1) + ". " + (group.name || "گرووپی بێ ناو")
+  ).join("\\n");
+  const answer = prompt(
+    "ژمارەی ئەو گرووپە بنووسە کە دەتەوێت بسڕدرێتەوە:\\n\\n" + choices
+  );
+  if (answer === null) return;
+
+  const selectedNumber = Number(answer.trim());
+  if (!Number.isInteger(selectedNumber) || selectedNumber < 1 || selectedNumber > deletable.length) {
+    alert("ژمارەی گرووپ هەڵەیە");
+    return;
+  }
+
+  await deleteGroup(deletable[selectedNumber - 1].id);
 }
 
 function fillSelect(id, items, includeEmpty = true) {
