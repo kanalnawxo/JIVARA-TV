@@ -535,6 +535,7 @@ label {
   <section id="groupsTab" class="hidden">
     <div class="panel">
       <h2>بەڕێوەبردنی گرووپەکان</h2>
+      <button type="button" class="secondary" onclick="restoreDefaultGroups()">گەڕاندنەوەی ١٤ گرووپی بنەڕەتی</button>
       <input id="groupName" placeholder="ناوی گرووپ">
       <select id="groupSection"></select>
       <select id="parentGroup"></select>
@@ -720,6 +721,17 @@ function showTab(id, button) {
 
   document.querySelectorAll(".tabs button[data-tab='true']").forEach(x => x.classList.remove("active"));
   button.classList.add("active");
+}
+
+async function restoreDefaultGroups() {
+  if (!confirm("١٤ گرووپی بنەڕەتی بۆ داشبۆرد دەگەڕێندرێنەوە. ئەم کردارە تەنها کاتێک کار دەکات کە لیستی گرووپەکان بەتاڵ بێت. بەردەوام بیت؟")) return;
+  try {
+    const result = await api("/api/admin/restore-default-groups", { method: "POST" });
+    await loadDB();
+    alert("گرووپە بنەڕەتییەکان گەڕێندرایەوە: " + Number(result.created || 0));
+  } catch (e) {
+    alert("گەڕاندنەوەی گرووپەکان سەرکەوتوو نەبوو: " + e.message);
+  }
 }
 
 async function addGroupFromTabs() {
@@ -1925,6 +1937,34 @@ async function handleRequest(request, env) {
       availableGroups: db.groups.map(x => String(x.name || "")).filter(Boolean).slice(0, 30),
       groupsCreated: 0
     });
+  }
+
+  if (path === "/api/admin/restore-default-groups" && method === "POST") {
+    const db = await readDB(env);
+    if (db.groups.length) {
+      return json({ error: "لیستی گرووپەکان بەتاڵ نییە؛ هیچ گۆڕانکارییەک نەکرا" }, 409);
+    }
+    const defaults = [
+      ["local", "ناوخۆ"],
+      ["kurdish", "کوردی"],
+      ["arabic", "عەرەبی"],
+      ["foreign", "بیانی"],
+      ["news", "هەواڵ"],
+      ["quran", "قورئان"],
+      ["kids", "منداڵان"],
+      ["sports", "وەرزش"],
+      ["music", "موزیک"],
+      ["documentary", "دۆکۆمێنتاری"],
+      ["iraq", "عێراق"],
+      ["iran", "ئێران"],
+      ["turkey", "تورکیا"],
+      ["israel", "ئیسرائیل"]
+    ];
+    db.groups = defaults.map(([id, name]) => ({
+      id, name, sectionId: "", section: "", parentId: ""
+    }));
+    await saveDB(env, db);
+    return json({ success: true, created: db.groups.length });
   }
 
   if (path === "/api/admin/groups" && method === "POST") {
