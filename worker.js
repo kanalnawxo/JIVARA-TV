@@ -57,6 +57,11 @@ function uid() {
 function normGroup(value) {
   return String(value == null ? "" : value)
     .normalize("NFKC")
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, "")
+    .replace(/\u0640/g, "")
+    .replace(/\p{M}/gu, "")
+    .replace(/[ك]/g, "ک")
+    .replace(/[يى]/g, "ی")
     .trim()
     .replace(/\s+/g, " ")
     .toLocaleLowerCase();
@@ -1120,8 +1125,14 @@ async function importChannels() {
     const missingGroups = Object.entries(result.skippedGroups || {})
       .map(([name, count]) => name + " (" + count + ")").join("، ");
     let importSummary = "زیادکرا: " + Number(result.count || 0) + " کەناڵ";
-    if (result.skipped) importSummary += "؛ هاوردە نەکرا: " + result.skipped + (missingGroups ? "؛ گرووپی نەدۆزراوە: " + missingGroups : "");
-    else importSummary = "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا";
+    if (result.skipped) {
+      importSummary += "؛ هاوردە نەکرا: " + result.skipped + (missingGroups ? "؛ گرووپی نەدۆزراوە: " + missingGroups : "");
+      if (result.availableGroups && result.availableGroups.length) {
+        importSummary += "؛ گرووپەکانی داشبۆرد: " + result.availableGroups.join("، ");
+      }
+    } else {
+      importSummary = "بە سەرکەوتوویی " + result.count + " کەناڵ زیادکرا";
+    }
     message("importMessage", importSummary);
     document.getElementById("importFile").value = "";
     selectedImportFile = null;
@@ -1911,6 +1922,7 @@ async function handleRequest(request, env) {
       skipped,
       skippedGroups,
       parsed: parsed.length,
+      availableGroups: db.groups.map(x => String(x.name || "")).filter(Boolean).slice(0, 30),
       groupsCreated: 0
     });
   }
