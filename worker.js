@@ -297,8 +297,8 @@ h1, h2, h3 { color: #f3c44e; }
 
 input, select, textarea {
   width: 100%;
-  padding: 12px;  margin: 7px 0;
-  border-radius: 7px;
+  padding: 12px;
+  margin: 7px 0;  border-radius: 7px;
   border: 1px solid #46516a;
   background: #111827;
   color: white;
@@ -597,8 +597,7 @@ label {
       <p>دوایین سەردان: <span id="statsLast">-</span></p>
     </div>
   </section>
-</div>
-</div>
+</div></div>
 
 <script>
 let token = "";
@@ -895,10 +894,10 @@ function renderChannels() {
     buckets.get(key).all.push(channel);
   });
 
-  function sectionLabel(bucket) {    if (bucket.group) {
+  function sectionLabel(bucket) {
+    if (bucket.group) {
       const sec = (db.sections || []).find(x => String(x.id) === String(bucket.group.sectionId || ""));
-      return sec ? sec.name : (bucket.group.section || "");
-    }
+      return sec ? sec.name : (bucket.group.section || "");    }
     return "";
   }
 
@@ -1194,11 +1193,11 @@ function renderGroups() {
     const row = document.createElement("div");
     row.className = "channel-row";
 
-    const title = document.createElement("strong");    title.textContent = channel.name || "بێ ناو";
+    const title = document.createElement("strong");
+    title.textContent = channel.name || "بێ ناو";
 
     const info = document.createElement("div");
-    info.className = "small";
-    info.textContent = channel.url || "";
+    info.className = "small";    info.textContent = channel.url || "";
 
     const edit = document.createElement("button");
     edit.textContent = "دەستکاری کەناڵ";
@@ -1493,12 +1492,12 @@ async function deleteDrama(id) {
       method: "DELETE"
     });
     await loadDB();
-  } catch (e) {    alert(e.message);
+  } catch (e) {
+    alert(e.message);
   }
 }
 
-async function saveEpisode() {
-  const editingId = document.getElementById("editingEpisode").value;
+async function saveEpisode() {  const editingId = document.getElementById("editingEpisode").value;
   const data = {
     id: editingId || undefined,
     dramaId: document.getElementById("episodeDrama").value,
@@ -1797,7 +1796,6 @@ async function handleRequest(request, env) {
     const id = url.searchParams.get("id");
     const db = await readDB(env);
     const before = db.channels.length;
-
     db.channels = db.channels.filter(x => x.id !== id);
 
     if (before === db.channels.length) {
@@ -2091,14 +2089,14 @@ async function handleRequest(request, env) {
     db.dramas = db.dramas.filter(x => x.id !== id);
 
     await saveDB(env, db);
-    return json({ success: true });  }
+    return json({ success: true });
+  }
 
   if (path === "/api/admin/episodes" && method === "POST") {
     const body = await readBody(request);
     const db = await readDB(env);
 
-    const drama = db.dramas.find(x => x.id === body.dramaId);
-    if (!drama) return json({ error: "دراما نەدۆزرایەوە" }, 404);
+    const drama = db.dramas.find(x => x.id === body.dramaId);    if (!drama) return json({ error: "دراما نەدۆزرایەوە" }, 404);
 
     if (!body.name || !body.url) {
       return json({ error: "ناوی ئەڵقە و لینک پێویستن" }, 400);
