@@ -1,0 +1,2655 @@
+
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JIVARA TV+ | Smart TV</title>
+<style>
+@font-face{font-family:'Rabar 043';src:url('https://pub-308a8f64471b4557b3566e6ca09f2b95.r2.dev/fonts/rabar-043/Rabar_043.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+:root{
+ --bg:#020b16;--panel:#06192b;--panel2:#0a2239;
+ --line:#163650;--blue:#0878f9;--text:#f4f8ff;
+ --muted:#9cb1c8;--red:#ff263d;--focus:#71c2ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;height:100%;min-height:100%;overflow:hidden}
+body{background:linear-gradient(180deg,rgba(2,8,14,.58) 0%,rgba(2,8,14,.30) 55%,rgba(2,8,14,.40) 100%),url('bg_autumn.jpg') center bottom/cover no-repeat,#020b16;color:var(--text);font-family:"Rabar 043",Tahoma,Arial,sans-serif}
+button,input,textarea,select{font:inherit}
+button{color:inherit;cursor:pointer}
+html,body,.app,.main,.content,.page,.panel,.player-screen{cursor:default}
+button,a,input,select,textarea,[role="button"],.category,.group-card,.channel,.nav,.topbtn,.btn{cursor:pointer}
+button:hover,.nav:hover,.channel:hover,.group-card:hover,.category:hover,.topbtn:hover,.btn:hover,.group-btn:hover{
+ filter:brightness(1.16);transition:filter .12s ease,box-shadow .12s ease,transform .12s ease
+}
+button:focus,input:focus,textarea:focus,select:focus,[tabindex]:focus{
+ outline:3px solid var(--focus);outline-offset:2px;position:relative;z-index:2
+}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+ outline:3px solid var(--focus);outline-offset:3px;box-shadow:0 0 0 4px #71c2ff28
+}
+.category:focus,.group-card:focus,.channel:focus,.radio-nav{position:relative;isolation:isolate;overflow:visible}.radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}@keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}\n.nav:focus,.btn:focus,.topbtn:focus{
+ box-shadow:0 0 0 3px #71c2ff35,0 0 16px #1682ff45
+}
+.pointer-active button:hover,.pointer-active .category:hover,.pointer-active .group-card:hover,.pointer-active .channel:hover{
+ transform:translateY(-1px)
+}
+.app{width:100vw;height:100vh;height:100dvh;min-height:0;margin:0;padding:1.4vh 1.2vw;box-sizing:border-box;display:grid;grid-template-columns:180px 1fr;
+ background:transparent}
+.sidebar{background:rgba(2,13,25,.80);border-left:1px solid var(--line);
+ padding:15px 9px;display:flex;flex-direction:column;gap:7px;min-height:0}
+.logo{direction:ltr;text-align:center;font-size:27px;font-weight:900;
+ margin:8px 0 25px;white-space:nowrap}
+.logo span{color:var(--red)}
+.nav{border:1px solid transparent;background:transparent;border-radius:8px;
+ padding:12px 9px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px}
+.nav span:not(.ico){text-align:center}
+.nav .ico{font-size:19px;width:25px;text-align:center}
+.nav.active,.nav:focus{background:linear-gradient(100deg,#0752a6,#0878f9)}
+
+/* User-provided Arabic mabkhara image, blended into the sidebar with natural smoke */
+.incense-scene{position:relative;height:116px;min-height:116px;margin:4px 0 1px;display:flex;align-items:flex-end;justify-content:center;overflow:visible;isolation:isolate;pointer-events:none}
+.incense-glow{position:absolute;bottom:3px;width:86px;height:24px;border-radius:50%;background:radial-gradient(ellipse,#d99b3d42 0%,#b77b241b 48%,transparent 75%);filter:blur(8px)}
+.incense-burner{position:relative;z-index:3;width:auto;height:108px;max-width:90px;object-fit:contain;margin-bottom:0;filter:drop-shadow(0 4px 5px #0009) drop-shadow(0 0 8px #c58a3830)}
+.smoke-wisp{position:absolute;bottom:82px;left:calc(50% - 17px);z-index:2;width:34px;height:66px;border-radius:48% 52% 55% 45%;opacity:0;filter:blur(5px);background:radial-gradient(ellipse at 48% 58%,#d9e3e8a8 0%,#c5d4dc6a 22%,#a9bac63b 45%,transparent 73%);animation:incenseRise 5.8s ease-in-out infinite;transform-origin:50% 100%}
+.smoke-wisp:nth-child(2){margin-left:-20px;width:39px;height:74px;animation-delay:-2.1s;filter:blur(6px)}
+.smoke-wisp:nth-child(3){margin-left:17px;width:31px;height:61px;animation-delay:-3.7s;filter:blur(4px)}
+.smoke-wisp:nth-child(4){margin-left:4px;width:45px;height:80px;animation-delay:-.9s;filter:blur(7px)}
+@keyframes incenseRise{0%{opacity:0;transform:translate(0,10px) scale(.45,.65) rotate(-8deg)}14%{opacity:.48}38%{opacity:.38;transform:translate(-9px,-24px) scale(1,.95) rotate(8deg)}65%{opacity:.23;transform:translate(10px,-55px) scale(1.45,1.12) rotate(-10deg)}100%{opacity:0;transform:translate(-5px,-98px) scale(1.9,1.35) rotate(12deg);filter:blur(12px)}}
+.nav-bottom{margin-top:auto;flex:0 0 auto;flex-shrink:0;padding:13px 5px 10px;text-align:center;border-top:1px solid #24445b;color:#dcecff;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;box-sizing:border-box}.contact-number{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.contact-label{font-size:13px;font-weight:700;color:#39d98a;display:flex;align-items:center;justify-content:center;gap:7px}
+.whatsapp-icon{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:#19b96b;color:#fff;font:700 16px Arial,sans-serif}
+.contact-number{display:block;direction:ltr;text-align:center;white-space:nowrap;font:700 12px/1.3 Arial,Tahoma,sans-serif;letter-spacing:.25px;color:#fff;text-decoration:none;background:#0c2a3e;border:1px solid #24865e;border-radius:8px;padding:4px 6px;min-width:100%;box-shadow:0 0 12px #19b96b24}
+.media-landing-page{display:flex;align-items:center;justify-content:center;min-height:100%;text-align:center}
+.media-landing-title{font-family:"Rabar 043",Tahoma,Arial,sans-serif;font-size:clamp(34px,5vw,64px);font-weight:800;color:#f0d79a;text-shadow:0 0 18px #d5a84a55;padding:24px 42px;border:1px solid #d5a84a55;border-radius:18px;background:linear-gradient(145deg,#142d40,#0b1c2b);min-width:min(320px,70%);}
+.contact-number:focus,.contact-number:hover{background:#10452f;color:#fff;outline:2px solid #39d98a;outline-offset:2px}
+.main{min-width:0;min-height:0;display:flex;flex-direction:column}
+.topbar{height:58px;min-height:58px;flex-shrink:0;margin:0;border-top:0;border-bottom:1px solid var(--line);
+ display:flex;align-items:center;padding:0 18px;gap:13px;position:relative}
+.verse-top{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:64%;text-align:center;color:#f0d79a;font-family:"Rabar 043",Tahoma,Arial,sans-serif;font-size:clamp(20px,2vw,30px);font-weight:700;line-height:1.55;text-shadow:0 0 12px #d5a84a35;pointer-events:none;white-space:normal}
+@media(max-width:700px){.verse-top{position:static;transform:none;flex:1;width:auto;max-width:none;font-size:clamp(15px,3.2vw,21px)}.page-title{display:none}.topbar{gap:7px;padding:0 8px}.clock{flex-shrink:0}}
+.page-title{font-size:17px;font-weight:bold;flex:1}
+.page-title small{display:block;font-size:10px;font-weight:normal;color:var(--muted);margin-top:4px}
+.topbtn,.btn{background:#0a2239;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.live-viewers{display:flex;align-items:center;gap:6px;white-space:nowrap;color:#e4c477;font-size:14px;font-weight:700;direction:rtl}.live-viewers small{font-size:10px;color:var(--muted);font-weight:400}.live-dot{width:7px;height:7px;border-radius:50%;background:#39c979;box-shadow:0 0 8px #39c979;display:inline-block}@media(max-width:700px){.live-viewers{gap:4px;font-size:12px}.live-viewers small{font-size:9px}}
+.clock{direction:ltr;text-align:center;font-size:14px}
+.clock small{display:block;color:var(--muted);font-family:Arial,Tahoma,sans-serif;font-size:15px;font-weight:700;line-height:1.25;margin-top:4px;white-space:nowrap}
+.content{padding:0 12px 12px;overflow:auto;min-height:0;flex:1;scrollbar-width:thin;margin:0}
+.page{display:none;min-height:100%}
+.page.active{display:block}
+#page-about.active{display:flex;align-items:center;justify-content:center;text-align:center;min-height:100%;width:100%;}
+#page-about .about-content{width:100%;max-width:850px;margin:auto;padding:12px 16px;text-align:center;background:transparent;border:0;box-shadow:none;border-radius:0;transform:translateY(-10px)}
+#page-about .project-message{margin:22px auto 0;max-width:100%;}
+#page-about .logo{margin:0 0 18px;font-size:clamp(30px,4vw,48px)}
+#page-about h2{margin:0 0 14px;font-size:clamp(20px,2.5vw,30px)}
+#page-about p{margin:9px 0;line-height:1.9}
+
+.hero{height:140px;display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:15px}
+.hero-main{border:1px solid #25435a;border-radius:12px;padding:18px 23px;
+ display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center;padding-bottom:24px;
+ background:linear-gradient(110deg,#07182a,#17445b,#786b53);position:relative;overflow:hidden}
+.hero-main:after{content:"";position:absolute;inset:0;
+ background:linear-gradient(90deg,#020b16d9,transparent);pointer-events:none}
+.hero-main>*{position:relative;z-index:1;text-align:center}
+.kicker{color:#e8c88b;font-size:10px}
+.hero h2{font-size:23px;margin:8px 0}
+.hero p{font-size:11px;color:#d1e0ed;margin:0}
+.section-title{display:flex;justify-content:space-between;align-items:center;
+ margin:13px 0 10px;font-size:14px;font-weight:bold}
+.section-title small{font-size:10px;color:var(--muted);font-weight:normal}
+.categories{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.category{position:relative;height:76px;border-radius:10px;border:1px solid #ffffff18;
+ background:linear-gradient(145deg,var(--c1),var(--c2));display:flex;
+ flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.category .symbol-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px}
+.category .symbol{font-size:25px;line-height:1}
+.category .channel-badge{position:absolute;top:50%;right:10px;transform:translateY(-50%);min-width:0;height:auto;padding:0;box-sizing:border-box;display:block;border-radius:0;background:transparent;color:#f3d58c;border:0;font-size:11px;font-weight:800;line-height:1.2;box-shadow:none;font-variant-numeric:tabular-nums}
+.category b{font-size:12px}
+.country-section-title{margin-top:14px}
+.country-categories{grid-template-columns:repeat(4,minmax(0,1fr));max-width:82%;margin:0 auto 8px}
+.country-categories .category{height:68px}
+.country-categories .category .symbol{font-size:23px}
+.media-categories{grid-template-columns:repeat(2,minmax(0,1fr));max-width:430px;margin:10px auto 8px;gap:12px}
+.media-categories .category{height:72px}
+.media-categories .category .symbol{font-size:25px}
+@media(max-width:700px){.country-categories{max-width:100%;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.country-categories .category{height:64px}}
+.project-message{margin:34px auto 0;padding:12px 16px;text-align:center;display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border:1px solid #c9a96a66;border-radius:9px;background:linear-gradient(100deg,#081a2b,#102c40,#081a2b);color:#e8d3a3;font-size:15px;line-height:1.9;letter-spacing:.1px;box-shadow:inset 0 0 18px #d5b46b0b}
+.project-message::before,.project-message::after{content:none;display:none}
+.category:focus,.category:hover{filter:brightness(1.18)}
+.lower{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;margin-top:15px}
+.panel{min-width:0;background:linear-gradient(145deg,#071d31,#041321);
+ border:1px solid var(--line);border-radius:11px;padding:12px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;
+ font-size:13px;font-weight:bold;margin-bottom:11px}
+.muted{color:var(--muted);font-size:11px}
+.placeholder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.placeholder-tile{min-height:53px;border-radius:7px;background:#0a2238;
+ border:1px solid var(--line);display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:4px;font-size:11px}
+.placeholder-tile span{font-size:18px}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.btn.primary{background:linear-gradient(100deg,#0759bd,#087bfa);border-color:#1788ff}
+.empty{padding:20px 10px;text-align:center;color:#8ba4bd;font-size:12px;
+ line-height:1.8;border:1px dashed #23435d;border-radius:8px}
+.group-layout{display:grid;grid-template-columns:1fr;gap:13px}
+.group-list{display:none}
+.group-btn{background:#071b2d;border:1px solid var(--line);border-radius:8px;
+ padding:11px;display:flex;align-items:center;gap:9px;text-align:right;font-size:12px}
+.group-btn.active,.group-btn:focus{background:#075bb8}
+.count{margin-right:auto;color:#a6c4df;font-size:10px}
+.group-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-content:start}
+.radio-panel{display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1fr);gap:18px;align-items:center;max-width:980px;margin:12px auto;padding:18px}.radio-visual{min-height:260px;border:1px solid #ffffff24;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:hidden;position:relative;background:radial-gradient(circle at 50% 40%,#6b1d91 0%,#143d79 38%,#07172f 75%);box-shadow:inset 0 0 45px #00d9ff25}.radio-visual:before,.radio-visual:after{content:"";position:absolute;width:210px;height:210px;border:2px solid #58e9ff55;border-radius:50%;animation:radioPulse 3s ease-out infinite}.radio-visual:after{animation-delay:1.5s}.radio-orb{font-size:55px;z-index:1;filter:drop-shadow(0 0 18px #ff4fd8)}.radio-visual strong,.radio-visual small{z-index:1}.radio-visual strong{letter-spacing:4px;color:#fff;text-shadow:0 0 14px #ff4fd8}.radio-visual small{color:#d6edff}.radio-waves{height:54px;display:flex;align-items:center;gap:5px;z-index:1}.radio-waves i{display:block;width:5px;height:12px;border-radius:5px;background:linear-gradient(180deg,#ffe45e,#ff4ac8,#37eaff);animation:radioWave .8s ease-in-out infinite alternate;animation-play-state:paused}.radio-waves i:nth-child(3n){animation-delay:-.3s}.radio-waves i:nth-child(3n+1){animation-delay:-.55s}.radio-visual.playing .radio-waves i{animation-play-state:running}.radio-controls{display:flex;flex-direction:column;gap:12px;min-width:0}.radio-actions{display:flex;gap:9px}.radio-actions .btn{flex:1}.radio-controls input{direction:ltr;text-align:left;unicode-bidi:plaintext}.radio-login-form{width:min(100%,460px);margin-left:0;margin-right:auto;text-align:right}.radio-login-form input{direction:ltr!important;text-align:left!important;unicode-bidi:plaintext}.radio-admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:2px 0 8px}.radio-admin-toolbar .panel-head{margin:0!important;flex:1;min-width:0}.radio-admin-toolbar #radioLogout{flex:0 0 auto;white-space:nowrap}#radioName,#radioUrl{direction:ltr!important;text-align:left!important;unicode-bidi:plaintext;scroll-margin-top:90px}#settingsBody:has(#radioUrl){overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin}#radioUrl{position:relative;z-index:2}.radio-visual.playing{filter:saturate(1.2)}@keyframes radioWave{to{height:48px;filter:hue-rotate(100deg);box-shadow:0 0 12px #38eaff}}@keyframes radioPulse{0%{transform:scale(.45);opacity:.8}100%{transform:scale(1.6);opacity:0}}@media(max-width:700px){.radio-panel{grid-template-columns:1fr}.radio-visual{min-height:190px}}.radio-panel{display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1fr);gap:18px;align-items:center;max-width:980px;margin:12px auto;padding:18px}.radio-visual{min-height:260px;border:1px solid #ffffff24;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:hidden;position:relative;background:radial-gradient(circle at 50% 40%,#6b1d91 0%,#143d79 38%,#07172f 75%);box-shadow:inset 0 0 45px #00d9ff25}.radio-visual:before,.radio-visual:after{content:"";position:absolute;width:210px;height:210px;border:2px solid #58e9ff55;border-radius:50%;animation:radioPulse 3s ease-out infinite}.radio-visual:after{animation-delay:1.5s}.radio-orb{font-size:55px;z-index:1;filter:drop-shadow(0 0 18px #ff4fd8)}.radio-visual strong,.radio-visual small{z-index:1}.radio-visual strong{letter-spacing:4px;color:#fff;text-shadow:0 0 14px #ff4fd8}.radio-visual small{color:#d6edff}.radio-waves{height:54px;display:flex;align-items:center;gap:5px;z-index:1}.radio-waves i{display:block;width:5px;height:12px;border-radius:5px;background:linear-gradient(180deg,#ffe45e,#ff4ac8,#37eaff);animation:radioWave .8s ease-in-out infinite alternate;animation-play-state:paused}.radio-waves i:nth-child(3n){animation-delay:-.3s}.radio-waves i:nth-child(3n+1){animation-delay:-.55s}.radio-visual.playing .radio-waves i{animation-play-state:running}.radio-controls{display:flex;flex-direction:column;gap:12px;min-width:0}.radio-actions{display:flex;gap:9px}.radio-actions .btn{flex:1}.radio-controls input{direction:ltr;text-align:left;unicode-bidi:plaintext}.radio-visual.playing{filter:saturate(1.2)}@keyframes radioWave{to{height:48px;filter:hue-rotate(100deg);box-shadow:0 0 12px #38eaff}}@keyframes radioPulse{0%{transform:scale(.45);opacity:.8}100%{transform:scale(1.6);opacity:0}}@media(max-width:700px){.radio-panel{grid-template-columns:1fr}.radio-visual{min-height:190px}}
+.group-card{border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#0b2740,#06172a);
+ min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.group-card .art{font-size:32px}
+.group-card b{font-size:12px}
+.group-card small{font-size:10px;color:var(--muted)}
+.drama-toolbar{display:flex;align-items:center;gap:12px;margin:10px 0 16px}
+.drama-back{background:#0a2239;border:1px solid #31516d;border-radius:9px;padding:10px 18px;font-weight:700}
+.drama-page-heading{font-size:18px;font-weight:800;color:#f0d79a}
+.drama-catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;align-content:start}
+.drama-episodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;align-content:start}
+.drama-card{position:relative;min-width:0;aspect-ratio:2/3;padding:0;overflow:hidden;border:1px solid #25445f;border-radius:13px;background:#0b2740;display:block;text-align:right;color:#fff;box-shadow:0 6px 18px #0008}
+.drama-card:focus,.drama-card:hover,.episode-card:focus{border-color:#71c2ff;box-shadow:0 0 0 3px #71c2ff55;outline:0}
+.drama-poster{position:absolute;inset:0;width:100%;height:100%;background:linear-gradient(145deg,#173e5d,#071a2c);display:grid;place-items:center;overflow:hidden;color:#e8d3a3;font-size:52px}
+.drama-poster img{width:100%;height:100%;object-fit:cover;display:block}
+.drama-info{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:38px 10px 10px;background:linear-gradient(0deg,rgba(3,10,20,.97) 10%,rgba(3,10,20,.72) 62%,transparent)}
+.drama-info b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:1.5;font-weight:800}
+.drama-stats{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.drama-stats span{font-size:11px;font-weight:700;color:#f0d79a;background:#ffffff1c;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.player-screen.episode-mode{background:#000}
+.player-screen.episode-mode .idle{display:none!important}
+.player-screen.episode-mode .episode-player-controls{padding-top:34px}
+.player-screen.episode-mode:not(.controls-on) .episode-player-controls{display:none!important}
+.player-screen.ep-native.controls-on.is-fullscreen{inset:0 0 auto 0;height:calc(100vh - 150px);height:calc(100dvh - 150px)}
+.player-screen.ep-native .episode-player-controls{position:fixed;left:0;right:0;bottom:0;background:#06121f;padding-top:12px}
+.update-notice{margin:12px 0;padding:12px 16px;border:1px solid #d6b35b;border-radius:10px;background:#3a2b08;color:#ffe29a;font-weight:700;line-height:1.8;word-break:break-all}
+.drama-hero{display:none;grid-template-columns:104px 1fr;gap:14px;align-items:center;margin:0 0 16px;padding:12px;border:1px solid #25445f;border-radius:13px;background:linear-gradient(145deg,#0b2740,#06172a)}
+.drama-hero.show{display:grid}
+.drama-hero-poster{position:relative;aspect-ratio:2/3;border-radius:9px;overflow:hidden;background:linear-gradient(145deg,#173e5d,#071a2c);display:grid;place-items:center;font-size:38px;color:#e8d3a3}
+.drama-hero-poster img{width:100%;height:100%;object-fit:cover;display:block}
+.drama-hero h2{margin:0 0 8px;font-size:20px;color:#f0d79a;line-height:1.4}
+.drama-hero .drama-stats span{font-size:12px}
+.episode-card{min-width:0;border:1px solid #25445f;border-radius:11px;background:linear-gradient(145deg,#0b2740,#06172a);padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:98px;color:#fff}
+.episode-card .episode-number{min-height:0;border:0;background:none;font-size:clamp(30px,4.4vw,48px);line-height:1.1}
+.episode-card small{font-size:11px;color:var(--muted)}
+@media(max-width:700px){.drama-catalog{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:11px}.drama-episodes{grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:9px}.drama-hero{grid-template-columns:86px 1fr}}
+.browse-layout{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.4fr);gap:12px}
+/* Hide channel-list column and its heading; keep player full-width. */
+.browse-layout{align-items:stretch;min-height:0}
+.browse-layout>.panel:first-child{display:flex;flex-direction:column;min-height:0}
+.channel-scroll{display:flex;flex:1 1 auto;flex-direction:column;gap:4px;min-height:0;max-height:none;overflow:auto;padding:3px 4px 4px 3px;box-sizing:border-box}
+.channel-reorder-help{margin:15px 4px 3px;padding:9px 10px;border:1px solid #9a7717;border-radius:7px;background:rgba(255,216,77,.08);color:#ffd84d;font-size:11px;line-height:1.8;text-align:center;direction:rtl;flex:0 0 auto}
+
+.channel{width:100%;display:flex;align-items:center;gap:10px;text-align:left;direction:ltr;
+ background:#061a2c;border:1px solid transparent;border-radius:6px;padding:5px 7px;font-size:10px;min-height:40px;transition:background .12s,border-color .12s,box-shadow .12s;box-sizing:border-box}
+.channel.active{background:#075bb8;border-color:#2b8cf1;box-shadow:inset 3px 0 0 #39baff}
+.channel.delete-selected,.channel.delete-selected:focus{background:#e32636!important;border-color:#ff8a94!important;color:#fff!important;box-shadow:inset 4px 0 0 #a90d1a,0 0 10px #e3263655!important}
+.channel.delete-selected .ch-number,.channel.delete-selected .ch-name{color:#fff!important}
+.channel.hold-selected,.channel.hold-selected:focus{background:#ffd84d!important;border-color:#fff0a3!important;color:#17202b!important;box-shadow:inset 4px 0 0 #f0aa00,0 0 12px #ffd84d55!important}
+.channel.hold-selected .ch-number,.channel.hold-selected .ch-name{color:#17202b!important}
+.channel.dragging{opacity:.45;outline:2px dashed #ffd84d}
+.channel.drop-target{border-top:3px solid #ffd84d!important}
+.channel:focus{background:#075bb8;border-color:#2b8cf1}
+.channel .ch-number{width:25px;flex:0 0 25px;text-align:center;color:#d8e8fa;font-size:11px;font-variant-numeric:tabular-nums}
+.channel .ch-logo{width:36px;height:29px;border-radius:5px;background:#f5f8ff;color:#172b40;
+ display:grid;place-items:center;overflow:hidden;font-weight:bold;font-size:8px;flex:0 0 36px}
+.channel .ch-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:2px}
+.channel .ch-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.channel.active .ch-number,.channel:focus .ch-number{color:#fff}
+.channel:focus{outline:2px solid var(--focus);outline-offset:0;box-shadow:0 0 9px #1682ff44}
+html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline-offset:0;box-shadow:inset 3px 0 0 #39baff}
+.player-screen{position:relative;background:#000;aspect-ratio:16/9;width:100%;
+ max-height:52vh;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.player-screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;transition:none!important;animation:none!important}
+/* Keep native playback icons/transport controls off the video surface; use the app controls and TV remote instead. */
+.player-screen video::-webkit-media-controls,.player-screen video::-webkit-media-controls-enclosure,.player-screen video::-webkit-media-controls-panel,.player-screen video::-webkit-media-controls-overlay-play-button{display:none !important;-webkit-appearance:none !important;opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
+.idle{position:absolute;inset:0;background:radial-gradient(ellipse,#10314d,#02070d 75%);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:15px}
+.idle .play{font-size:43px;color:#1682ff}
+.idle strong{font-size:16px}
+.idle small{font-size:11px;color:var(--muted)}
+.player-screen:fullscreen,.player-screen.is-fullscreen{position:fixed;inset:0;z-index:99999;width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;border-radius:0;margin:0}
+.player-screen:fullscreen video,.player-screen.is-fullscreen video{width:100%;height:100%;object-fit:contain}
+.player-screen.is-fullscreen .idle{border-radius:0}
+/* Fullscreen drama playback controls stay above the native video surface. */
+.episode-player-controls{display:none;position:absolute;left:0;right:0;bottom:0;z-index:20;padding:clamp(12px,2vw,26px);padding-bottom:calc(clamp(12px,2vw,26px) + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.94),rgba(0,0,0,.68) 72%,transparent);color:#fff;pointer-events:auto}
+.player-screen.is-fullscreen.episode-mode .episode-player-controls{display:block}
+.episode-seek-row{display:grid;grid-template-columns:auto minmax(100px,1fr) auto;align-items:center;gap:12px;font-size:clamp(11px,1.5vw,16px);font-variant-numeric:tabular-nums}
+.episode-seek-row input{width:100%;accent-color:#e6b84f;cursor:pointer}
+.episode-control-buttons{display:flex;justify-content:center;align-items:center;gap:clamp(7px,1.5vw,18px);margin-top:12px;flex-wrap:wrap}
+.episode-control-btn{min-width:clamp(76px,10vw,130px);padding:clamp(9px,1.2vw,15px) 16px;border:1px solid #d6b35b88;border-radius:9px;background:#102b43;color:#fff;font-size:clamp(12px,1.6vw,18px);font-weight:800}
+.episode-control-btn.primary{background:#b88627;color:#101010}
+.episode-control-btn.exit{background:#6f2020;border-color:#d77b7b}
+.episode-control-btn:focus,.episode-seek-row input:focus{outline:3px solid #fff;outline-offset:3px}
+.episode-number{width:100%;min-height:110px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(145deg,#173e5d,#071a2c);border:1px solid #d5a84a66;color:#f0d79a;font-size:clamp(38px,5vw,64px);font-weight:900}
+
+
+/* Fullscreen tap handling is captured by the player container itself. */
+.player-screen.is-fullscreen video,.player-screen.is-fullscreen iframe{pointer-events:none !important}
+.channel-switch-overlay{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap;padding:18px 22px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.88),rgba(0,0,0,.48) 70%,transparent);color:#fff;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .25s ease,transform .25s ease;font-size:clamp(14px,2.1vw,23px);text-shadow:0 2px 8px #000}
+.channel-switch-overlay.visible{opacity:1;transform:translateY(0)}
+.channel-switch-overlay .switch-item{display:flex;align-items:center;gap:8px;max-width:46%;min-width:0}
+.channel-switch-overlay .switch-label{color:#8bcaff;font-size:.72em;white-space:nowrap}
+.channel-switch-overlay .switch-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.channel-switch-overlay .switch-current .switch-name{color:#fff}
+.channel-switch-overlay .switch-next .switch-name{color:#f1d69a}
+.player-tools{display:flex;gap:7px;margin-top:10px}
+.player-tools .btn{flex:1;font-size:11px}
+.program{font-size:12px;margin-top:11px}
+.program small{display:block;color:var(--muted);margin-top:6px;font-size:10px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:7px;color:#c5d7e8;font-size:12px;min-width:0}
+.field.full{grid-column:1/-1}
+.field input,.field select,.field textarea{width:100%;min-width:0;background:#031322;color:white;
+ border:1px solid #17405e;border-radius:7px;padding:11px}
+.field textarea{min-height:170px;resize:vertical;direction:ltr;text-align:left;font-family:monospace;font-size:11px}
+/* URL fields are written and displayed from left to right */
+#manualChannelUrl,#manualChannelLogo{direction:ltr;text-align:left;unicode-bidi:plaintext;}
+.notice{padding:11px;background:#09233a;border:1px solid #174465;border-radius:8px;
+ color:#adc8e0;font-size:11px;line-height:1.8;margin-bottom:12px}
+/* Settings: keep the right-side tab boxes compact and their labels centered. */
+.settings-layout{display:grid;grid-template-columns:148px minmax(0,1fr);gap:10px;align-items:start}
+.settings-nav{display:flex;flex-direction:column;gap:6px;padding:9px;min-width:0}
+.settings-nav button{text-align:center;justify-content:center;padding:8px 6px;font-size:11px;line-height:1.45;min-height:38px;white-space:normal}
+.settings-nav 
+#settingsBody{min-width:0;overflow:hidden}
+#settingsBody .panel-head{text-align:center}
+#settingsBody .form-grid{align-items:start}
+.footer{border-top:1px solid var(--line);padding-top:9px;margin-top:14px;
+ display:flex;justify-content:space-between;gap:10px;color:#6e8ba6;font-size:9px}
+
+/* Home and group pages retain their normal content layout without the decorative leaf strips. */
+#page-home,#page-groups{padding-bottom:0;min-height:100%;}
+
+
+.toast{display:none;position:fixed;z-index:1000;bottom:20px;left:50%;
+ transform:translateX(-50%);padding:11px 16px;background:#0c3151;border:1px solid #2788d8;
+ border-radius:8px;font-size:12px;max-width:90vw}
+.toast.show{display:block}
+@media(max-width:1000px){
+ .app{grid-template-columns:145px 1fr}.logo{font-size:22px}
+ .content{padding:0 8px 8px}.categories{gap:6px}.category{height:68px}.category b{font-size:11px}
+ .hero{height:120px;grid-template-columns:1fr}
+ .group-cards{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .lower{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+ html,body{overflow:auto}.app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+ .sidebar{grid-row:2;flex-direction:row;overflow-x:auto;padding:4px;gap:3px;border:0;border-top:1px solid var(--line)}
+ .logo,.nav-bottom,.incense-scene{display:none}.nav{flex:0 0 auto;padding:6px 7px;font-size:9px;gap:3px}.nav .ico{font-size:15px;width:19px}
+ .main{grid-row:1;min-height:0}.topbar{height:44px;min-height:44px;padding:0 6px;gap:5px}.verse-top{font-size:clamp(12px,2.8vw,18px);line-height:1.2;max-width:calc(100% - 110px)}.clock{font-size:11px}.clock small{font-size:12px;margin-top:1px}
+ .content{padding:0 6px 6px}
+ .hero{height:86px;grid-template-columns:1fr;margin-bottom:8px;gap:6px}.hero-main{padding:7px 10px 12px;border-radius:8px}
+ .kicker{font-size:8px}.hero h2{font-size:14px;margin:4px 0}.hero p{font-size:9px}
+ .section-title{margin:7px 0 6px;font-size:12px}.section-title small{font-size:9px}
+ .categories{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.category{height:44px;border-radius:7px;gap:2px}.category .symbol{font-size:16px}.category .symbol-wrap{min-width:24px;height:19px}.category .channel-badge{top:50%;right:5px;transform:translateY(-50%);min-width:0;height:auto;font-size:8px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}.category b{font-size:9px}
+ .project-message{margin-top:24px;padding:6px 8px;font-size:11px;line-height:1.55}
+ .lower,.group-layout,.browse-layout,.settings-layout{grid-template-columns:1fr;gap:7px}
+ .panel{padding:8px;border-radius:8px}.panel-head{font-size:11px;margin-bottom:7px}.placeholder-grid,.quick{gap:4px}.placeholder-tile{min-height:40px;font-size:9px}.placeholder-tile span{font-size:15px}
+ .group-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.group-btn{padding:7px;font-size:10px}
+ .group-cards{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.group-card{min-height:60px;gap:3px;padding:3px}.group-card .art{font-size:18px}.group-card b{font-size:9px}.group-card small{font-size:8px}
+ .form-grid{grid-template-columns:1fr;gap:7px}.field.full{grid-column:auto}.field{font-size:10px;gap:4px}.field input,.field select,.field textarea{padding:8px}.field textarea{min-height:110px}
+ .notice{padding:7px;font-size:10px;margin-bottom:7px}.footer{padding-top:5px;margin-top:7px;font-size:8px}
+ .browse-layout>.panel:first-child{min-height:0}.channel-scroll{flex:0 0 auto;max-height:180px}.channel{min-height:32px;padding:3px 5px;gap:6px;font-size:9px}.channel .ch-logo{width:28px;height:23px;flex-basis:28px}.channel .ch-number{width:19px;flex-basis:19px;font-size:9px}.player-screen{max-height:none}.player-tools{gap:4px;margin-top:6px}.player-tools .btn{font-size:9px;padding:6px}.program{font-size:10px;margin-top:6px}
+}
+/* Compact layouts for short or lower-resolution TV screens. */
+@media (min-width:701px) and (max-width:1366px){
+ .app{grid-template-columns:150px minmax(0,1fr)}.sidebar{padding:9px 7px;gap:4px}.logo{font-size:22px;margin:5px 0 12px}.nav{padding:8px 7px;font-size:11px;gap:7px}.nav .ico{font-size:16px;width:21px}
+ .topbar{height:48px;min-height:48px;padding:0 10px}.verse-top{font-size:clamp(17px,1.8vw,24px);max-width:62%}.clock{font-size:12px}.clock small{font-size:15px;margin-top:2px}
+ .content{padding:0 8px 8px}.hero{height:100px;margin-bottom:9px}.hero-main{padding:12px 16px 18px}.hero h2{font-size:19px;margin:5px 0}.section-title{margin:8px 0 6px;font-size:12px}.categories{gap:6px}.category{height:58px;gap:3px}.category .symbol{font-size:21px}.category b{font-size:10px}.media-categories{max-width:100%;gap:8px}.media-categories .category{height:64px}.project-message{margin-top:12px;padding:8px 10px;font-size:12px;line-height:1.6}.lower{gap:8px;margin-top:9px}.panel{padding:9px}.group-cards{gap:7px}.group-card{min-height:88px}.channel-scroll{max-height:46vh}
+}
+@media (max-height:800px) and (min-width:701px){
+ .settings-layout{grid-template-columns:132px minmax(0,1fr);gap:8px}
+ .settings-nav{padding:7px;gap:5px}
+ .settings-nav button{padding:6px 5px;font-size:10px;min-height:33px;line-height:1.35}
+ .settings-nav 
+ #settingsBody{padding:8px}
+ #settingsBody .field{gap:5px}
+ #settingsBody .field input,#settingsBody .field select,#settingsBody .field textarea{padding:8px}
+ .topbar{height:42px;min-height:42px}.verse-top{font-size:clamp(16px,1.65vw,22px);line-height:1.2}.sidebar{padding-top:6px;padding-bottom:5px;gap:3px}.logo{margin:2px 0 8px}.nav{padding-top:6px;padding-bottom:6px}.nav-bottom{padding:5px 0;font-size:9px}
+ .hero{height:82px;margin-bottom:7px}.hero-main{padding:8px 13px 14px}.hero h2{font-size:17px;margin:4px 0}.section-title{margin:6px 0 5px}.category{height:48px}.category .symbol{font-size:18px}.project-message{margin-top:18px;padding:5px 8px;font-size:11px;line-height:1.5}.lower{margin-top:7px;gap:7px}.panel{padding:7px}.panel-head{margin-bottom:6px}.group-card{min-height:70px}.group-card .art{font-size:24px}.channel-scroll{max-height:40vh}.footer{margin-top:7px;padding-top:5px}
+}
+
+
+
+
+.radio-nav{position:relative;isolation:isolate;overflow:visible}
+.radio-nav:before{content:"";position:absolute;inset:3px;border:1px solid #a96cff;border-radius:9px;pointer-events:none;box-shadow:0 0 8px #a96cff88;animation:radioNavRing 2.4s ease-in-out infinite}
+@keyframes radioNavRing{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.035);opacity:1;box-shadow:0 0 15px #b46cff,0 0 25px #42dfff55}}
+
+/* Language choices use the same vertical navigation-button design as the sidebar. */
+.language-switch{display:flex;flex-direction:column;gap:7px;width:100%;direction:rtl}
+.language-switch .nav{width:100%;flex:0 0 auto}
+@media(max-width:700px){.language-switch{flex-direction:row;gap:3px;width:auto;align-items:center}.language-switch .nav{flex:0 0 auto;width:auto;padding:6px 7px;font-size:9px;gap:3px}.language-switch .nav .ico{font-size:15px;width:19px}}
+
+</style>
+
+
+
+</head>
+<body>
+<div class="app">
+ <aside class="sidebar">
+  <div class="logo">JIVARA<span>TV</span></div>
+  <button class="nav active" data-page="home"><span class="ico">⌂</span>سەرەکی</button>
+  <button class="nav" data-page="browse"><span class="ico">▣</span>کەناڵەکان</button>
+  <button class="nav" data-page="groups"><span class="ico">▦</span>گرووپەکان</button>
+  <button class="nav radio-nav" data-page="radio"><span class="ico">📻</span>ڕادیۆ</button>
+  <div class="language-switch" id="jivaraLanguageSwitch" data-no-translate="true" aria-label="App language">
+   <button class="nav active" type="button" data-language="ku" aria-pressed="true"><span class="ico">🌐</span><span>کوردی</span></button>
+   <button class="nav" type="button" data-language="ar" aria-pressed="false"><span class="ico">🌐</span><span>عەرەبی</span></button>
+   <button class="nav" type="button" data-language="en" aria-pressed="false"><span class="ico">🌐</span><span>ئینگلیزی</span></button>
+  </div>
+  <button class="nav" data-page="settings"><span class="ico">⚙</span>ڕێکخستنەکان</button>
+  <button class="nav" data-page="about"><span class="ico">ⓘ</span>زانیاری</button>
+  <div class="nav-bottom" aria-label="WhatsApp contact">
+   <div class="contact-label"><span class="whatsapp-icon">☏</span> واتساپ</div>
+   <a class="contact-number" href="https://wa.me/9647722243040" target="_blank" rel="noopener" dir="ltr">07722243040</a>
+  </div>
+ </aside>
+ <main class="main">
+  <header class="topbar">
+   <div class="page-title" id="pageTitle">سەرەکی<small>پلەیەری Smart TV</small></div>
+   <div class="verse-top" aria-label="ئایەتی قورئان">ئەم ئەپە بەردەوام نوێ دەکرێتەوە</div>
+   <div class="live-viewers" id="liveViewers" aria-label="بینەری ئێستا"><span class="live-dot"></span><span id="liveViewerCount">--</span><small>بینەری ئێستا</small></div>
+   <div class="clock"><span id="clock">--:--</span><small id="weekday">---</small></div>
+  </header>
+  <section class="content">
+
+   <section class="page active" id="page-home">
+    <div class="hero">
+     <div class="hero-main">
+      <h2>بەخێربێیت بۆ جیهانی کەناڵەکان</h2>
+      <p>گرووپێک هەڵبژێرە یان لینکەکانی خۆت زیاد بکە.</p>
+      
+     </div>
+    </div>
+    <div class="section-title">گرووپەکان <small>کلیک بکە بۆ کردنەوە</small></div>
+    <div class="categories" id="homeCategories"></div>
+   </section>
+
+   <section class="page" id="page-drama">
+    <div class="drama-toolbar">
+     <button class="drama-back" id="dramaBack" type="button" style="display:none">← گەڕانەوە</button>
+     <div class="drama-page-heading" id="dramaPageTitle">دراماکان</div>
+    </div>
+    <div class="drama-hero" id="dramaHero"></div>
+    <div class="drama-catalog" id="dramaCatalog"></div>
+    <div class="drama-episodes" id="dramaEpisodes" style="display:none"></div>
+   </section>
+
+   <section class="page media-landing-page" id="page-media">
+    <div class="media-landing-title" id="mediaLandingTitle">فیلم</div>
+   </section>
+
+   <section class="page" id="page-groups">
+    <div class="section-title">گرووپەکانی کەناڵەکان <small>گرووپێک هەڵبژێرە</small></div>
+    <div class="group-layout">
+     <div class="group-cards" id="groupCards"></div>
+    </div>
+   </section>
+
+   <section class="page" id="page-radio">
+    <div class="section-title"><span>ڕادیۆ</span><small>پەخشی ڕاستەوخۆی دەنگ</small></div>
+    <div class="radio-panel panel">
+     <div class="radio-visual" id="radioVisual" aria-label="وێنەی جوڵاوی پەخشی ڕادیۆ">
+      <div class="radio-orb">📻</div><div class="radio-waves"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <strong>JIVARA RADIO</strong><small id="radioVisualStatus">ئامادەی پەخشە</small>
+     </div>
+     <div class="radio-controls">
+      <div class="panel-head">ڕادیۆکان</div><div id="radioSavedList" class="channel-scroll"></div>
+      <div class="radio-actions"><button class="btn" id="radioStop" type="button">■ وەستاندن</button></div>
+      <div class="notice" id="radioStatus" role="status">ڕادیۆیەک هەڵبژێرە بۆ دەستپێکردنی پەخش.</div>
+      <audio id="radioAudio" preload="none"></audio>
+     </div>
+    </div>
+   </section>
+
+   <section class="page" id="page-browse">
+    <div class="section-title"><span id="browseHeading">کەناڵەکان</span><small id="browseCount">٠ کەناڵ</small></div>
+    <div class="browse-layout">
+     <div class="panel">
+      <div class="panel-head"><span id="channelListHeading">لیستی کەناڵەکان</span></div>
+      <div class="channel-scroll" id="channelList"></div>
+      <div class="channel-reorder-help" role="note">بۆ گۆڕینی شوێنی کەناڵ و ڕێکخستنی لیستەکە بە دڵی خۆت، نیو چرکە دوگمەی ناوەڕاست (OK / Enter)ی ڕیمۆتەکەت لەسەر کەناڵەکە ڕابگرە؛ کاتێک ڕەنگەکەی زەرد بوو، بە تیرەکانی سەرەوە و خوارەوە بیگوازەرەوە، پاشان OK دووبارە دابگرە بۆ دانانی لە شوێنی نوێ؛ دوای ئەوە بە OK کەناڵەکە پخش بکە.</div>
+     </div>
+     <div class="panel">
+      <div class="panel-head"><span id="nowTitle">پلەیەری ڤیدیۆ</span></div>
+      <div class="player-screen" id="playerScreen" tabindex="0" role="button" aria-label="کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە">
+       <video id="video" playsinline preload="auto" fetchpriority="high" disablepictureinpicture disableremoteplayback></video>
+       <video id="episodeVideo" playsinline preload="auto" disablepictureinpicture style="display:none"></video>
+       <div class="episode-player-controls" id="episodePlayerControls" aria-label="کۆنترۆڵی پەخشکردنی ئەڵقە">
+        <div class="episode-seek-row"><span id="episodeCurrentTime">00:00</span><input id="episodeSeek" type="range" min="0" max="100" step="1" value="0" aria-label="شوێنی پەخش"><span id="episodeDuration">00:00</span></div>
+        <div class="episode-control-buttons">
+         <button type="button" class="episode-control-btn" id="episodeBack10">↶ 10</button>
+         <button type="button" class="episode-control-btn primary" id="episodePlayPause">Ⅱ وەستاندن</button>
+         <button type="button" class="episode-control-btn" id="episodeForward10">10 ↷</button>
+         <button type="button" class="episode-control-btn exit" id="episodeExit">✕ دەرچوون</button>
+        </div>
+       </div>
+       <iframe id="webStreamFrame" title="پەخشی کەناڵ" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="display:none;width:100%;height:100%;border:0;background:#000"></iframe>
+       <div class="idle" id="idle"><div class="play">▶</div><strong>کەناڵێک هەڵبژێرە</strong><small>کەناڵێک هەڵبژێرە بۆ بینین</small></div>
+      </div>
+      <div class="program"><strong id="programTitle">ئامادەی پەخشکردن</strong><small id="programSub">لینکی کەناڵێک نییە.</small></div>
+      <div class="player-tools">
+       <button class="btn" id="playBtn">▶ / ❚❚</button>
+       <button class="btn" id="muteBtn">🔊 دەنگ</button>
+       <button class="btn" data-action="settings">⚙ لینکەکان</button>
+      </div>
+     </div>
+    </div>
+   </section>
+
+   <section class="page" id="page-search">
+    <div class="section-title">گەڕان لە کەناڵەکان</div>
+    <div class="panel">
+     <label class="field">ناوی کەناڵ بنووسە
+      <input id="searchInput" placeholder="گەڕان..." type="search">
+     </label>
+     <div style="height:12px"></div>
+     <div id="searchResults" class="channel-scroll"></div>
+    </div>
+   </section>
+
+   <section class="page" id="page-settings">
+    <div class="section-title">ڕێکخستنەکان <small>شوێنی گروپی لینکەکان</small></div>
+    <div class="settings-layout">
+     <div class="panel settings-nav">
+      <button class="btn primary" data-tab="player">🎬 پلەیەری ڤیدیۆ</button>
+      <button class="btn" data-tab="manual">＋ زیادکردنی کەناڵ بە دەستی</button>
+      <button class="btn" data-tab="edit">✎ گۆڕینی ناوی کەناڵ</button>
+      <button class="btn" data-tab="radio">📻 بەڕێوەبردنی ڕادیۆ</button>
+      <button class="btn" data-tab="delete">✖ سڕینەوەی کەناڵ</button>
+     </div>
+     <div class="panel" id="settingsBody"></div>
+    </div>
+   </section>
+
+   <section class="page" id="page-about">
+    <div class="about-content">
+     <div class="logo">JIVARA<span>TV</span></div>
+     <h2>Smart TV IPTV Player</h2>
+     <p class="muted">ڕووکارێکی ئامادە بۆ گروپی کەناڵەکان و لینکەکانی IPTV.</p>
+     <p class="muted">ئەمە پڕۆژەیەکی نموونەییە و پڕۆژەیەکی تایبەتی JIVARA TV ـە.</p>
+    <div class="update-notice" id="updateNotice" style="display:none" role="status"></div>
+    <div class="project-message">بینەری بەڕێز، ئەم پرۆژەیە بۆ خزمەتی تۆیە. تکایە بەهەڵە بەکاری مەهێنە و دەتوانیت لینکی کەناڵی تیڤی دڵخوازی خۆت لە گروپەکان زیاد بکەیت، دڵنیابە کە ئێمە ئاگاداری ئەو لینکانەین کە داخڵیان دەکەیت و لینکی نەشیاو ڕێگەپێدراو نییە.</div>
+    </div>
+   </section>
+
+  </section>
+ </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const groups = [
+ {id:'local',name:'ناوخۆ',icon:'🏙️',art:'🏙️',colors:['#0878f9','#06408f']},
+ {id:'kurdish',name:'کوردی',icon:'📺',art:'📺',colors:['#ed1740','#9d0029']},
+ {id:'arabic',name:'عەرەبی',icon:'🌙',art:'🌙',colors:['#119b83','#075548']},
+ {id:'foreign',name:'بیانی',icon:'🌍',art:'🌍',colors:['#a52a8d','#55164e']},
+ {id:'news',name:'هەواڵ',icon:'📰',art:'📰',colors:['#1263a8','#07335f']},
+ {id:'quran',name:'قورئان',icon:'🕌',art:'🕌',colors:['#8c23d9','#4d087f']},
+ {id:'kids',name:'منداڵان',icon:'🧸',art:'🧸',colors:['#09a76b','#06623f']},
+ {id:'sports',name:'وەرزش',icon:'⚽',art:'⚽',colors:['#ff8b16','#b84a00']},
+ {id:'music',name:'موزیک',icon:'🎵',art:'🎵',colors:['#087cdd','#064281']},
+ {id:'documentary',name:'دۆکۆمێنتاری',icon:'🎞️',art:'🎞️',colors:['#b17b22','#69430b']},
+ // گرووپەکانی وڵاتەکان — لە ڕووکاری سەرەکی و لاپەڕەی گرووپەکان
+ {id:'iraq',name:'عێراق',icon:'🇮🇶',art:'🇮🇶',colors:['#13834b','#064b2b']},
+ {id:'iran',name:'ئێران',icon:'🇮🇷',art:'🇮🇷',colors:['#15966a','#07543d']},
+ {id:'turkey',name:'تورکیا',icon:'🇹🇷',art:'🇹🇷',colors:['#d52b3e','#821323']},
+ {id:'israel',name:'ئیسرائیل',icon:'🇮🇱',art:'🇮🇱',colors:['#2877c7','#123c78']},
+ {id:'movies',name:'فیلم',icon:'🎬',art:'🎬',colors:['#b52b45','#681329']},
+ {id:'drama',name:'دراما',icon:'🎭',art:'🎭',colors:['#7650bd','#39205f']}
+];
+
+// ================================================================
+// شوێنی سەرەکی دانانی لینکی کەناڵەکان: هەر گروپێک پاکێجی تایبەتی خۆی هەیە.
+// بۆ زیادکردن: تۆماری {id, name, logo, url, group} لە ناو پاکێجی گروپی خۆی دابنێ.
+// بۆ گۆڕینی پاکێج: تەنها ناو ئەم بەشە دەستکاری بکە؛ group دەبێت هەمان ID ـی گروپ بێت.
+// ================================================================
+const channelPackages = {
+  // ناوخۆ — 0 کەناڵی ئێستا
+  local: [
+    // لێرە لینکی کەناڵەکانی گروپی ناوخۆ دابنێ.
+    // نموونە: {id:'local-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'local'},
+  ],
+  // کوردی — 30 کەناڵی ئێستا
+  kurdish: [
+  ],
+  // عەرەبی — 34 کەناڵی ئێستا
+  arabic: [
+  ],
+  // بیانی — 0 کەناڵی ئێستا
+  foreign: [
+    // لێرە لینکی کەناڵەکانی گروپی بیانی دابنێ.
+    // نموونە: {id:'foreign-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'foreign'},
+  ],
+  // هەواڵ — هیچ کەناڵێک نییە
+  news: [
+  ],
+  // قورئان — 0 کەناڵی ئێستا
+  quran: [
+    // لێرە لینکی کەناڵەکانی گروپی قورئان دابنێ.
+    // نموونە: {id:'quran-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'quran'},
+  ],
+  // منداڵان — 0 کەناڵی ئێستا
+  kids: [
+    // لێرە لینکی کەناڵەکانی گروپی منداڵان دابنێ.
+    // نموونە: {id:'kids-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'kids'},
+  ],
+  // وەرزش — 0 کەناڵی ئێستا
+  sports: [
+    // لێرە لینکی کەناڵەکانی گروپی وەرزش دابنێ.
+    // نموونە: {id:'sports-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'sports'},
+  ],
+  // موزیک — 0 کەناڵی ئێستا
+  music: [
+    // لێرە لینکی کەناڵەکانی گروپی موزیک دابنێ.
+    // نموونە: {id:'music-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'music'},
+  ],
+  // دۆکۆمێنتاری — 0 کەناڵی ئێستا
+  documentary: [
+    // لێرە لینکی کەناڵەکانی گروپی دۆکۆمێنتاری دابنێ.
+    // نموونە: {id:'documentary-01',name:'ناوی کەناڵ',logo:'https://...',url:'https://...m3u8',group:'documentary'},
+  ]
+};
+
+// ================================================================
+// پاکێجی M3U ـی دەستی: هەر گروپێک بەشی تایبەتی خۆی هەیە.
+// تەنها هێڵەکانی #EXTINF و لینکی دواتریان لە نێوان ` بکۆپە/دابنێ.
+// ناوی group-title دەتوانێت وەک ناوی گروپی M3U ـەکەت بێت؛
+// کەناڵەکان بە خودی کلیلی پاکێج (local/kurdish/...) دەخرێنە ناو گروپی خۆیان.
+// ================================================================
+const m3uPackages = {
+  // ناوخۆ — Local-ناوخۆ
+  local: `#EXTM3U
+#EXTINF:-1 tvg-id="" tvg-name="Local: KANALI 21" tvg-logo="https://i.postimg.cc/htnNbxnF/21-jzeer.png" group-title="Local-ناوخۆ",KANALI 21
+https://183.bozztv.com/giatv/giatv-kanali21/kanali21/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="Local: KHAK TV" tvg-logo="https://i.postimg.cc/cH9VzRxK/Pics-Art-25-08-01-16-55-23-538.png" group-title="Local-ناوخۆ",Local: KHAK TV
+http://khakhd.ddns.net:1935/stream/khakhd/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="Infinity HD" tvg-logo="https://i.postimg.cc/CYh5Hjwq/infinity.png" group-title="Local-ناوخۆ",Infinity HD
+https://cdn.karwan.tv/infinity-tv/tracks-v1a1/mono.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="S TV" tvg-logo="" group-title="Kurdistan",S TV
+http://195.128.27.253/548607065148/955372318450/931861
+#EXTINF:-1 tvg-id="" tvg-name="Nishtimani Mn HD KRD" tvg-logo="" group-title="Kurdistan",Nishtimani Mn HD
+http://195.128.27.253/548607065148/955372318450/931983
+#EXTINF:-1 tvg-id="" tvg-name="Nohadra HD KRD" tvg-logo="" group-title="Kurdistan",Nohadra HD
+http://195.128.27.253/548607065148/955372318450/931887
+#EXTINF:-1 tvg-id="" tvg-name="KURD HD" tvg-logo="" group-title="Kurdistan",KURD HD
+http://195.128.27.253/548607065148/955372318450/931863
+#EXTINF:-1 tvg-id="" tvg-name="AVA Entertainment" tvg-logo="  " group-title="Kurdistan",AVA Entertainment
+http://hlspackager.akamaized.net/live/DB/AVA_TV/HLS/AVA_TV.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="PESHMARGA TV" tvg-logo="" group-title="Kurdistan",PESHMARGA TV
+http://195.128.27.253/548607065148/955372318450/931920
+#EXTINF:-1 tvg-id="" tvg-name="Ishtar TV HD KRD" tvg-logo="   " group-title="Kurdistan",Ishtar TV HD
+http://195.128.27.253/548607065148/955372318450/931935
+#EXTINF:-1 tvg-id="" tvg-name="PSHDAR HD KRD" tvg-logo="" group-title="Kurdistan",PSHDAR HD
+http://195.128.27.253/548607065148/955372318450/932109
+#EXTINF:-1 tvg-id="" tvg-name="QALAT HD KRD" tvg-logo="" group-title="Kurdistan",QALAT HD
+http://195.128.27.253/548607065148/955372318450/931977
+#EXTINF:-1 tvg-id="" tvg-name="Ranya KRD" tvg-logo="" group-title="Kurdistan",Ranya
+http://195.128.27.253/548607065148/955372318450/930363
+#EXTINF:-1 tvg-id="" tvg-name="RASAN HD KRD" tvg-logo="   " group-title="Kurdistan",RASAN HD
+http://195.128.27.253/548607065148/955372318450/931857
+#EXTINF:-1 tvg-id="" tvg-name="RENG TV HD KRD" tvg-logo="   " group-title="Kurdistan",RENG TV HD
+http://195.128.27.253/548607065148/955372318450/931883
+#EXTINF:-1 tvg-id="" tvg-name="Mixkurdy HD KRD" tvg-logo="" group-title="Kurdistan",Mixkurdy HD
+http://195.128.27.253/548607065148/955372318450/932129
+#EXTINF:-1 tvg-id="" tvg-name="Next HD KRD" tvg-logo="" group-title="Kurdistan",Next HD
+http://195.128.27.253/548607065148/955372318450/931939
+#EXTINF:-1 tvg-id="" tvg-name="BARIN FAMILY HD KRD" tvg-logo="" group-title="Kurdistan",BARIN FAMILY HD
+http://195.128.27.253/548607065148/955372318450/931886
+#EXTINF:-1 tvg-id="" tvg-name="BARIN MOVIES HD KRD" tvg-logo="" group-title="Kurdistan",BARIN MOVIES HD
+http://195.128.27.253/548607065148/955372318450/932075
+#EXTINF:-1 tvg-id="" tvg-name="BIABAN MUSIC" tvg-logo="" group-title="Kurdistan",BIABAN MUSIC
+http://195.128.27.253/548607065148/955372318450/1035295
+#EXTINF:-1 tvg-id="" tvg-name="BNAR MOVIES KRD" tvg-logo="" group-title="Kurdistan",BNAR MOVIES KRD
+http://195.128.27.253/548607065148/955372318450/932041
+#EXTINF:-1 tvg-id="" tvg-name="Chamchamal HD KRD" tvg-logo="" group-title="Kurdistan",Chamchamal HD
+http://195.128.27.253/548607065148/955372318450/931958
+#EXTINF:-1 tvg-id="" tvg-name="CIHAN HD KRD" tvg-logo="" group-title="Kurdistan",CIHAN HD
+http://195.128.27.253/548607065148/955372318450/931892
+#EXTINF:-1 tvg-id="" tvg-name="MIRNA TV" tvg-logo="" group-title="Kurdistan",MIRNA TV
+http://195.128.27.253/548607065148/955372318450/932101
+#EXTINF:-1 tvg-id="" tvg-name="SORAN ENTERTAIMENT" tvg-logo="" group-title="Kurdistan",SORAN ENTERTAINMENT
+http://195.128.27.253/548607065148/955372318450/931869
+#EXTINF:-1 tvg-id="" tvg-name="BABAN MUSIC" tvg-logo="" group-title="Kurdistan",BABAN MUSIC
+http://195.128.27.253/548607065148/955372318450/932104
+#EXTINF:-1 tvg-id="" tvg-name="DERIN TV HD" KRD" tvg-logo="" group-title="Kurdistan",DERIN TV HD
+http://195.128.27.253/548607065148/955372318450/931879
+#EXTINF:-1 tvg-id="" tvg-name="RED TV" tvg-logo="" group-title="Kurdistan",RED TV
+http://195.128.27.253/548607065148/955372318450/931985
+#EXTINF:-1 tvg-id="" tvg-name="MMN  Documentary HD KRD" tvg-logo="" group-title="Kurdistan",MMN  Documentary HD
+http://195.128.27.253/548607065148/955372318450/932082
+#EXTINF:-1 tvg-id="" tvg-name="MMN SHOW HD KRD" tvg-logo="" group-title="Kurdistan",MMN SHOW HD
+http://195.128.27.253/548607065148/955372318450/931853
+#EXTINF:-1 tvg-id="" tvg-name="MMN  MOVIES HD KRD" tvg-logo="" group-title="Kurdistan",MMN  MOVIES HD
+http://195.128.27.253/548607065148/955372318450/932072
+#EXTINF:-1 tvg-id="" tvg-name="MMN  Quran HD KRD" tvg-logo="" group-title="Kurdistan",MMN  Quran HD
+http://195.128.27.253/548607065148/955372318450/932016
+#EXTINF:-1 tvg-id="" tvg-name="MMN ACTION HD KRD" tvg-logo="" group-title="Kurdistan",MMN ACTION HD
+http://195.128.27.253/548607065148/955372318450/932043
+#EXTINF:-1 tvg-id="" tvg-name="MMN Classic Musical HD KRD" tvg-logo="" group-title="Kurdistan",MMN Classic Musical HD
+http://195.128.27.253/548607065148/955372318450/931986
+#EXTINF:-1 tvg-id="" tvg-name="MMN Clip HD KRD" tvg-logo="" group-title="Kurdistan",MMN Clip HD
+http://195.128.27.253/548607065148/955372318450/931851
+#EXTINF:-1 tvg-id="" tvg-name="MMN HD Drama KRD" tvg-logo="" group-title="Kurdistan",MMN HD Drama
+http://195.128.27.253/548607065148/955372318450/932042
+#EXTINF:-1 tvg-id="" tvg-name="MMN NEWS HD KRD" tvg-logo="" group-title="Kurdistan",MMN NEWS HD
+http://195.128.27.253/548607065148/955372318450/931878
+
+`,
+
+  // کوردی — Kurdish
+  kurdish: `#EXTM3U
+#EXTINF:-1 tvg-id="Kurdsat.iq@SD" tvg-logo="https://i.imgur.com/UAbSwYA.png" group-title="Entertainment",Kurdsat
+https://hlspackager.akamaized.net/live/DB/KURDSAT_HD/HLS/KURDSAT_HD.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="KURDMAX TV" tvg-logo="" group-title="Kurdistan",KURDMAX TV
+http://195.128.27.253/548607065148/955372318450/931898
+#EXTINF:-1 tvg-id="" tvg-name="KURDMAX SHOW SORANI TV HD KRD" tvg-logo="https://ia801403.us.archive.org/4/items/soz_20211021/kurddmaxshow.jpg" group-title="Kurdistan",KURDMAX SHOW SORANI TV HD KRD
+http://195.128.27.253/548607065148/955372318450/931837
+
+
+
+`,
+
+
+
+  // عەرەبی — Arabic
+  arabic: `#EXTM3U
+#EXTINF:-1 tvg-id="osnyahalaae" tvg-name="OSN YaHala" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/OSN_Yahala.png" group-title="OSN",OSN YaHala
+http://195.128.27.253/548607065148/955372318450/1546083
+#EXTINF:-1 tvg-id="osnyahalaae" tvg-name="OSN YaHala Bil Arabi" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/OSN_Yahala_Bil_Arabi.png" group-title="OSN",OSN YaHala Bil Arabi
+http://195.128.27.253/548607065148/955372318450/1836429
+#EXTINF:-1 tvg-id="osnyahalacinimaae" tvg-name="OSN TV Ya Hala Aflam" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/OSN_Yahala_Aflam.png" group-title="OSN",OSN TV Ya Hala Aflam
+http://195.128.27.253/548607065148/955372318450/1573397
+#EXTINF:-1 tvg-id="Series Channel" tvg-name="Alfa Series Channel" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/Alfa_Series_Channel.png" group-title="OSN",Alfa Series Channel
+http://195.128.27.253/548607065148/955372318450/1545984
+#EXTINF:-1 tvg-id="alyawm.sa" tvg-name="OSN Al Youm HD" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/OSN-Alywm.png" group-title="OSN",OSN Al Youm HD
+http://195.128.27.253/548607065148/955372318450/1545988
+#EXTINF:-1 tvg-id="alsafwa.sa" tvg-name="Alfa Al Safwa" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/Alfa_AlSafwa.png" group-title="OSN",Alfa Al Safwa
+http://195.128.27.253/548607065148/955372318450/1545987
+#EXTINF:-1 tvg-id="fann.sa" tvg-name="OSN Fann HD" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/OSN-Fann.png" group-title="OSN",OSN Fann HD
+http://195.128.27.253/548607065148/955372318450/1644626
+#EXTINF:-1 tvg-id="Cinema1" tvg-name="Alfa Cinema 1" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/Alfa_Cinema_1.png" group-title="OSN",Alfa Cinema 1
+http://195.128.27.253/548607065148/955372318450/1546057
+#EXTINF:-1 tvg-id="Cinema2" tvg-name="OSN Cinema 2" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/OSN-Cinem2Arab.png" group-title="OSN",OSN Cinema 2
+http://195.128.27.253/548607065148/955372318450/1546056
+#EXTINF:-1 tvg-id="osnliving.ae" tvg-name="OSN TV Now" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/OSN_Now.png" group-title="OSN",OSN TV Now
+http://195.128.27.253/548607065148/955372318450/1546005
+#EXTINF:-1 tvg-id="tlc.sa" tvg-name="OSN TLC" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/canada/tlc-ca.png" group-title="OSN",OSN TLC
+http://195.128.27.253/548607065148/955372318450/1545993
+#EXTINF:-1 tvg-id="eentertainment.sa" tvg-name="OSN E! Entertainment" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/OSN-E.png" group-title="OSN",OSN E! Entertainment
+http://195.128.27.253/548607065148/955372318450/1545957
+#EXTINF:-1 tvg-id="discovery.sa" tvg-name="OSN Discovery Channel" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/Discovery_HD.png" group-title="OSN",OSN Discovery Channel
+http://195.128.27.253/548607065148/955372318450/1545968
+#EXTINF:-1 tvg-id="discoveryscience.sa" tvg-name="OSN Discovery Science" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/Discovery_Science_HD.png" group-title="OSN",OSN Discovery Science
+http://195.128.27.253/548607065148/955372318450/1545967
+#EXTINF:-1 tvg-id="idx.sa" tvg-name="OSN Discovery ID" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/Discovery_ID.png" group-title="OSN",OSN Discovery ID
+http://195.128.27.253/548607065148/955372318450/1545966
+#EXTINF:-1 tvg-id="history.sa" tvg-name="OSN History" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/History.png" group-title="OSN",OSN History
+http://195.128.27.253/548607065148/955372318450/1545959
+#EXTINF:-1 tvg-id="historyen.sa" tvg-name="OSN History 2" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/History2.png" group-title="OSN",OSN History 2
+http://195.128.27.253/548607065148/955372318450/1545958
+#EXTINF:-1 tvg-id="natgeo.sa" tvg-name="OSN Nat Geo" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/NatGeoHD.png" group-title="OSN",OSN Nat Geo
+http://195.128.27.253/548607065148/955372318450/1545964
+#EXTINF:-1 tvg-id="Nat Geo People HD" tvg-name="OSN Nat Geo People" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/NatGeoHD.png" group-title="OSN",OSN Nat Geo People
+http://195.128.27.253/548607065148/955372318450/1546041
+#EXTINF:-1 tvg-id="natgeowild.sa" tvg-name="OSN Nat Geo Wild" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/NatGeoWildHD.png" group-title="OSN",OSN Nat Geo Wild
+http://195.128.27.253/548607065148/955372318450/1545962
+#EXTINF:-1 tvg-id="MusicNow" tvg-name="OSN Music Now" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/OSN_Now.png" group-title="OSN",OSN Music Now
+http://195.128.27.253/548607065148/955372318450/1545990
+#EXTINF:-1 tvg-id="VH1" tvg-name="MTV 00s" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/OSN/MTV_00s.png" group-title="OSN",MTV 00s
+http://195.128.27.253/548607065148/955372318450/1545991
+#EXTINF:-1 tvg-id="OSN Series HD" tvg-name="OSN Series Prime" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/OSN-Series.png" group-title="OSN",OSN Series Prime
+http://195.128.27.253/548607065148/955372318450/1573396
+#EXTINF:-1 tvg-id="artaflam1.sa" tvg-name="ART Aflam 1" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/ART-Aflam1.png" group-title="OSN",ART Aflam 1
+http://195.128.27.253/548607065148/955372318450/1508905
+#EXTINF:-1 tvg-id="artaflam2.sa" tvg-name="ART Aflam 2" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/ART-Aflam2.png" group-title="OSN",ART Aflam 2
+http://195.128.27.253/548607065148/955372318450/1508904
+#EXTINF:-1 tvg-id="artcinema.sa" tvg-name="ART Cinema" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/ART-Cinema.png" group-title="OSN",ART Cinema
+http://195.128.27.253/548607065148/955372318450/1508903
+#EXTINF:-1 tvg-id="ARTHekayat" tvg-name="ART Hekayat 1" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/ART-Hekayat1.png" group-title="OSN",ART Hekayat 1
+http://195.128.27.253/548607065148/955372318450/1508902
+#EXTINF:-1 tvg-id="ARTHekayat2" tvg-name="ART Hekayat 2" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/OSN/ART-Hekayat2.png" group-title="OSN",ART Hekayat 2
+http://195.128.27.253/548607065148/955372318450/1508901
+#EXTINF:-1 tvg-id="artcinema.sa" tvg-name="ART Cima" tvg-logo="https://logo.m3uassets.com/artcima.png" group-title="OSN",ART Cima
+http://195.128.27.253/548607065148/955372318450/1684405
+#EXTINF:-1 tvg-id="artaflam1.sa" tvg-name="ART Movies" tvg-logo="" group-title="OSN",ART Movies
+http://195.128.27.253/548607065148/955372318450/1684406
+#EXTINF:-1 tvg-id="" tvg-name="ART America" tvg-logo="https://logo.m3uassets.com/artamerica.png" group-title="OSN",ART America
+http://195.128.27.253/548607065148/955372318450/1684407
+#EXTINF:-1 tvg-id="mbc1.ae" tvg-name="MBC 1 ᴴᴰ" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/MBC/MBC_1.png" group-title="MBC-MyHD",MBC 1 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1508900
+#EXTINF:-1 tvg-id="mbc1.ae" tvg-name="MBC 1 ᴴᴰ FHD" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/My-HD/Mbc1opy.webp" group-title="MBC-MyHD",MBC 1 ᴴᴰ FHD
+http://195.128.27.253/548607065148/955372318450/1540003
+#EXTINF:-1 tvg-id="mbc2.ae" tvg-name="MBC 2 ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC2.png" group-title="MBC-MyHD",MBC 2 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1540002
+#EXTINF:-1 tvg-id="mbc2.ae" tvg-name="MBC 2" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC2.png" group-title="MBC-MyHD",MBC 2
+http://195.128.27.253/548607065148/955372318450/1508898
+#EXTINF:-1 tvg-id="mbc3.ae" tvg-name="MBC 3 ᴴᴰ" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/My-HD/MBC3.png" group-title="MBC-MyHD",MBC 3 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1540001
+#EXTINF:-1 tvg-id="mbc3.ae" tvg-name="MBC 3" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/My-HD/MBC3.png" group-title="MBC-MyHD",MBC 3
+http://195.128.27.253/548607065148/955372318450/1508896
+#EXTINF:-1 tvg-id="mbc4.ae" tvg-name="MBC 4 ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC4.png" group-title="MBC-MyHD",MBC 4 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1540000
+#EXTINF:-1 tvg-id="mbc4.sa" tvg-name="MBC 4" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC4.png" group-title="MBC-MyHD",MBC 4
+http://195.128.27.253/548607065148/955372318450/1508894
+#EXTINF:-1 tvg-id="mbcaction.sa" tvg-name="MBC Action ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Action.png" group-title="MBC-MyHD",MBC Action ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1540006
+#EXTINF:-1 tvg-id="mbcaction.sa" tvg-name="MBC Action" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Action.png" group-title="MBC-MyHD",MBC Action
+http://195.128.27.253/548607065148/955372318450/1508887
+#EXTINF:-1 tvg-id="mbcbollywood.sa" tvg-name="MBC Bollywood" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC-Bollywood.png" group-title="MBC-MyHD",MBC Bollywood
+http://195.128.27.253/548607065148/955372318450/1509999
+#EXTINF:-1 tvg-id="mbcdrama.ae" tvg-name="MBC Drama ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Drama.png" group-title="MBC-MyHD",MBC Drama ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1540004
+#EXTINF:-1 tvg-id="mbcdrama.ae" tvg-name="MBC Drama" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Drama.png" group-title="MBC-MyHD",MBC Drama
+http://195.128.27.253/548607065148/955372318450/1508890
+#EXTINF:-1 tvg-id="mbc5.ae" tvg-name="MBC 5 ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC5.png" group-title="MBC-MyHD",MBC 5 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1570350
+#EXTINF:-1 tvg-id="mbciraq.iq" tvg-name="MBC Iraq ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Iraq.png" group-title="MBC-MyHD",MBC Iraq ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1570208
+#EXTINF:-1 tvg-id="mbciraq.iq" tvg-name="MBC Iraq" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Iraq.png" group-title="MBC-MyHD",MBC Iraq
+http://195.128.27.253/548607065148/955372318450/1585745
+#EXTINF:-1 tvg-id="MBCPersia" tvg-name="MBC Persia TV" tvg-logo="" group-title="MBC-MyHD",MBC Persia TV
+http://195.128.27.253/548607065148/955372318450/1680305
+#EXTINF:-1 tvg-id="mbcmasr.eg" tvg-name="MBC Masr 1 ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Maser.png" group-title="MBC-MyHD",MBC Masr 1 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1606618
+#EXTINF:-1 tvg-id="mbcmasr.eg" tvg-name="MBC Masr 1" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Maser.png" group-title="MBC-MyHD",MBC Masr 1
+http://195.128.27.253/548607065148/955372318450/1508885
+#EXTINF:-1 tvg-id="mbcmasr2.eg" tvg-name="MBC Masr 2 ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Maser2.png" group-title="MBC-MyHD",MBC Masr 2 ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1606619
+#EXTINF:-1 tvg-id="mbcmasr2.eg" tvg-name="MBC Masr 2" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Maser2.png" group-title="MBC-MyHD",MBC Masr 2
+http://195.128.27.253/548607065148/955372318450/1508884
+#EXTINF:-1 tvg-id="mbcmasr.eg" tvg-name="MBC Masr Drama HD" tvg-logo="http://pic.apkdt.co/pic/temu/arabic/mbc/MBC-MASR-DRAMA.png" group-title="MBC-MyHD",MBC Masr Drama HD
+http://195.128.27.253/548607065148/955372318450/1878060
+#EXTINF:-1 tvg-id="mbcmax.ae" tvg-name="MBC Max ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_MAX.png" group-title="MBC-MyHD",MBC Max ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1539999
+#EXTINF:-1 tvg-id="mbcmax.ae" tvg-name="MBC Max" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_MAX.png" group-title="MBC-MyHD",MBC Max
+http://195.128.27.253/548607065148/955372318450/1508892
+#EXTINF:-1 tvg-id="" tvg-name="MBC Variety ᴴᴰ" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/My-HD/MBCPlusVariety.png" group-title="MBC-MyHD",MBC Variety ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1539998
+#EXTINF:-1 tvg-id="UTC_PlUS_0300" tvg-name="MBC Variety" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/My-HD/MBCPlusVariety.png" group-title="MBC-MyHD",MBC Variety
+http://195.128.27.253/548607065148/955372318450/1510007
+#EXTINF:-1 tvg-id="mbcdramaplus.ae" tvg-name="MBC Drama+ ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Drama.png" group-title="MBC-MyHD",MBC Drama+ ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1520297
+#EXTINF:-1 tvg-id="mbcplusdramaen.ae" tvg-name="MBC+ Drama  ᴴᴰ" tvg-logo="https://logos.mypanel.one/nemesislogos/saqlogo/Logo_EVDTV/MBC/MBC_Drama.png" group-title="MBC-MyHD",MBC+ Drama  ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1540005
+#EXTINF:-1 tvg-id="" tvg-name="MBC eLife ᴴᴰ" tvg-logo="" group-title="MBC-MyHD",MBC eLife ᴴᴰ
+http://195.128.27.253/548607065148/955372318450/1699247
+#EXTINF:-1 tvg-id="" tvg-name="MBC FM" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/My-HD/MBCFm.png" group-title="MBC-MyHD",MBC FM
+http://195.128.27.253/548607065148/955372318450/1623742
+#EXTINF:-1 tvg-id="mbcwanasah.eg" tvg-name="Wanasah FHD" tvg-logo="http://logo.mypanel.one/logos/LogoEVDTV/MBC/Mbc_Wanasah.png" group-title="MBC-MyHD",Wanasah FHD
+http://195.128.27.253/548607065148/955372318450/1654381
+`,
+
+  // بیانی — Foreign
+  foreign: `#EXTM3U
+# لێرە پاکێجی M3U ـی گروپی بیانی دابنێ.
+`,
+
+  // هەواڵ — پاکێجی کەناڵەکانی هەواڵ و کەناڵە کوردییەکان
+  // لینک و زانیارییەکان وەک ئەوەی بەکارهێنەر ناردوویەتی پارێزراون.
+  news: `#EXTM3U
+
+
+#EXTINF:-6 tvg-id="KurdsatNews.iq@SD" tvg-logo="https://i.imgur.com/F3XRwkt.png" group-title="News",Kurdsat News
+https://hlspackager.akamaized.net/live/DB/KURDSAT_NEWS/HLS/KURDSAT_NEWS.m3u8
+#EXTINF:-32,Gali Kurdistan TV
+https://live.host247.net/gk/gksat/playlist.m3u8
+#EXTINF:-2 tvg-id="Channel8.iq@SD" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Channel8corp.png/960px-Channel8corp.png" group-title="News",Channel8
+https://live.channel8.com/Channel8-Kurdish/index.fmp4.m3u8
+#EXTINF:-34,Kirkuk Satellite TV
+https://live.kirkuklive.live/hls/stream/index.m3u8
+#EXTINF:-5 tvg-id="Kurdistan24.iq@SD" tvg-logo="https://i.imgur.com/9QWs2ms.png" group-title="News",Kurdistan 24 
+https://hlspackager.akamaized.net/live/DB/K24/HLS/K24.m3u8
+#EXTINF:-3 tvg-id="RudawTV.iq@SD" tvg-logo="https://i.imgur.com/Zo3IWOn.png" group-title="News",Rudaw TV
+https://hlspackager.akamaized.net/live/DB/RUDAW/HLS/RUDAW.m3u8
+#EXTINF:-4 tvg-id="KurdistanTV.iq@SD" tvg-logo="https://i.imgur.com/mjQptpc.png" group-title="General",Kurdistan TV
+https://5a3ed7a72ed4b.streamlock.net/live/SMIL:myStream.smil/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="AVA Entertainment KRD" tvg-logo="https://ih1.redbubble.net/image.1537432242.4989/ur,pin_small_front,wide_portrait,750x1000.jpg" group-title="Kurdistan",AVA Entertainment KRD
+http://hlspackager.akamaized.net/live/DB/AVA_TV/HLS/AVA_TV.m3u8
+#EXTINF:-33,WelatTV
+https://stream.badinan.xyz/welat/tv/chunklist_w1721419603.m3u8
+
+
+
+
+
+#EXTINF:-1 xc_vm-id="2749" tvg-id="" tvg-name="AR | AL JAZEERA DOCUMENTARY HD" tvg-logo="http://get.acccesclassico.qpon:80/images/1cd3858c68840e17824fb84fdc6ef5ca.png" group-title="News ᴴᴰ",AR | AL JAZEERA DOCUMENTARY HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5jU-egiAE4NiB_XYYqv4YBM
+#EXTINF:-1 xc_vm-id="2750" tvg-id="" tvg-name="AR | ALARABIYA BUSINESS HD" tvg-logo="http://get.acccesclassico.qpon:80/images/6646aea152e659bfa76d7e6f284f54cf.jpg" group-title="News ᴴᴰ",AR | ALARABIYA BUSINESS HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5g23yDY9XlTHrUztufSAHY0
+#EXTINF:-1 xc_vm-id="2751" tvg-id="" tvg-name="NEWS | AL-ALAM FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/781dd0855029858b3f41593874972947.png" group-title="News ᴴᴰ",NEWS | AL-ALAM FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5p_ef78dAPRl_hWA8ifT86c
+#EXTINF:-1 xc_vm-id="2752" tvg-id="" tvg-name="NEWS | AL ARABY FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/47716999193564fd5c308faa5837ad68.png" group-title="News ᴴᴰ",NEWS | AL ARABY FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5lK3oSfONMW5GJOWqxz3dbU
+#EXTINF:-1 xc_vm-id="2753" tvg-id="" tvg-name="AR | AL ARABIYA HD" tvg-logo="http://get.acccesclassico.qpon:80/images/831eefd6cabcec58dda3b541cddf0856.png" group-title="News ᴴᴰ",AR | AL ARABIYA HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5jMBuRvBJohCXE0q7hj-Eto
+#EXTINF:-1 xc_vm-id="2756" tvg-id="" tvg-name="AR | AL ARABY 2 HD" tvg-logo="http://get.acccesclassico.qpon:80/images/282447255aeafb28d7f8db1233517a5c.png" group-title="News ᴴᴰ",AR | AL ARABY 2 HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5krsc6PVHtrHKJl2nzP3L8A
+#EXTINF:-1 xc_vm-id="2759" tvg-id="" tvg-name="NEWS | AL SHARQIYA NEWS FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/327d1efb57ce8e94fa3ae6e65f5baf98.png" group-title="News ᴴᴰ",NEWS | AL SHARQIYA NEWS FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5il7ciRFS9bN7uCpy7NlAjA
+#EXTINF:-1 xc_vm-id="2760" tvg-id="" tvg-name="AR | ALARABIYA ALHADATH HD" tvg-logo="http://get.acccesclassico.qpon:80/images/b82c5495e6ed42ae06436d01c2c65eef.png" group-title="News ᴴᴰ",AR | ALARABIYA ALHADATH HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5idnKHrOw9fo2FScv4BvNeQ
+#EXTINF:-1 xc_vm-id="2761" tvg-id="" tvg-name="NEWS | AL HURRA FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/8ccbe3cdaccaa065721a4282d4f717fc.png" group-title="News ᴴᴰ",NEWS | AL HURRA FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5hV7pJ_Vs2BO4nO6Q1pbDps
+#EXTINF:-1 xc_vm-id="2763" tvg-id="" tvg-name="AR | BBC ARABIC HD" tvg-logo="http://get.acccesclassico.qpon:80/images/7fd84ebf6d752596a9c19667d1f0c762.png" group-title="News ᴴᴰ",AR | BBC ARABIC HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5oL3O0DdYk5cRZWYX2dbj-Q
+#EXTINF:-1 xc_vm-id="2764" tvg-id="" tvg-name="NEWS | CGTN ARABIC FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/4ab1cc6a4c918229dee763cce0c7f7b1.png" group-title="News ᴴᴰ",NEWS | CGTN ARABIC FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5r9QKcF6lNbtMQktNKI8_4w
+#EXTINF:-1 xc_vm-id="2765" tvg-id="" tvg-name="AR | CNBC ARABIYA HD" tvg-logo="http://get.acccesclassico.qpon:80/images/d0be2cb98bdf4a7b5ec78a9f54e1cb05.png" group-title="News ᴴᴰ",AR | CNBC ARABIYA HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5v6QmGTqSoTgNXQ2T75dbus
+#EXTINF:-1 xc_vm-id="2766" tvg-id="" tvg-name="AR | DW ARABIC FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/4830068c749ae4d7a340acf8b5e5f084.png" group-title="News ᴴᴰ",AR | DW ARABIC FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5uLuTVWbOKMGLxy9YPlAHUY
+#EXTINF:-1 xc_vm-id="2768" tvg-id="" tvg-name="AR | ASHARQ NEWS FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/e0e37decd5e7bd81bec79bd7ca256dc6.png" group-title="News ᴴᴰ",AR | ASHARQ NEWS FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5rXFpfXFIp56xeAA8xCGGv0
+#EXTINF:-1 xc_vm-id="2769" tvg-id="" tvg-name="AR | ELSHARQ TV HD" tvg-logo="http://get.acccesclassico.qpon:80/images/f02867696fdd515bd983b43e0f2ad5f1.png" group-title="News ᴴᴰ",AR | ELSHARQ TV HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5vKBTxroyYj-NfXet_gOSik
+#EXTINF:-1 xc_vm-id="2771" tvg-id="" tvg-name="AR | FRANCE 24 HD" tvg-logo="http://get.acccesclassico.qpon:80/images/d0ab94aa669f83385189d7d40e8592d5.png" group-title="News ᴴᴰ",AR | FRANCE 24 HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5jYQpv-FszlKFSqaVfv4pkI
+#EXTINF:-1 xc_vm-id="2773" tvg-id="" tvg-name="AR | i24 NEWS ARABIC HD" tvg-logo="http://get.acccesclassico.qpon:80/images/9a260871ddf6eddc3d493f7538137e61.png" group-title="News ᴴᴰ",AR | i24 NEWS ARABIC HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5qzsknjk2HpZpB86pLva1XQ
+#EXTINF:-1 xc_vm-id="2776" tvg-id="" tvg-name="AR | RT ARABIC HD" tvg-logo="http://get.acccesclassico.qpon:80/images/0656bae15682061a3b4ead1f4298384d.png" group-title="News ᴴᴰ",AR | RT ARABIC HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5lfS3PW6jH5itoCwA8tDWKs
+#EXTINF:-1 xc_vm-id="2778" tvg-id="" tvg-name="AR | SKY NEWS ARABIA HD" tvg-logo="http://get.acccesclassico.qpon:80/images/38edcd0f1ecbf9774700322ee3d15a13.png" group-title="News ᴴᴰ",AR | SKY NEWS ARABIA HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5gSCaeB-gAsrJiPsavNOqSw
+#EXTINF:-1 xc_vm-id="2779" tvg-id="" tvg-name="AR | TRT ARABI SD" tvg-logo="http://get.acccesclassico.qpon:80/images/1e8bcf9506411ae198c94fcaf7a9c548.png" group-title="News ᴴᴰ",AR | TRT ARABI SD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5nk4lOFxP_ZhNbRoY1NyTyg
+#EXTINF:-1 xc_vm-id="2780" tvg-id="" tvg-name="AR | TRT WORLD 4K" tvg-logo="http://get.acccesclassico.qpon:80/images/5b187ee81947b712c983fffcb74414d5.png" group-title="News ᴴᴰ",AR | TRT WORLD 4K
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5iZA4zX0t5fDgln1aVt3aEk
+#EXTINF:-1 xc_vm-id="2781" tvg-id="" tvg-name="AR | AL ARABY HD" tvg-logo="http://get.acccesclassico.qpon:80/images/47716999193564fd5c308faa5837ad68.png" group-title="News ᴴᴰ",AR | AL ARABY HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5vx027Ff6rnz_XSMAufXLU0
+#EXTINF:-1 xc_vm-id="2787" tvg-id="" tvg-name="AR | Al QAHERA NEWS HD" tvg-logo="http://get.acccesclassico.qpon:80/images/cbbca6b665c304539de28a60ca5e338f.png" group-title="News ᴴᴰ",AR | Al QAHERA NEWS HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5g5jvtIJSS8epHTpD6xx3fA
+#EXTINF:-1 xc_vm-id="2788" tvg-id="" tvg-name="AR | EXTRA NEWS HD" tvg-logo="http://get.acccesclassico.qpon:80/images/99da18dbf33a334f04503c1cd5bf1672.png" group-title="News ᴴᴰ",AR | EXTRA NEWS HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5pc8ZZLgBHlNZYAKDZHrLmc
+#EXTINF:-1 xc_vm-id="2789" tvg-id="" tvg-name="NEWS | AL ARABIYA FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/831eefd6cabcec58dda3b541cddf0856.png" group-title="News ᴴᴰ",NEWS | AL ARABIYA FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5jOb8Dqma3wjbyn-JkVW9ag
+#EXTINF:-1 xc_vm-id="2792" tvg-id="" tvg-name="NEWS | TV5 MONDE INFO FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/7af5f059f47041a31ca358030862c16c.png" group-title="News ᴴᴰ",NEWS | TV5 MONDE INFO FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5so9jhoi8ZzyIbJ-pT-JxBo
+#EXTINF:-1 xc_vm-id="2793" tvg-id="" tvg-name="NEWS | TV5MONDE MAGHREB-ORIENT FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/471968928f94ee6c994664a498e328d8.png" group-title="News ᴴᴰ",NEWS | TV5MONDE MAGHREB-ORIENT FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5vcfysektUKcH8x6opiT258
+#EXTINF:-1 xc_vm-id="2794" tvg-id="" tvg-name="NEWS | SKY NEWS ARABIA FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/38edcd0f1ecbf9774700322ee3d15a13.png" group-title="News ᴴᴰ",NEWS | SKY NEWS ARABIA FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5sW3sgtXpOyOE6W6iMQr3TA
+#EXTINF:-1 xc_vm-id="2796" tvg-id="" tvg-name="NEWS | AL MAYADEEN TV FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/4cc26086e157f5030b6f5e6dac416325.png" group-title="News ᴴᴰ",NEWS | AL MAYADEEN TV FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5vlPPoKXiyTMWTIm9e8iOxo
+#EXTINF:-1 xc_vm-id="2797" tvg-id="" tvg-name="NEWS | AL KHALIJ TV FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/a24059b7a0c4372b9f66514326c65388.png" group-title="News ᴴᴰ",NEWS | AL KHALIJ TV FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5mf-t6zu-SuYUTVLviJZZU8
+#EXTINF:-1 xc_vm-id="2799" tvg-id="" tvg-name="NEWS | NABAA TV FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/660d4d6b553cba7b68a147c3add645e7.png" group-title="News ᴴᴰ",NEWS | NABAA TV FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5gmXjtunvkMpUHE5R4BZXcU
+#EXTINF:-1 xc_vm-id="2800" tvg-id="" tvg-name="NEWS | HADATH FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/b82c5495e6ed42ae06436d01c2c65eef.png" group-title="News ᴴᴰ",NEWS | HADATH FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5lUTQyyTxeQYf3k8641k3fE
+#EXTINF:-1 xc_vm-id="2801" tvg-id="" tvg-name="NEWS | MEKAMELEEN TV FHD" tvg-logo="http://get.acccesclassico.qpon:80/images/ecb74ca80097a3925f98b64255c42715.png" group-title="News ᴴᴰ",NEWS | MEKAMELEEN TV FHD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5v12z_j6LHUAb1Yw-zKIqeY
+#EXTINF:-1 xc_vm-id="2812" tvg-id="" tvg-name="AR | AL JAZEERA 4K" tvg-logo="http://get.acccesclassico.qpon:80/images/1cd3858c68840e17824fb84fdc6ef5ca.png" group-title="News ᴴᴰ",AR | AL JAZEERA 4K
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5kLb0Bg6_Xla1OURwxJx9Mo
+#EXTINF:-1 xc_vm-id="2980" tvg-id="" tvg-name="AR | AL JAZEERA TV" tvg-logo="http://get.acccesclassico.qpon:80/images/5b0d44236020392c3f550a8225ed23e3.png" group-title="News ᴴᴰ",AR | AL JAZEERA TV
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5uiVFwhjnEnLX5WTEJMb8FM
+#EXTINF:-1 xc_vm-id="2982" tvg-id="" tvg-name="AR | AL JAZEERA MUBASHER 2HD" tvg-logo="http://get.acccesclassico.qpon:80/images/9a27800c79d9068f33759d40f6e71270.png" group-title="News ᴴᴰ",AR | AL JAZEERA MUBASHER 2HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5qaO6h0vpUTNwZNL88MC3Bw
+#EXTINF:-1 xc_vm-id="2983" tvg-id="" tvg-name="AR | AL JAZEERA ENGLISH HD" tvg-logo="http://get.acccesclassico.qpon:80/images/c887ab3ca678af0401bf01836392c992.png" group-title="News ᴴᴰ",AR | AL JAZEERA ENGLISH HD
+http://get.acccesclassico.qpon:80/play/JhvkVpYajMsDGptTBGQU5kZuQf0kJaZ-XxvAc4RCWyc
+`,
+
+  // قورئان — Quran
+  quran: `#EXTM3U
+#EXTINF:-1 tvg-id="" tvg-name="SAUDI AL QURAN HD" tvg-logo="https://i.postimg.cc/hjcXjgCj/Al-Qurran-removebg-preview.png" group-title="D  QURAN ◉  قورئان",SAUDI AL QURAN HD
+http://line.123trx.space:80/h8djr5mw70/5c46tqh2tq/2112498
+#EXTINF:-1 tvg-id="" tvg-name="SAUDI SUNNAH HD" tvg-logo="https://i.postimg.cc/zDdyJsTV/Al-Sunnah-removebg-preview.png" group-title="D  QURAN ◉  قورئان",SAUDI SUNNAH HD
+http://line.123trx.space:80/h8djr5mw70/5c46tqh2tq/2112497
+#EXTINF:-1 tvg-id="" tvg-name="ALI JABIR" tvg-logo="" group-title="D  QURAN ◉  قورئان",ALI JABIR
+http://line.123trx.space:80/h8djr5mw70/5c46tqh2tq/2021732
+#EXTINF:-1 tvg-id="" tvg-name="NRT 4 HD" tvg-logo="https://i.postimg.cc/NMjQS0J5/NRT4-removebg-preview.png" group-title="D  QURAN ◉  قورئان",NRT 4 HD
+http://cli2345.live:2082/live/59979526/23928915/180162.ts
+#EXTINF:-1 tvg-id="" tvg-name=" QALAM AYNI" tvg-logo="" group-title="D  QURAN ◉  قورئان",QALAM AYNI
+http://iptvtree.net:8080/Javamicro/0481fbb702/301675
+#EXTINF:-1 tvg-id="" tvg-name="MMN QURAN HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",MMN QURAN HD
+http://mmn.mypsx.net:1935/live/mmnhdquran/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="ESRA 1" tvg-logo="" group-title="D  QURAN ◉  قورئان",ESRA 1
+https://live20.bozztv.com/giatv/giatv-ESRAHD/ESRAHD/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="ESRA 2" tvg-logo="" group-title="D  QURAN ◉  قورئان",ESRA 2
+https://live20.bozztv.com/giatv/giatv-esra2hd_kamalblbas/esra2hd_kamalblbas/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="MIHRAB FM" tvg-logo="" group-title="D  QURAN ◉  قورئان",MIHRAB FM
+http://bblserver.ddns.net:1935/live/mihrabfm/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="MIHRAB TV" tvg-logo="" group-title="D  QURAN ◉  قورئان",MIHRAB TV
+http://baskhd.ddns.net:40/live/MihrabTV/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="SPEDA TV" tvg-logo="" group-title="D  QURAN ◉  قورئان",SPEDA TV 
+http://iptvtree.net:8080/Javamicro/0481fbb702/18798
+#EXTINF:-1 tvg-id="" tvg-name="PAYAM TV" tvg-logo="https://logo.0964750.xyz/logo/logos/payam.png" group-title="D  QURAN ◉  قورئان",PAYAM TV
+http://iptvtree.net:8080/Javamicro/0481fbb702/796
+#EXTINF:-1 tvg-id="" tvg-name="SADA TV" tvg-logo="" group-title="D  QURAN ◉  قورئان",SADA TV
+http://iptvtree.net:8080/Javamicro/0481fbb702/172547
+#EXTINF:-1 tvg-id="" tvg-name="BANGAWAZ TV" tvg-logo="" group-title="D  QURAN ◉  قورئان",BANGAWAZ TV
+http://bangawaztv.ddns.net:40/live/bangawaztv/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="DUNYA HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",DUNYA HD
+https://live20.bozztv.com/giatv/giatv-DniaTV/DniaTV/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="BASK HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",BASK HD
+http://baskhd.ddns.net:40/live/baskhd/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="Eman HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",Eman HD
+http://avrstream.com:1935/live/emantv/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="FARMODA HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",FARMODA HD
+http://avrstream.com:1935/live/FarmodaTV/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="IMK QURAN HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",IMK QURAN HD
+http://avrstream.com:1935/live/IMKQURANHD/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="SHAR QURAN" tvg-logo="" group-title="D  QURAN ◉  قورئان",SHAR QURAN
+https://live20.bozztv.com/giatv/giatv-sharqurantv/sharqurantv/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="SHNA QURAN HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",SHNA QURAN HD
+http://rawshan.ddns.net:1935/live/rawshantv/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="SUNNAT" tvg-logo="" group-title="D  QURAN ◉  قورئان",SUNNAT
+https://live20.bozztv.com:443/giatv/giatv-rsunnat/rsunnat/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="SOZ QURAN HD" tvg-logo="http://logo.0964750.xyz/logo/garyan.fw.png" group-title="D  QURAN ◉  قورئان",SOZ QURAN 2 HD
+http://live20.bozztv.com/giatv/giatv-sozquran/sozquran/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="SPI QURAN HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",SPI QURAN HD
+https://live20.bozztv.com/giatv/giatv-spi_quran_hd/spi_quran_hd/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="DANGI QURAN HD" tvg-logo="" group-title="D  QURAN ◉  قورئان",DANGI QURAN HD
+https://live20.bozztv.com/giatv/giatv-Quran/Quran/playlist.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="U2TV" tvg-logo="https://i.postimg.cc/vH6RP3mP/UTV-2-removebg-preview.png" group-title="D  QURAN ◉  قورئان",U2TV
+https://live20.bozztv.com/giatv/giatv-utv2_h88ottplayer/utv2_h88ottplayer/chunks.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="UTV HD" tvg-logo="https://i.postimg.cc/wv0HpM8d/u-tv-kurdi-removebg-preview.png" group-title="D  QURAN ◉  قورئان",UTV HD
+http://promaxhd.com:8080/4FFbTUbpTH/Sen3DSVfJo/378233
+`,
+
+
+  // منداڵان — Kids
+  kids: `#EXTM3U
+#EXTINF:-1 tvg-id="" tvg-name="NRT3 TV HD KRD" tvg-logo="" group-title="Kurdistan",NRT3 TV HD 
+http://195.128.27.253/548607065148/955372318450/931833
+#EXTINF:-1 tvg-id="" tvg-name="Afarin Kids HD KRD" tvg-logo="" group-title="Kurdistan",Afarin Kids HD
+http://195.128.27.253/548607065148/955372318450/931870
+#EXTINF:-1 tvg-id="" tvg-name="AFRIN Baxcha HD KRD" tvg-logo="" group-title="Kurdistan",AFRIN Baxcha HD
+http://195.128.27.253/548607065148/955372318450/931928
+#EXTINF:-1 tvg-id="" tvg-name="MMN Kids HD KRD" tvg-logo="" group-title="Kurdistan",MMN Kids HD
+http://195.128.27.253/548607065148/955372318450/932040
+#EXTINF:-1 tvg-id="" tvg-name="MY KIDS HD KRD" tvg-logo="" group-title="Kurdistan",MY KIDS HD
+http://195.128.27.253/548607065148/955372318450/932094
+#EXTINF:-1 tvg-id="" tvg-name="NEWROZ KURD HD KRD" tvg-logo="" group-title="Kurdistan",NEWROZ KURD HD
+http://195.128.27.253/548607065148/955372318450/1035254
+#EXTINF:-1 tvg-id="" tvg-name="NEXT KIDS HD KRD" tvg-logo="" group-title="Kurdistan",NEXT KIDS HD
+http://195.128.27.253/548607065148/955372318450/1035275
+
+`,
+
+  // وەرزش — Sports
+  sports: `#EXTM3U
+# لێرە پاکێجی M3U ـی گروپی وەرزش دابنێ.
+`,
+
+  // موزیک — Music
+  music: `#EXTM3U
+
+#EXTINF:-1 tvg-id="" tvg-name="4Kurd FHD KRD" tvg-logo="" group-title="Kurdistan",4Kurd
+http://195.128.27.253/548607065148/955372318450/931923
+
+
+
+`,
+
+  // دۆکۆمێنتاری — Documentary
+  documentary: `#EXTM3U
+# لێرە پاکێجی M3U ـی گروپی دۆکۆمێنتاری دابنێ.
+`
+};
+
+// خوێندنەوەی ستانداردی M3U؛ هەر EXTINF ـێک بە لینکی دواترییەوە دەخوێنرێتەوە.
+function parseM3UPackage(source, groupId){
+ const lines=String(source||'').split(/\r?\n/).map(x=>x.trim());
+ const result=[]; let info='';
+ for(const line of lines){
+  if(!line || line.startsWith('#EXTM3U') || (line.startsWith('#')&&!line.startsWith('#EXTINF'))) continue;
+  if(line.startsWith('#EXTINF')){info=line;continue;}
+  if(info && /^https?:\/\//i.test(line)){
+   const attr=(key)=>{const m=info.match(new RegExp('(?:^|\\s)'+key+'="([^"]*)"'));return m?m[1]:'';};
+   const comma=info.indexOf(',');
+   const display=comma>=0?info.slice(comma+1).trim():attr('tvg-name');
+   const name=attr('tvg-name')||display||'Unnamed channel';
+   result.push({id:'m3u-'+groupId+'-'+result.length+'-'+Math.random().toString(36).slice(2,7),name:display||name,logo:attr('tvg-logo'),url:line,group:groupId});
+   info='';
+  }
+ }
+ return result;
+}
+
+// کەناڵە دەستی زیادکراوەکان لە هەمان وێبگەڕدا هەمیشە دەمێننەوە.
+const MANUAL_CHANNELS_STORAGE_KEY = 'jivara_tv_manual_channels_v1';
+const CHANNEL_OVERRIDES_STORAGE_KEY = 'jivara_tv_channel_overrides_v1';
+function channelStableKey(channel){return String(channel?.url||'').trim();}
+function loadChannelOverrides(){
+ try{
+  const data=JSON.parse(localStorage.getItem(CHANNEL_OVERRIDES_STORAGE_KEY)||'{}');
+  return {deleted:Array.isArray(data.deleted)?data.deleted.filter(x=>typeof x==='string'):[],order:data.order&&typeof data.order==='object'?data.order:{},names:data.names&&typeof data.names==='object'?data.names:{}};
+ }catch(_){return {deleted:[],order:{},names:{}};}
+}
+let channelOverrides=loadChannelOverrides();
+function applyChannelOverrides(source){
+ const deleted=new Set(channelOverrides.deleted);
+ let result=source.filter(c=>!deleted.has(channelStableKey(c))).map(c=>({...c,name:typeof channelOverrides.names[channelStableKey(c)]==='string'?channelOverrides.names[channelStableKey(c)]:c.name}));
+ for(const g of groups){
+  const order=channelOverrides.order[g.id];
+  if(!Array.isArray(order)||!order.length)continue;
+  const rank=new Map(order.map((url,index)=>[url,index]));
+  const inGroup=result.filter(c=>c.group===g.id);
+  const elsewhere=result.filter(c=>c.group!==g.id);
+  inGroup.sort((a,b)=>{
+   const ai=rank.has(channelStableKey(a))?rank.get(channelStableKey(a)):Number.MAX_SAFE_INTEGER;
+   const bi=rank.has(channelStableKey(b))?rank.get(channelStableKey(b)):Number.MAX_SAFE_INTEGER;
+   return ai-bi;
+  });
+  result=[...elsewhere,...inGroup];
+ }
+ return result;
+}
+function rememberChannelDeletion(channel){
+ const key=channelStableKey(channel);if(!key)return;
+ if(!channelOverrides.deleted.includes(key))channelOverrides.deleted.push(key);
+ try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));}
+ catch(_){toast('نەتوانرا سڕینەوە هەڵبگیرێت؛ بیرگەی ئامێر پڕە.');}
+}
+function loadManualChannels(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(MANUAL_CHANNELS_STORAGE_KEY)||'[]');
+  const kept=Array.isArray(saved)?saved.filter(c=>c&&typeof c.name==='string'&&typeof c.url==='string'&&groups.some(g=>g.id===c.group)).map(c=>({...c,id:String(c.id||('manual-'+Date.now())),logo:String(c.logo||'')})) : [];
+  localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(kept));
+  return kept;
+ }catch(_){return [];}
+}
+function persistChannelName(channel,newName){
+  const key=channelStableKey(channel);if(!key)return false;
+  channelOverrides.names=channelOverrides.names||{};channelOverrides.names[key]=newName;
+  channel.name=newName;
+  try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));return true;}
+  catch(_){toast('نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.');return false;}
+ }
+ function persistChannelName(channel,newName){
+ const key=channelStableKey(channel);if(!key)return false;
+ channelOverrides.names=channelOverrides.names||{};channelOverrides.names[key]=newName;channel.name=newName;
+ try{localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));return true;}catch(_){toast('نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.');return false;}
+}
+function persistManualChannels(){
+ try{
+  localStorage.setItem(MANUAL_CHANNELS_STORAGE_KEY,JSON.stringify(channels.filter(c=>String(c.id).startsWith('manual-'))));
+  for(const g of groups)channelOverrides.order[g.id]=channels.filter(c=>c.group===g.id).map(channelStableKey).filter(Boolean);
+  localStorage.setItem(CHANNEL_OVERRIDES_STORAGE_KEY,JSON.stringify(channelOverrides));
+ }catch(_){toast('نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.');}
+}
+
+// بنەمای کەناڵە ناوخۆییەکان و پاکێجە M3U ـەکان؛ دیزاینی ئەپەکە دەستکاری ناکرێت.
+const builtInChannels = [
+ ...Object.values(channelPackages).flat(),
+ ...Object.entries(m3uPackages).flatMap(([id, text])=>parseM3UPackage(text,id))
+];
+let remoteChannels = [];
+let remoteChannelsLoaded = false;
+
+function matchRemoteGroup(value){
+ const key=String(value||'').trim().toLowerCase();
+ const aliases={
+  local:['local','ناوخۆ','local-ناوخۆ'], kurdish:['kurdish','کوردی','kurdistan'],
+  arabic:['arabic','عەرەبی','عربي'], foreign:['foreign','بیانی'],
+  movies:['movies','movie','فیلم','افلام','أفلام'], drama:['drama','دراما','مسلسلات'],
+  news:['news','هەواڵ','اخبار'], quran:['quran','قورئان','قرآن'],
+  kids:['kids','children','منداڵان','مندالان','اطفال'], sports:['sports','sport','وەرزش','رياضة'],
+  music:['music','موزیک','موسيقى'], documentary:['documentary','دۆکۆمێنتاری'],
+  iraq:['iraq','iq','عێراق','عراق','العراق','🇮🇶'], iran:['iran','ir','ئێران','ایران','إيران','ايران','🇮🇷'],
+  turkey:['turkey','türkiye','turkiye','tr','تورکیا','توركيا','تركيا','🇹🇷'],
+  israel:['israel','il','ئیسرائیل','اسرائیل','إسرائيل','اسرائيل','🇮🇱']
+ };
+ for(const g of groups){
+  if(key===String(g.id).toLowerCase() || key===String(g.name).trim().toLowerCase()) return g.id;
+  if((aliases[g.id]||[]).some(x=>x.toLowerCase()===key)) return g.id;
+ }
+ return null;
+}
+function normalizeRemoteGroup(value){return matchRemoteGroup(value)||'kurdish';}
+let dashboardGroupMap=new Map();
+// ===== پلەیەری ڤیدیۆ: exo | android | vlc (پاشەکەوتکراو لەسەر ئامێرەکە) =====
+const PLAYER_ENGINES=['exo','android','vlc'];
+function playerEngine(){try{const v=localStorage.getItem('jivara_player_engine');return PLAYER_ENGINES.indexOf(v)>=0?v:'exo';}catch(e){return 'exo';}}
+function setPlayerEngine(v){try{localStorage.setItem('jivara_player_engine',v);}catch(e){}}
+const JIVARA_API='https://late-paper-d34e.jivarakamal8.workers.dev';
+const APP_VERSION_CODE=3;
+let remoteDramas=[];
+let selectedDramaId=null;
+function remoteChannelId(url,id=''){
+ if(id)return 'remote-'+String(id);
+ let hash=2166136261;
+ for(let i=0;i<url.length;i++){hash^=url.charCodeAt(i);hash=Math.imul(hash,16777619);}
+ return 'remote-'+(hash>>>0).toString(36);
+}
+const DASH_CACHE_KEY='jivara_dashboard_cache_v1';
+function readDashboardCache(){try{const raw=localStorage.getItem(DASH_CACHE_KEY);return raw?JSON.parse(raw):null;}catch{return null;}}
+function writeDashboardCache(payload){try{localStorage.setItem(DASH_CACHE_KEY,JSON.stringify(payload));}catch{}}
+function normDashName(v){return String(v==null?'':v).normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();}
+function hashDashName(str){let h=0;for(let i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))|0;return (h>>>0).toString(36);}
+
+async function fetchDashboardPayload(){
+ const get=async path=>{
+  const r=await fetch(JIVARA_API+'/api/'+path,{method:'GET',cache:'no-store'});
+  if(!r.ok)throw new Error(path+' '+r.status);
+  return r.json();
+ };
+ const [sections,groupsData,channelsData]=await Promise.all([get('sections'),get('groups'),get('channels')]);
+ let dramas=null,config=null;
+ try{dramas=await get('dramas');}catch{}   // کاتالۆگی دراما سەربەخۆیە
+ try{config=await get('app-config');}catch{}
+ return {sections,groups:groupsData,channels:channelsData,dramas,config};
+}
+
+function applyAppConfig(cfg){
+ if(!cfg||typeof cfg!=='object')return;
+ const msg=document.querySelector('.project-message');
+ if(msg){
+  if(!msg.dataset.defaultText)msg.dataset.defaultText=msg.textContent;
+  msg.textContent=String(cfg.announcement||'').trim()||msg.dataset.defaultText;
+ }
+ const box=document.getElementById('updateNotice');
+ if(box){
+  const latest=Number(cfg.latestVersionCode)||0;
+  if(latest>APP_VERSION_CODE){
+   const name=String(cfg.latestVersionName||'').trim(),extra=String(cfg.updateMessage||'').trim();
+   box.textContent='🔔 وەشانی نوێی ئەپ'+(name?' ('+name+')':'')+' بەردەستە. '+(extra?extra+' ':'')+'بۆ دابەزاندن: '+String(cfg.downloadPage||cfg.apkUrl||'');
+   box.style.display='block';
+  }else{box.style.display='none';}
+ }
+}
+
+function applyDashboardPayload(payload){
+ const sectionsData=payload.sections,groupsData=payload.groups,channelsData=payload.channels;
+ if(!Array.isArray(sectionsData)||!Array.isArray(groupsData)||!Array.isArray(channelsData))
+  throw new Error('Invalid dashboard data');
+ const dramaPayload=payload.dramas;
+ if(dramaPayload){
+  // Accept all known Worker response shapes and dashboard field names.
+  const grouped=Array.isArray(dramaPayload?.groups)?dramaPayload.groups.flatMap(g=>Array.isArray(g?.dramas)?g.dramas:[]):[];
+  const sourceDramas=[
+   ...(Array.isArray(dramaPayload)?dramaPayload:[]),
+   ...(Array.isArray(dramaPayload?.series)?dramaPayload.series:[]),
+   ...(Array.isArray(dramaPayload?.dramas)?dramaPayload.dramas:[]),
+   ...grouped
+  ];
+  const seenDramaIds=new Set();
+  remoteDramas=sourceDramas.filter(d=>{
+   if(!d||!d.id||seenDramaIds.has(String(d.id)))return false;
+   seenDramaIds.add(String(d.id));return true;
+  }).map(d=>({
+   id:String(d.id),name:String(d.name||d.title||d.seriesTitle||'دراما'),
+   logo:String(d.logo||d.poster||d.image||d.seriesPoster||'').trim(),views:Math.max(0,Number(d.views)||0),
+   episodes:(Array.isArray(d.episodes)?d.episodes:[]).map((ep,index)=>({
+    ...ep,id:String(ep?.id||''),number:ep?.number??ep?.episodeNumber??index+1,
+    name:String(ep?.name||ep?.title||ep?.episodeTitle||''),
+    url:String(ep?.url||ep?.streamUrl||ep?.episodeUrl||'').trim()
+   }))
+  }));
+ }
+ // Remove only the dashboard-generated groups before rebuilding them from the live API.
+ for(let i=groups.length-1;i>=0;i--)if(groups[i]._dashboard)groups.splice(i,1);
+ dashboardGroupMap=new Map();
+ const namedGroupMap=new Map();
+ const sectionNames=new Map(sectionsData.map(s=>[String(s.id),String(s.name||'')]));
+ const sourceGroups=new Map(groupsData.map(g=>[String(g.id),g]));
+ // ١٤ گرووپە ڕەنگاوڕەنگەکەی ئەپ تاکە کارتەکانن: گرووپی داشبۆرد بە ID یان ناو یان ناوی جێگرەوە دەبەسترێتەوە
+ // بە هەمان کارت و هیچ کارتێکی زیادە/دووبارە دروست ناکرێت. گرووپی نەناسراو پیشان نادرێت.
+ const makeDashboardGroup=(g)=>{
+  if(dashboardGroupMap.has(String(g.id)))return dashboardGroupMap.get(String(g.id));
+  const builtin=groups.find(x=>!x._dashboard&&String(x.id)===String(g.id));
+  const matchedId=builtin?builtin.id:matchRemoteGroup(g.name);
+  dashboardGroupMap.set(String(g.id),matchedId||null);
+  return matchedId||null;
+ };
+ // Parent-first ordering keeps nested group labels understandable even if the API order differs.
+ const pending=[...groupsData];let guard=0;
+ while(pending.length&&guard++<groupsData.length+2){
+  let progressed=false;
+  for(let i=pending.length-1;i>=0;i--){
+   const g=pending[i];
+   if(!g.parentId||dashboardGroupMap.has(String(g.parentId))||!sourceGroups.has(String(g.parentId))){
+    makeDashboardGroup(g);pending.splice(i,1);progressed=true;
+   }
+  }
+  if(!progressed){for(const g of pending)makeDashboardGroup(g);pending.length=0;}
+ }
+ // هەمان یاسای داشبۆرد: groupId، پاشان ناوی گرووپ، پاشان گرووپی ناوخۆیی، پاشان گرووپی نوێ بە ناو.
+ const resolveByName=item=>{
+  const names=[item.group,item.groupName,item.group_name].map(normDashName).filter(Boolean);
+  for(const n of names){
+   let matches=groupsData.filter(g=>normDashName(g.name)===n);
+   if(matches.length>1&&item.sectionId){
+    const bySection=matches.filter(g=>String(g.sectionId||'')===String(item.sectionId));
+    if(bySection.length)matches=bySection;
+   }
+   if(matches.length)return dashboardGroupMap.get(String(matches[0].id))||null;
+  }
+  return null;
+ };
+ const ensureNamedGroup=(raw,item)=>{
+  const norm=normDashName(raw);
+  if(namedGroupMap.has(norm))return namedGroupMap.get(norm);
+  const id='dashboard-name-'+hashDashName(norm);
+  groups.push({id,name:raw,icon:'📺',art:'📺',colors:['#176f9e','#123e65'],
+   section:String(item.section||''),sectionId:String(item.sectionId||''),parentName:'',_dashboard:true});
+  namedGroupMap.set(norm,id);return id;
+ };
+ const next=[];const seen=new Set();
+ for(const item of channelsData){
+  const url=String(item?.url||'').trim(),name=String(item?.name||'').trim();
+  if(!name||!/^https?:\/\//i.test(url)||seen.has(String(item.id||url)))continue;
+  seen.add(String(item.id||url));
+  let groupId=item.groupId?dashboardGroupMap.get(String(item.groupId)):null;
+  if(!groupId)groupId=resolveByName(item);
+  if(!groupId){
+   // هیچ گرووپێکی نوێ دروست ناکرێت: کەناڵی بێ گرووپی ناسراو لە ئەپ پیشان نادرێت.
+   const raw=String(item.group||'').trim();
+   groupId=raw?matchRemoteGroup(raw):null;
+  }
+  if(!groupId)continue;
+  next.push({id:remoteChannelId(url,item.id),name,logo:String(item.logo||'').trim(),url,group:groupId});
+ }
+ // Keep the drama catalogue separate from the live-channel groups.
+ // Each dashboard drama keeps a private stream group for playback from its episode list.
+ for(const drama of remoteDramas){
+  if(!drama||!drama.id)continue;
+  const groupId='dashboard-drama-'+String(drama.id);
+  if(!groups.some(g=>g.id===groupId))groups.push({id:groupId,name:String(drama.name||'دراما'),icon:'🎭',art:'🎭',
+   colors:['#7650bd','#39205f'],section:'دراما',sectionId:'dashboard-drama',_dashboard:true});
+  for(const ep of (Array.isArray(drama.episodes)?drama.episodes:[])){
+   const url=String(ep.url||ep.streamUrl||ep.episodeUrl||'').trim();
+   const name=String(ep.name||ep.title||('ئەڵقە '+(ep.number||''))).trim();
+   if(!url||!/^https?:\/\//i.test(url))continue;
+   next.push({id:'episode-'+String(ep.id||remoteChannelId(url)),name,logo:String(ep.logo||drama.logo||'').trim(),url,group:groupId});
+  }
+ }
+ remoteChannels=next;remoteChannelsLoaded=true;
+ channels=applyChannelOverrides([...remoteChannels,...loadManualChannels()]);
+ applyAppConfig(payload.config);
+ renderAll();
+}
+
+async function refreshRemoteChannels(showMessage=false){
+ try{
+  const payload=await fetchDashboardPayload();
+  if(payload.dramas===null){const old=readDashboardCache();payload.dramas=old?old.dramas:null;}
+  applyDashboardPayload(payload);
+  writeDashboardCache(payload);
+  if(showMessage)toast('بەش و گرووپ و کەناڵ و ئەڵقەکانی داشبۆرد نوێکرانەوە.');
+  return true;
+ }catch(error){
+  // ئەگەر ئینتەرنێت/سێرڤەر نەبوو، دوایین زانیاری پاشەکەوتکراوی داشبۆرد بەکاردێت.
+  if(!remoteChannelsLoaded){
+   const cached=readDashboardCache();
+   if(cached){try{applyDashboardPayload(cached);}catch(e){}}
+  }
+  renderAll();
+  if(showMessage)toast('زانیارییەکانی داشبۆرد نەخوێندرایەوە؛ دوایین زانیاری پاشەکەوتکراو بەکارهات.');
+  return false;
+ }
+}
+
+// کەناڵە دەستییەکان لە بیرگەی ئەم ئامێرەدا دەمێننەوە.
+let channels = applyChannelOverrides([...builtInChannels, ...loadManualChannels()]);
+let currentGroup = 'kurdish';
+let currentChannel = null;
+let activePage = 'home';
+
+const videoA = $('#video');
+const playerScreen = $('#playerScreen');
+let video = videoA;
+const idle = $('#idle');
+
+function toast(message){
+ const t=$('#toast');
+ t.textContent=message;t.classList.add('show');
+ clearTimeout(toast.timer);
+ toast.timer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+function safe(s){
+ return String(s??'').replace(/[&<>"']/g,c=>({
+ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+ }[c]));
+}
+function group(id){return groups.find(g=>g.id===id)||groups[0];}
+function groupChannels(id){return channels.filter(c=>c.group===id);}
+
+
+const worldMoviePosters = [
+ {title:'Dune: Part Two',src:'https://image.tmdb.org/t/p/w780/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg'},
+ {title:'Oppenheimer',src:'https://image.tmdb.org/t/p/w780/4XM8DUTQb3lhLemJC51Jx4a2EuA.jpg'},
+ {title:'The Batman',src:'https://image.tmdb.org/t/p/w780/b0PlSFdDwbyK0cf5RxwDpaOJQvQ.jpg'},
+ {title:'Interstellar',src:'https://image.tmdb.org/t/p/w780/xJHokMbljvjADYdit5fK5VQsXEG.jpg'},
+ {title:'Inception',src:'https://image.tmdb.org/t/p/w780/s3TBrRGB1iav7gFOCNx3H31MoES.jpg'},
+ {title:'Avatar: The Way of Water',src:'https://image.tmdb.org/t/p/w780/8rpDcsfLJypbO6vREc089j4qkD3.jpg'},
+ {title:'Spider-Man: Across the Spider-Verse',src:'https://image.tmdb.org/t/p/w780/4HodYYKEIsGOdinkGi2Ucz6X9i0.jpg'},
+ {title:'Avengers: Endgame',src:'https://image.tmdb.org/t/p/w780/7RyHsO4youpWWqiy5GzV7q7fD2B.jpg'},
+ {title:'Joker',src:'https://image.tmdb.org/t/p/w780/hO7KbdvGOtDIXBx9nM4N9W9J6z.jpg'},
+ {title:'Top Gun: Maverick',src:'https://image.tmdb.org/t/p/w780/odJ4AP1Z2CzjZ7aX8g7Y0s8bYQ3.jpg'},
+ {title:'Guardians of the Galaxy Vol. 3',src:'https://image.tmdb.org/t/p/w780/5YZbUmIy1n9cT0ao3toVP8IgMz4.jpg'},
+ {title:'The Creator',src:'https://image.tmdb.org/t/p/w780/4HodYYKEIsGOdinkGi2Ucz6X9i0.jpg'},
+ {title:'Ready Player One',src:'https://image.tmdb.org/t/p/w780/5a7lMDn3nAj2ByO0X1fg6BhUphR.jpg'},
+ {title:'Doctor Strange in the Multiverse of Madness',src:'https://image.tmdb.org/t/p/w780/7WfK17BXE6szXlm4WOxfswgbdsL.jpg'},
+ {title:'The Lord of the Rings',src:'https://image.tmdb.org/t/p/w780/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg'},
+ {title:'The Matrix Resurrections',src:'https://image.tmdb.org/t/p/w780/8c4a8kE7PizaGQQnditMmI1xbRp.jpg'}
+];
+function renderHome(){
+ const countryIds=new Set(['iraq','iran','turkey','israel']);
+ const mediaIds=new Set(['movies','drama']);
+ const mainGroups=groups.filter(g=>!countryIds.has(g.id)&&!mediaIds.has(g.id)&&!String(g.id).startsWith('dashboard-drama-'));
+ const countries=groups.filter(g=>countryIds.has(g.id));
+ const mediaGroups=groups.filter(g=>mediaIds.has(g.id));
+ const makeTiles=items=>items.map(g=>
+ `<button class="category" data-group="${g.id}" style="--c1:${g.colors[0]};--c2:${g.colors[1]}">
+ <span class="symbol-wrap"><span class="symbol">${g.icon}</span></span><b>${g.name}</b><span class="channel-badge" aria-label="${groupChannels(g.id).length} کەناڵ">${groupChannels(g.id).length}</span>${g.section?`<small class="dashboard-section-label">${safe(g.section)}</small>`:''}</button>`).join('');
+ $('#homeCategories').innerHTML=makeTiles(mainGroups);
+ 
+ let countrySection=$('#homeCountryCategories');
+ if(!countrySection){
+  const heading=document.createElement('div');
+  heading.className='section-title country-section-title';
+  heading.textContent='وڵاتەکان';
+  countrySection=document.createElement('div');
+  countrySection.id='homeCountryCategories';
+  countrySection.className='categories country-categories';
+  const homeCats=$('#homeCategories');
+  homeCats.insertAdjacentElement('afterend',heading);
+  heading.insertAdjacentElement('afterend',countrySection);
+ }
+ countrySection.innerHTML=makeTiles(countries);
+ let mediaSection=$('#homeMediaCategories');
+ if(!mediaSection){
+  mediaSection=document.createElement('div');
+  mediaSection.id='homeMediaCategories';
+  mediaSection.className='categories media-categories';
+  countrySection.insertAdjacentElement('afterend',mediaSection);
+ }
+ mediaSection.innerHTML=makeTiles(mediaGroups);
+ $('#page-home').querySelectorAll('[data-group]').forEach(b=>{
+  b.onclick=()=>{
+   const id=b.dataset.group;
+   if(id==='drama')openDramaPage();
+   else if(id==='movies')openMediaPage(id);
+   else openGroup(id);
+  };
+ });
+}
+function renderGroups(){
+
+ $('#groupCards').innerHTML=groups.filter(g=>!['movies','drama'].includes(g.id)&&!String(g.id).startsWith('dashboard-drama-')).map(g=>
+ `<button class="group-card" data-group="${g.id}">
+ <span class="art">${g.art}</span><b>${g.name}</b>
+ <small>${groupChannels(g.id).length} کەناڵ</small></button>`).join('');
+ 
+
+ $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
+ b.onclick=()=>openGroup(b.dataset.group));
+}
+function formatViews(n){
+ n=Math.max(0,Number(n)||0);
+ if(n>=1000000)return (n/1000000).toFixed(n>=10000000?0:1).replace(/\.0$/,'')+'M';
+ if(n>=10000)return (n/1000).toFixed(n>=100000?0:1).replace(/\.0$/,'')+'K';
+ return n.toLocaleString('en-US');
+}
+function dramaStatsHtml(d){
+ return '<div class="drama-stats"><span>📺 '+d.episodes.length+' ئەڵقە</span><span>👁 '+formatViews(d.views)+' بینین</span></div>';
+}
+function dramaPosterHtml(d,cls){
+ return d.logo?'<img src="'+safe(d.logo)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'🎭';
+}
+// یەک بینین بۆ هەر دراماکە لە هەر ٣٠ خولەکێک لەسەر ئەم ئامێرە
+function recordDramaView(dramaId){
+ try{
+  const key='jivara_drama_view_'+dramaId,now=Date.now();
+  const last=Number(localStorage.getItem(key)||0);
+  if(now-last<30*60*1000)return;
+  localStorage.setItem(key,String(now));
+ }catch{}
+ const d=remoteDramas.find(x=>x.id===String(dramaId));
+ if(d)d.views=(Number(d.views)||0)+1;
+ fetch(JIVARA_API+'/api/dramas/'+encodeURIComponent(dramaId)+'/view',{method:'POST',cache:'no-store'})
+  .then(r=>r.ok?r.json():null).then(data=>{
+   if(data&&Number.isFinite(data.views)){const x=remoteDramas.find(y=>y.id===String(dramaId));if(x)x.views=data.views;}
+  }).catch(()=>{});
+}
+function renderDramaPage(){
+ const catalog=$('#dramaCatalog'),episodeGrid=$('#dramaEpisodes'),back=$('#dramaBack'),hero=$('#dramaHero');
+ const selected=remoteDramas.find(d=>d.id===selectedDramaId);
+ if(!selected){
+  back.style.display='none';$('#dramaPageTitle').textContent='دراماکان';
+  hero.classList.remove('show');hero.innerHTML='';
+  catalog.style.display='grid';episodeGrid.style.display='none';
+  catalog.innerHTML=remoteDramas.length?remoteDramas.map(d=>
+   '<button class="drama-card" data-drama-id="'+safe(d.id)+'"><span class="drama-poster">'+dramaPosterHtml(d)+'</span><span class="drama-info"><b>'+safe(d.name)+'</b>'+dramaStatsHtml(d)+'</span></button>'
+  ).join(''):'<div class="empty">هیچ درامایەک لە داشبۆرد زیاد نەکراوە.</div>';
+  catalog.querySelectorAll('[data-drama-id]').forEach(btn=>btn.onclick=()=>{
+   selectedDramaId=btn.dataset.dramaId;renderDramaPage();
+   const first=$('#dramaEpisodes .episode-card');if(first)first.focus({preventScroll:true});
+  });
+ }else{
+  back.style.display='inline-flex';$('#dramaPageTitle').textContent='';
+  hero.innerHTML='<div class="drama-hero-poster">'+dramaPosterHtml(selected)+'</div><div><h2>'+safe(selected.name)+'</h2>'+dramaStatsHtml(selected)+'</div>';
+  hero.classList.add('show');
+  catalog.style.display='none';episodeGrid.style.display='grid';
+  const ordered=(Array.isArray(selected.episodes)?selected.episodes:[])
+   .map((ep,index)=>{
+    const raw=String(ep.number??ep.episodeNumber??'').trim(),parsed=raw!==''?Number(raw):NaN;
+    const url=String(ep.url||ep.streamUrl||ep.episodeUrl||'').trim();
+    return {ep,index,url,number:Number.isFinite(parsed)&&parsed>=0?parsed:index+1};
+   }).sort((a,b)=>a.number-b.number||a.index-b.index);
+  episodeGrid.innerHTML=ordered.length?ordered.map(({ep,url,number})=>{
+   const key=String(ep.id||remoteChannelId(url)),label=String(number);
+   return '<button class="episode-card" data-drama-episode="'+safe(key)+'" aria-label="ئەڵقەی ژمارە '+safe(label)+'"><span class="episode-number">'+safe(label)+'</span><small>ئەڵقە</small></button>';
+  }).join(''):'<div class="empty">هیچ ئەڵقەیەک بۆ ئەم درامایە تۆمار نەکراوە.</div>';
+  episodeGrid.querySelectorAll('[data-drama-episode]').forEach(btn=>btn.onclick=()=>{
+   const key=btn.dataset.dramaEpisode;
+   const channel=channels.find(ch=>ch.id==='episode-'+key||ch.id===key);
+   if(!channel){toast('لینکی ئەم ئەڵقەیە لە داشبۆرد دانەنراوە.');return;}
+   lastDramaEpisodeKey=key;recordDramaView(selected.id);startEpisode(channel);
+  });
+ }
+}
+function openDramaPage(){
+ selectedDramaId=null;renderDramaPage();switchPage('drama');renderDramaPage();
+}
+$('#dramaBack').onclick=()=>{
+ selectedDramaId=null;renderDramaPage();
+};
+
+function renderChannels(){
+ const list=groupChannels(currentGroup);
+ $('#browseHeading').textContent=group(currentGroup).name;
+ $('#browseCount').textContent=list.length+' کەناڵ';
+ $('#channelList').innerHTML=list.length?list.map((c,i)=>
+ `<button class="channel ${currentChannel?.id===c.id?'active':''}" data-id="${c.id}" tabindex="0">
+ <span class="ch-number">${String(i+1).padStart(2,'0')}</span>
+ <span class="ch-logo">${c.logo?`<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`:safe(c.name.slice(0,3))}</span>
+ <span class="ch-name">${safe(c.name)}</span></button>`).join(''):
+ '<div class="empty">ئەم گرووپە بەتاڵە.<br>لە ڕێکخستنەکان کەناڵ زیاد بکە.</div>';
+
+ // Channel activation is delegated below so double-click can be detected reliably.
+ renderGroups();
+}
+function renderSearch(q=''){
+ q=q.trim().toLowerCase();
+ const found=channels.filter(c=>!q||c.name.toLowerCase().includes(q));
+ $('#searchResults').innerHTML=found.length?found.map(c=>
+ `<button class="channel" data-id="${c.id}">
+ <span class="ch-logo">${c.logo?`<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`:safe(c.name.slice(0,3))}</span>
+ <span class="ch-name">${safe(c.name)}</span>
+ <span>${safe(group(c.group).name)}</span></button>`).join(''):
+ '<div class="empty">هیچ کەناڵێک نییە. لینکەکان زیاد بکە.</div>';
+ // Channel activation is delegated below so double-click can be detected reliably.
+}
+function renderAll(){renderHome();renderGroups();renderChannels();renderSearch($('#searchInput').value||'');if($('#page-drama'))renderDramaPage();}
+
+function switchPage(name){
+ if(!$('#page-'+name))name='home';
+ // Stop radio playback immediately when navigating away from its page.
+ if(activePage==='radio'&&name!=='radio')stopRadioPlayback('بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.');
+ // Leaving the live channel page must stop the native Android player completely.
+ if(activePage==='browse'&&name!=='browse')cleanPlayer();
+ activePage=name;
+ $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+ $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+ const titles={home:'سەرەکی',browse:'کەناڵەکان',groups:'گرووپەکان',media:'فیلم',drama:'دراماکان',
+ search:'گەڕان',settings:'ڕێکخستنەکان',about:'زانیاری',radio:'ڕادیۆ'};
+ $('#pageTitle').innerHTML=name==='home'?safe(titles[name])+'<small>پلەیەری Smart TV</small>':safe(titles[name])+'<small>JIVARA TV · Smart TV</small>';
+ if(name==='browse')renderChannels();
+ if(name==='groups')renderGroups();
+ if(name==='home')renderHome();
+ if(name==='drama')renderDramaPage();
+}
+function openGroup(id){
+ currentGroup=id;
+ const listHeading=$('#channelListHeading');
+ if(listHeading){
+  listHeading.textContent=id==='movies'?'لیستی فیلم':id==='drama'?'لیستی دراما':'لیستی کەناڵەکان';
+ }
+ switchPage('browse');
+ renderChannels();
+}
+function openMediaPage(id){
+ if(id==='drama'){openDramaPage();return;}
+ // Movies retain their existing channel-group behavior.
+ openGroup(id);
+}
+
+function focusSelectedChannel(id){
+ // Rendering the list replaces its buttons, so restore real keyboard/remote focus
+ // to the selected channel after each render. The active highlight remains visible.
+ requestAnimationFrame(()=>{
+  const selected=$(`#channelList .channel[data-id="${CSS.escape(id)}"]`);
+  if(selected){selected.focus({preventScroll:true});selected.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}
+ });
+}
+let channelOverlayTimer=null;
+function showChannelSwitch(c){
+ const overlay=$('#channelSwitchOverlay');
+ if(!overlay||!c)return;
+ const idx=channels.findIndex(x=>x.id===c.id);
+ const next=idx>=0?channels[idx+1]:null;
+ $('#switchCurrentName').textContent=c.name;
+ $('#switchNextName').textContent=next?next.name:'کۆتایی لیست';
+ overlay.classList.add('visible');
+ clearTimeout(channelOverlayTimer);
+ channelOverlayTimer=setTimeout(()=>overlay.classList.remove('visible'),2600);
+}
+const webStreamFrame=$('#webStreamFrame');
+let streamSession=0;
+function inEpisode(){try{return !!episodeMode;}catch(e){return false;}}
+function openInVlc(url){
+ try{
+  if(window.AndroidPlayer&&typeof AndroidPlayer.openExternal==='function'){
+   if(AndroidPlayer.openExternal(url,'org.videolan.vlc')!==false)return true;
+   toast('VLC لەسەر ئەم ئامێرە دانەمەزراوە؛ ExoPlayer بەکاردێت.');
+   return false;
+  }
+ }catch(e){}
+ toast('VLC لەم وەشانەی ئەپدا بەردەست نییە؛ ExoPlayer بەکاردێت.');
+ return false;
+}
+function stopAndroidPlayer(){
+ const ev=document.getElementById('episodeVideo');
+ if(!ev)return;
+ try{ev.pause();ev.removeAttribute('src');ev.load();}catch(e){}
+ ev.style.display='none';
+ try{if(video===ev)video=videoA;}catch(e){}
+}
+function cleanPlayer(){
+ stopAndroidPlayer();
+ ++streamSession;
+ try{videoA.pause();videoA.removeAttribute('src');videoA.load();}catch(e){}
+ try{if(window.AndroidPlayer&&AndroidPlayer.stop)AndroidPlayer.stop();}catch(e){}
+ webStreamFrame.src='about:blank';webStreamFrame.style.display='none';
+ videoA.style.display='block';videoA.style.opacity='1';videoA.style.visibility='visible';videoA.style.zIndex='1';
+}
+function looksLike(url,ext){return new RegExp('\\.'+ext+'(?:$|[?#])','i').test(url);}
+function startAndroidStream(url,session){
+ const ev=document.getElementById('episodeVideo');
+ try{if(window.AndroidPlayer&&AndroidPlayer.stop)AndroidPlayer.stop();}catch(e){}
+ webStreamFrame.src='about:blank';webStreamFrame.style.display='none';
+ videoA.style.display='none';ev.style.display='block';idle.style.display='none';
+ video=ev;
+ let done=false;
+ const fallback=()=>{
+  if(done||session!==streamSession)return;done=true;
+  toast('Android Player نەیتوانی ئەم لینکە پەخش بکات؛ ExoPlayer بەکاردێت.');
+  stopAndroidPlayer();
+  const prev=window.__forceExo;window.__forceExo=true;
+  try{startStream(url);}finally{window.__forceExo=prev;}
+ };
+ ev.onplaying=()=>{done=true;};
+ ev.onerror=fallback;
+ setTimeout(()=>{if(!done&&ev.readyState<2)fallback();},20000);
+ try{ev.src=url;ev.load();const pr=ev.play();if(pr&&pr.catch)pr.catch(()=>{});}catch(e){fallback();}
+}
+async function startStream(rawUrl){
+ let url=(rawUrl||'').trim();
+ if(!url)return;
+ const session=++streamSession;
+ if(!/^https?:\/\//i.test(url)){toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');return;}
+ if(looksLike(url,'m3u')||looksLike(url,'m3uplus')){
+  try{
+   const r=await fetch(url,{cache:'no-store'});
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   const txt=await r.text();
+   const lines=txt.split(/\r?\n/).map(x=>x.trim());
+   const first=lines.find(x=>x&&!x.startsWith('#')&&/^(https?:)?\/\//i.test(x));
+   if(!first)throw new Error('empty playlist');
+   url=new URL(first,url).href;
+  }catch(e){
+   if(session===streamSession)toast('فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.');
+   return;
+  }
+ }
+ if(session!==streamSession)return;
+ const engine=window.__forceExo?'exo':playerEngine();
+ if(engine==='vlc'&&!inEpisode()&&openInVlc(url))return;
+ if(engine==='android'&&!inEpisode()){startAndroidStream(url,session);return;}
+ webStreamFrame.src='about:blank';webStreamFrame.style.display='none';
+ videoA.style.display='block';videoA.style.opacity='1';videoA.style.visibility='visible';videoA.style.zIndex='1';
+ idle.style.display='none';
+ try{
+  // Every stream is sent directly to the native Android Media3 ExoPlayer bridge.
+  videoA.src=url;
+  videoA.play().catch(()=>{});
+  setTimeout(()=>{
+   if(session!==streamSession)return;
+   try{if(window.AndroidPlayer&&!AndroidPlayer.isPlaying()){
+    idle.style.display='flex';
+    toast('پەخش نەکرا؛ ExoPlayer نەتوانی ئەم فۆرماتە یان لینکە پەخش بکات.');
+   }}catch(e){}
+  },18000);
+ }catch(e){
+  if(session===streamSession){idle.style.display='flex';toast('هەڵە لە پەخشی ExoPlayer.');}
+ }
+}
+function playChannel(id){
+ const c=channels.find(x=>x.id===id);if(!c)return;
+ showChannelSwitch(c);
+ const keepPlayerFullscreen=!!(document.fullscreenElement===playerScreen || playerScreen?.classList.contains('is-fullscreen'));
+ const previousGroup=currentGroup;
+ currentChannel=c;currentGroup=c.group;
+ $('#nowTitle').textContent=c.name;
+ $('#programTitle').textContent=c.name;
+ $('#programSub').textContent=c.url?'ئامادەی پەخشکردن':'هیچ کەناڵێک ئامادە نییە.';
+ if(!keepPlayerFullscreen){
+  if(activePage!=='browse')switchPage('browse');
+  else if(previousGroup!==c.group)renderChannels();
+  else{
+   const list=$('#channelList');
+   const selected=list?.querySelector('.channel[data-id="'+c.id+'"]');
+   if(selected){
+    list.querySelectorAll('.channel.active').forEach(x=>x.classList.remove('active'));
+    selected.classList.add('active');
+   }else renderChannels();
+  }
+  focusSelectedChannel(c.id);
+ }else{renderGroups();}
+ if(!c.url){toast('سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.');return;}
+ startStream(c.url);
+}
+for(const playerVideo of [videoA]){
+ playerVideo.addEventListener('playing',()=>idle.style.display='none');
+ playerVideo.addEventListener('error',()=>{if(playerVideo.currentSrc)toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.');});
+}
+
+let fullscreenBusy=false;
+const isPlayerFullscreen=()=>playerScreen.classList.contains('is-fullscreen');
+// Use the app's CSS fullscreen state on Android WebView. Mixing the browser
+// Fullscreen API with WebView custom-view handling can leave the player stuck.
+function fullscreen(){
+ if(fullscreenBusy)return;
+ fullscreenBusy=true;
+ const expanded=isPlayerFullscreen();
+ playerScreen.classList.toggle('is-fullscreen',!expanded);
+ document.body.classList.toggle('jivara-player-fullscreen',!expanded);
+ requestAnimationFrame(()=>{
+  fullscreenBusy=false;
+  if(expanded && currentChannel)focusSelectedChannel(currentChannel.id);
+  else if(!expanded && currentChannel?.id?.startsWith('episode-')){
+   updateEpisodePlayerControls();
+   episodePlayPause?.focus({preventScroll:true});
+  }
+ });
+}
+let lastDramaEpisodeKey=null;
+const episodeSeek=$('#episodeSeek');
+const episodeCurrentTime=$('#episodeCurrentTime');
+const episodeDuration=$('#episodeDuration');
+const episodePlayPause=$('#episodePlayPause');
+function formatEpisodeTime(value){
+ const n=Number(value);
+ if(!Number.isFinite(n)||n<0)return '00:00';
+ const seconds=Math.floor(n),hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60),rest=seconds%60;
+ return hours?String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(rest).padStart(2,'0'):String(minutes).padStart(2,'0')+':'+String(rest).padStart(2,'0');
+}
+function updateEpisodePlayerControls(){
+ if(!episodeSeek)return;
+ const duration=Number(video.duration),current=Number(video.currentTime);
+ const seekable=Number.isFinite(duration)&&duration>0;
+ episodeSeek.disabled=!seekable;
+ episodeSeek.max=seekable?String(Math.floor(duration)):'100';
+ if(!episodeSeek.matches(':active'))episodeSeek.value=seekable?String(Math.min(duration,Math.max(0,current||0))):'0';
+ episodeCurrentTime.textContent=formatEpisodeTime(current);
+ episodeDuration.textContent=seekable?formatEpisodeTime(duration):'--:--';
+ if(episodePlayPause)episodePlayPause.textContent=video.paused?'▶ بەردەوامکردن':'Ⅱ وەستاندن';
+}
+function seekEpisodeBy(delta){
+ if(episodeMode==='native'){notifyNoSeek();return;}
+ try{if(Number.isFinite(video.duration)&&video.duration>0)video.currentTime=Math.max(0,Math.min(video.duration,(video.currentTime||0)+delta));}catch(_){}
+ updateEpisodePlayerControls();
+}
+if(episodeSeek){
+ episodeSeek.addEventListener('input',()=>{
+  const duration=Number(video.duration);
+  if(Number.isFinite(duration)&&duration>0)episodeCurrentTime.textContent=formatEpisodeTime(Number(episodeSeek.value));
+ });
+ episodeSeek.addEventListener('change',()=>{
+  const duration=Number(video.duration);
+  if(Number.isFinite(duration)&&duration>0){try{video.currentTime=Math.max(0,Math.min(duration,Number(episodeSeek.value)));}catch(_){}}
+  updateEpisodePlayerControls();
+ });
+}
+['timeupdate','durationchange','loadedmetadata','play','pause','playing','waiting','ended','seeking','seeked'].forEach(eventName=>video.addEventListener(eventName,updateEpisodePlayerControls));
+episodePlayPause?.addEventListener('click',()=>{
+ if(!currentChannel)return;
+ if(video.paused)video.play().catch(()=>toast('نەتوانرا پەخشکردن بەردەوام بکرێت.'));
+ else video.pause();
+ updateEpisodePlayerControls();
+});
+$('#episodeBack10')?.addEventListener('click',()=>seekEpisodeBy(-10));
+$('#episodeForward10')?.addEventListener('click',()=>seekEpisodeBy(10));
+// ===== پەخشی ئەڵقەی دراما: <video>ی ئاسایی (پێشخستن/دواخستن/وەستاندن) + پاشەکشە بۆ ExoPlayer =====
+const episodeVideo=$('#episodeVideo');
+let episodeMode=null;          // null | 'html' | 'native'
+let episodeOrigin=null;        // شوێنی ڕەسەنی playerScreen لە DOM
+let episodeFallbackTimer=null;
+['timeupdate','durationchange','loadedmetadata','play','pause','playing','waiting','ended','seeking','seeked'].forEach(n=>episodeVideo.addEventListener(n,updateEpisodePlayerControls));
+episodeVideo.addEventListener('playing',()=>{clearTimeout(episodeFallbackTimer);});
+episodeVideo.addEventListener('error',()=>{if(episodeMode==='html'&&episodeVideo.getAttribute('src'))episodeFallbackToNative();});
+episodeVideo.addEventListener('ended',()=>updateEpisodePlayerControls());
+
+function startEpisode(channel){
+ if(!channel||!channel.url){toast('لینکی ئەم ئەڵقەیە لە داشبۆرد دانەنراوە.');return;}
+ const engine=playerEngine();
+ if(engine==='vlc'&&openInVlc(channel.url))return;   // VLC ی دەرەکی: لەسەر پەڕەی دراما دەمێنینەوە
+ cleanPlayer();
+ clearTimeout(episodeFallbackTimer);
+ currentChannel=channel;
+ $('#nowTitle').textContent=channel.name;$('#programTitle').textContent=channel.name;
+ // playerScreen دەبرێتە body تا لەسەر پەڕەی دراما (نەک لیستی کەناڵەکان) پڕ شاشە بێت.
+ if(!episodeOrigin){episodeOrigin={parent:playerScreen.parentNode,next:playerScreen.nextSibling};document.body.appendChild(playerScreen);}
+ playerScreen.classList.remove('ep-native','controls-on');
+ playerScreen.classList.add('is-fullscreen','episode-mode');
+ document.body.classList.add('jivara-player-fullscreen');
+ if(engine!=='android'){
+  // ExoPlayer (بنەڕەت): باشترین کوالێتی و دیکۆدینگی هاردوێر
+  episodeMode='html';video=episodeVideo;
+  episodeFallbackToNative(true);
+  requestAnimationFrame(()=>{updateEpisodePlayerControls();playerScreen.focus({preventScroll:true});});
+  return;
+ }
+ episodeMode='html';video=episodeVideo;
+ videoA.style.display='none';episodeVideo.style.display='block';idle.style.display='none';
+ try{episodeVideo.src=channel.url;episodeVideo.load();episodeVideo.play().catch(()=>{});}catch(e){episodeFallbackToNative();return;}
+ episodeFallbackTimer=setTimeout(()=>{if(episodeMode==='html'&&(episodeVideo.readyState<2))episodeFallbackToNative();},15000);
+ updateEpisodePlayerControls();
+ requestAnimationFrame(()=>{updateEpisodePlayerControls();playerScreen.focus({preventScroll:true});});
+}
+function notifyNoSeek(){
+ const n=Date.now();
+ if(n-(window.__noSeekAt||0)>4000){window.__noSeekAt=n;toast('پێشخستن لە ExoPlayer بەردەست نییە؛ لە ڕێکخستنەکان «Android Player» هەڵبژێرە.');}
+}
+function setEpisodeControls(on){
+ if(!episodeMode)return;
+ playerScreen.classList.toggle('controls-on',!!on);
+ if(on){updateEpisodePlayerControls();requestAnimationFrame(()=>episodePlayPause?.focus({preventScroll:true}));}
+ else{try{document.activeElement?.blur?.();playerScreen.focus({preventScroll:true});}catch(e){}}
+}
+const episodeControlsVisible=()=>playerScreen.classList.contains('controls-on');
+function episodeFallbackToNative(silent){
+ if(episodeMode!=='html'||!currentChannel)return;
+ clearTimeout(episodeFallbackTimer);
+ const url=currentChannel.url;
+ try{episodeVideo.pause();episodeVideo.removeAttribute('src');episodeVideo.load();}catch(e){}
+ episodeVideo.style.display='none';videoA.style.display='block';
+ episodeMode='native';video=videoA;
+ playerScreen.classList.add('ep-native');
+ if(!silent)toast('ئەم فۆرماتە بە ExoPlayer پەخش دەکرێت؛ پێشخستن بۆی بەردەست نییە.');
+ startStream(url);
+ updateEpisodePlayerControls();
+}
+function exitEpisodePlayback(){
+ clearTimeout(episodeFallbackTimer);
+ try{episodeVideo.pause();episodeVideo.removeAttribute('src');episodeVideo.load();}catch(e){}
+ episodeVideo.style.display='none';
+ cleanPlayer();
+ episodeMode=null;video=videoA;currentChannel=null;
+ playerScreen.classList.remove('is-fullscreen','episode-mode','ep-native','controls-on');
+ document.body.classList.remove('jivara-player-fullscreen');
+ if(episodeOrigin){episodeOrigin.parent.insertBefore(playerScreen,episodeOrigin.next);episodeOrigin=null;}
+ idle.style.display='flex';
+ // گەڕانەوە بۆ پەڕەی هەمان دراما (لۆگۆ + ئەڵقەکان)، بێ ئەوەی لیستی کەناڵەکان نیشان بدرێت.
+ switchPage('drama');renderDramaPage();
+ requestAnimationFrame(()=>{
+  $('#dramaHero')?.scrollIntoView({block:'start'});
+  const row=$('#dramaEpisodes [data-drama-episode="'+CSS.escape(String(lastDramaEpisodeKey||''))+'"]');
+  if(row){
+   row.focus({preventScroll:true});
+   const r=row.getBoundingClientRect();
+   if(r.bottom>innerHeight||r.top<0)row.scrollIntoView({block:'center'});
+  }
+ });
+}
+$('#episodeExit')?.addEventListener('click',exitEpisodePlayback);
+
+
+// کلیک/تەچ لەسەر شاشە: ئەڵقە دەگەڕێتەوە بۆ پەڕەی دراما
+function exitFullscreenFromTap(e){
+ if(!isPlayerFullscreen() || fullscreenBusy)return;
+ if(e.target?.closest?.('.episode-player-controls'))return;
+ if(e.cancelable)e.preventDefault();
+ e.stopPropagation();
+ e.stopImmediatePropagation?.();
+ if(episodeMode){if(episodeMode==='html')setEpisodeControls(true);else exitEpisodePlayback();return;}
+ fullscreen();
+}
+playerScreen.addEventListener('pointerdown',exitFullscreenFromTap,true);
+playerScreen.addEventListener('touchstart',exitFullscreenFromTap,{capture:true,passive:false});
+playerScreen.addEventListener('click',exitFullscreenFromTap,true);
+
+// ===== دوگمەی گەڕانەوەی ڕیموت (Back / Escape) =====
+let lastBackAt=0;
+function handleBackAction(){
+ if(episodeMode){
+  if(episodeMode==='html'&&playerScreen.classList.contains('controls-on')){setEpisodeControls(false);return true;}
+  exitEpisodePlayback();return true;
+ }
+ if(isPlayerFullscreen()){fullscreen();return true;}
+ if(activePage==='drama'&&selectedDramaId){
+  const id=selectedDramaId;selectedDramaId=null;renderDramaPage();
+  requestAnimationFrame(()=>{const card=$('#dramaCatalog [data-drama-id="'+CSS.escape(String(id))+'"]');if(card)card.focus();});
+  return true;
+ }
+ if(activePage!=='home'){switchPage('home');return true;}
+ return false;
+}
+function episodeControlItems(){
+ return ['episodeSeek','episodeBack10','episodePlayPause','episodeForward10','episodeExit'].map(id=>document.getElementById(id)).filter(el=>el&&!el.disabled);
+}
+document.addEventListener('keydown',e=>{
+ const tag=(e.target?.tagName||'').toLowerCase();
+ const typing=(tag==='textarea'||tag==='select'||(tag==='input'&&e.target.type!=='range'));
+ const isBack=e.key==='Escape'||e.key==='GoBack'||e.key==='BrowserBack'||e.keyCode===4||e.keyCode===27;
+ if(isBack&&!typing){
+  if(document.querySelector('.channel.hold-selected'))return; // دۆخی ڕیزکردنی کەناڵ خۆی Escape بەڕێوە دەبات
+  const now=Date.now();
+  if(now-lastBackAt<300){e.preventDefault();e.stopImmediatePropagation();return;}
+  if(handleBackAction()){lastBackAt=now;e.preventDefault();e.stopImmediatePropagation();}
+  return;
+ }
+ if(!episodeMode&&isPlayerFullscreen()&&!e.target?.closest?.('.episode-player-controls')&&(e.key==='Enter'||e.key===' '||e.keyCode===23||e.keyCode===66)){
+  e.preventDefault();e.stopPropagation();fullscreen();return;
+ }
+ if(!episodeMode||!isPlayerFullscreen())return;
+ const k=e.key,c=e.keyCode;
+ const inControls=!!e.target?.closest?.('.episode-player-controls');
+ const stop=()=>{e.preventDefault();e.stopImmediatePropagation();};
+ const toggle=()=>{if(video.paused)video.play().catch(()=>{});else video.pause();updateEpisodePlayerControls();};
+ if(c===85||c===179||k==='MediaPlayPause'){stop();toggle();return;}
+ if(c===126||k==='MediaPlay'){stop();video.play().catch(()=>{});return;}
+ if(c===127||k==='MediaPause'){stop();video.pause();updateEpisodePlayerControls();return;}
+ if(c===89||k==='MediaRewind'){stop();seekEpisodeBy(-10);return;}
+ if(c===90||k==='MediaFastForward'){stop();seekEpisodeBy(10);return;}
+ if(k==='Enter'||k===' '||c===23||c===66){
+  if(inControls)return; // دوگمەکە خۆی کلیک دەکرێت
+  stop();
+  if(episodeMode==='html'&&!episodeControlsVisible())setEpisodeControls(true);else toggle();
+  return;
+ }
+ if(k==='ArrowLeft'||k==='ArrowRight'){
+  stop();
+  const dir=k==='ArrowLeft'?-1:1;
+  const btns=['episodeBack10','episodePlayPause','episodeForward10','episodeExit'].map(id=>document.getElementById(id)).filter(Boolean);
+  if(e.target&&btns.includes(e.target)){
+   const sorted=btns.slice().sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left);
+   const i=sorted.indexOf(e.target),next=sorted[i+dir];
+   if(next)next.focus({preventScroll:true});
+   return;
+  }
+  seekEpisodeBy(dir*10);return;
+ }
+ if(k==='ArrowUp'||k==='ArrowDown'){
+  stop();
+  if(episodeMode!=='html')return;
+  if(!episodeControlsVisible()){setEpisodeControls(true);return;}
+  const seek=document.getElementById('episodeSeek');
+  if(k==='ArrowUp'&&seek&&!seek.disabled)seek.focus({preventScroll:true});
+  else episodePlayPause?.focus({preventScroll:true});
+  return;
+ }
+},true);
+// Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
+const channelListEl=$('#channelList');
+let holdTimer=null, heldRow=null, dragRow=null, dropRow=null, holdActivated=false, holdStartX=0, holdStartY=0;
+function clearHoldState(){
+ if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
+ if(dragRow)dragRow.classList.remove('dragging');
+ if(dropRow)dropRow.classList.remove('drop-target');
+ dragRow=null;dropRow=null;heldRow=null;
+}
+if(channelListEl){
+ const updatePointerReorder=e=>{
+  if(!heldRow||!holdActivated)return;
+  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#channelList .channel[data-id]');
+  if(!dragRow){dragRow=heldRow;dragRow.classList.add('dragging');}
+  if(dropRow&&dropRow!==target)dropRow.classList.remove('drop-target');
+  dropRow=target&&target!==dragRow?target:null;
+  if(dropRow)dropRow.classList.add('drop-target');
+ };
+ channelListEl.addEventListener('pointerdown',e=>{
+  const row=e.target.closest('.channel[data-id]');
+  if(!row || (e.button!==0&&e.pointerType!=='touch'))return;
+  clearHoldState();holdActivated=false;heldRow=row;holdStartX=e.clientX;holdStartY=e.clientY;
+  holdTimer=setTimeout(()=>{holdTimer=null;holdActivated=true;row.classList.add('hold-selected');row.style.touchAction='none';try{if(e.pointerId!==undefined)row.setPointerCapture(e.pointerId);}catch{}toast('کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.');},650);
+ });
+ document.addEventListener('pointermove',e=>{
+  if(!heldRow)return;
+  const moved=Math.abs(e.clientX-holdStartX)+Math.abs(e.clientY-holdStartY);
+  if(!holdActivated&&moved>18){if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}heldRow=null;return;}
+  updatePointerReorder(e);
+ },{passive:true});
+ const finishReorder=e=>{
+  if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
+  if(holdActivated){
+   e.preventDefault?.();
+   if(dragRow && dropRow){
+    const from=channels.findIndex(c=>c.id===dragRow.dataset.id);
+    const to=channels.findIndex(c=>c.id===dropRow.dataset.id);
+    if(from>=0&&to>=0&&channels[from].group===channels[to].group&&from!==to){
+     const groupId=channels[from].group;
+     const same=channels.filter(c=>c.group===groupId);
+     const a=same.findIndex(c=>c.id===channels[from].id), b=same.findIndex(c=>c.id===channels[to].id);
+     const [moved]=same.splice(a,1);
+     const targetIndex=same.findIndex(c=>c.id===dropRow.dataset.id);
+     const rect=dropRow.getBoundingClientRect();
+     const after=e.clientY>rect.top+rect.height/2;
+     same.splice(Math.max(0,targetIndex+(after?1:0)),0,moved);
+     let j=0;channels=channels.map(c=>c.group===groupId?same[j++]:c);
+     persistManualChannels();
+     renderAll();
+     const movedRow=channelListEl.querySelector(`.channel[data-id="${moved.id}"]`);
+     if(movedRow){movedRow.classList.remove('hold-selected');movedRow.focus({preventScroll:true});movedRow.scrollIntoView({block:'nearest'});}
+     toast('ڕیزبەندی کەناڵەکان گۆڕدرا.');
+    }
+   }
+   // Once dropped, restore the channel's normal color.
+   channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
+   if(dragRow)dragRow.classList.remove('dragging');
+   if(dropRow)dropRow.classList.remove('drop-target');
+   channelListEl.querySelectorAll('.channel').forEach(x=>{x.style.touchAction='';});
+   dragRow=null;dropRow=null;heldRow=null;holdActivated=false;
+   channelListEl.dataset.suppressClick='1';setTimeout(()=>delete channelListEl.dataset.suppressClick,350);
+  }else{heldRow=null;}
+ };
+ document.addEventListener('pointerup',finishReorder);
+ document.addEventListener('pointercancel',()=>{clearHoldState();holdActivated=false;});
+ // Android TV remote: hold OK for 1 second to select the channel in yellow.
+ // Use Up/Down to move it; release OK, then press OK again to finish.
+
+ // Remote reorder is handled at document capture level because some Android TV
+ // remotes deliver DPAD events to the focused view rather than the channel list.
+ let remoteHoldTimer=null, remoteHoldRow=null, remoteReorder=false, remoteReadyToDrop=false;
+ let remoteTapPending=null;
+ function remoteKeyName(e){
+  const code=e.keyCode||e.which||0;
+  if(code===13||code===23||code===66)return 'Enter';
+  if(code===19||code===38)return 'ArrowUp';
+  if(code===20||code===40)return 'ArrowDown';
+  if(code===21||code===37)return 'ArrowLeft';
+  if(code===22||code===39)return 'ArrowRight';
+  return e.key;
+ }
+ function handleRemoteChannelTap(row){
+  if(!row)return;
+  const id=row.dataset.id;
+  if(remoteTapPending){
+   const prev=remoteTapPending;clearTimeout(prev.timer);remoteTapPending=null;
+   if(prev.id===id){
+    if(currentChannel?.id!==id)playChannel(id);
+    const selected=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+    if(selected)selected.focus({preventScroll:true});
+    fullscreen();return;
+   }
+  }
+  if(currentChannel?.id!==id)playChannel(id);
+  else row.focus({preventScroll:true});
+  const timer=setTimeout(()=>{if(remoteTapPending&&remoteTapPending.id===id)remoteTapPending=null;},450);
+  remoteTapPending={id,timer};
+ }
+ function finishRemoteReorder(){
+  if(!remoteReorder)return;
+  const id=remoteHoldRow?.dataset.id;
+  remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
+  channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
+  persistManualChannels();renderChannels();
+  const placed=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+  if(placed){placed.focus({preventScroll:true});placed.scrollIntoView({block:'nearest'});}
+  toast('شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.');
+ }
+ document.addEventListener('keydown',e=>{
+  const k=remoteKeyName(e);
+  const active=document.activeElement;
+  const row=active?.closest?.('#channelList .channel[data-id]') || remoteHoldRow;
+  const isOk=k==='Enter'||k===' ';
+  if(isOk){
+   if(remoteHoldTimer){
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    return;
+   }
+   if(remoteReorder){
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    if(!e.repeat && remoteReadyToDrop)finishRemoteReorder();
+    return;
+   }
+   if(row && !remoteHoldTimer && !e.repeat){
+    remoteHoldRow=row;
+    remoteHoldTimer=setTimeout(()=>{
+     remoteHoldTimer=null;
+     remoteReorder=true;remoteReadyToDrop=false;
+     const live=channelListEl.querySelector('.channel[data-id="'+row.dataset.id+'"]');
+     remoteHoldRow=live||row;
+     remoteHoldRow.classList.add('hold-selected');
+     remoteHoldRow.focus({preventScroll:true});
+     toast('کەناڵەکە زەرد بوو؛ بە تیرەکانی سەرەوە و خوارەوە شوێنەکەی بگۆڕە، پاشان OK دابگرە بۆ جێگیرکردن.');
+    },850);
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+   }
+   return;
+  }
+  if(remoteReorder && (k==='ArrowUp'||k==='ArrowDown')){
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+   if(e.repeat)return;
+   const id=remoteHoldRow?.dataset.id;
+   const from=channels.findIndex(c=>c.id===id);
+   if(from<0)return;
+   const current=channels[from],same=channels.filter(c=>c.group===current.group);
+   const pos=same.findIndex(c=>c.id===id),targetPos=pos+(k==='ArrowUp'?-1:1);
+   if(targetPos<0||targetPos>=same.length)return;
+   const other=same[targetPos],to=channels.findIndex(c=>c.id===other.id);
+   if(to<0)return;
+   [channels[from],channels[to]]=[channels[to],channels[from]];
+   persistManualChannels();
+   renderChannels();
+   remoteHoldRow=channelListEl.querySelector('.channel[data-id="'+id+'"]');
+   if(remoteHoldRow){
+    remoteHoldRow.classList.add('hold-selected');
+    remoteHoldRow.focus({preventScroll:true});
+    remoteHoldRow.scrollIntoView({block:'nearest',inline:'nearest'});
+   }
+   return;
+  }
+  if(remoteReorder && k==='Escape'){
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+   remoteReorder=false;remoteReadyToDrop=false;remoteHoldRow=null;
+   channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>x.classList.remove('hold-selected'));
+  }
+ },true);
+ document.addEventListener('keyup',e=>{
+  const k=remoteKeyName(e);
+  if(k!=='Enter'&&k!==' ')return;
+  if(remoteHoldTimer){
+   clearTimeout(remoteHoldTimer);remoteHoldTimer=null;
+   const id=remoteHoldRow?.dataset.id;remoteHoldRow=null;
+   if(id&&!remoteReorder)handleRemoteChannelTap(channelListEl.querySelector('.channel[data-id="'+id+'"]'));
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return;
+  }
+  if(remoteReorder){
+   remoteReadyToDrop=true;
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  }
+ },true);
+ channelListEl.addEventListener('click',e=>{
+  if(channelListEl.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
+  const row=e.target.closest('.channel[data-id]');
+  if(row)channelListEl.querySelectorAll('.channel.hold-selected').forEach(x=>{if(x!==row)x.classList.remove('hold-selected');});
+ },true);
+}
+// Pointer: first click plays inline; a second click on the same channel enters fullscreen.
+const channelListForDelete = $('#channelList');
+let pointerChannelClick = null;
+if(channelListForDelete){
+ channelListForDelete.addEventListener('click',e=>{
+  if(channelListForDelete.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();return;}
+  const row=e.target.closest('.channel[data-id]');
+  if(!row)return;
+  const id=row.dataset.id;
+  if(pointerChannelClick){
+   clearTimeout(pointerChannelClick.timer);
+   const previous=pointerChannelClick;
+   pointerChannelClick=null;
+   if(previous.id===id){
+    if(currentChannel?.id!==id)playChannel(id);
+    const selected=channelListForDelete.querySelector('.channel[data-id="'+id+'"]');
+    if(selected)selected.focus({preventScroll:true});
+    requestAnimationFrame(()=>fullscreen());
+    return;
+   }
+   if(currentChannel?.id!==previous.id)playChannel(previous.id);
+  }
+  const timer=setTimeout(()=>{
+   if(pointerChannelClick?.id!==id)return;
+   pointerChannelClick=null;
+   if(currentChannel?.id!==id)playChannel(id);
+   else row.focus({preventScroll:true});
+  },380);
+  pointerChannelClick={id,timer};
+ });
+}
+// Search results keep their ordinary single-click playback and double-click fullscreen behavior.
+const searchList=$('#searchResults');
+if(searchList){
+ searchList.addEventListener('click',e=>{
+  const row=e.target.closest('.channel[data-id]');if(!row)return;
+  const prior=channelClickTimers.get(searchList);
+  if(prior){clearTimeout(prior);channelClickTimers.delete(searchList);return;}
+  const timer=setTimeout(()=>{channelClickTimers.delete(searchList);playChannel(row.dataset.id);},450);
+  channelClickTimers.set(searchList,timer);
+ });
+ searchList.addEventListener('dblclick',e=>{
+  const row=e.target.closest('.channel[data-id]');if(!row)return;
+  e.preventDefault();const timer=channelClickTimers.get(searchList);if(timer)clearTimeout(timer);
+  channelClickTimers.delete(searchList);if(row.dataset.id&&currentChannel?.id!==row.dataset.id)playChannel(row.dataset.id);fullscreen();
+ });
+}
+// Keep pointer interaction natural across the whole interface; hovering a control highlights it.
+document.addEventListener('pointermove',()=>{document.documentElement.classList.add('pointer-active');},{passive:true});
+document.addEventListener('pointerdown',e=>{
+ const target=e.target.closest('button,a,input,select,textarea,[role="button"],.channel,.group-card,.group-btn');
+ if(target) target.classList.add('pointer-hover');
+},{passive:true});
+// Keep keyboard/TV-remote focus visible while moving freely between UI controls.
+document.addEventListener('focusin',e=>{
+ const el=e.target;
+ if(el && el.scrollIntoView && el.closest('.page.active')){
+  el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+ }
+});
+// Make dynamically rendered tiles and controls available to keyboard/remote navigation.
+document.addEventListener('pointerover',e=>{
+ const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
+ if(target) target.classList.add('pointer-hover');
+});
+document.addEventListener('pointerout',e=>{
+ const target=e.target.closest('button,a,input,select,textarea,[role="button"]');
+ if(target && !target.matches(':focus')) target.classList.remove('pointer-hover');
+});
+$('#playBtn').onclick=()=>{
+ if(!currentChannel||!currentChannel.url){toast('کەناڵێکی لینکدار هەڵبژێرە.');return;}
+ video.paused?video.play():video.pause();
+};
+$('#muteBtn').onclick=()=>{video.muted=!video.muted;$('#muteBtn').textContent=video.muted?'🔇 بێدەنگ':'🔊 دەنگ';};
+
+$$('.nav').forEach(b=>b.onclick=()=>switchPage(b.dataset.page));
+$$('[data-action]').forEach(b=>b.onclick=()=>{
+ const a=b.dataset.action;
+ if(a==='search'){switchPage('search');$('#searchInput').focus();}
+ else if(a==='add'){switchPage('settings');settingsTab('manual');}
+ else if(a==='edit'){switchPage('settings');settingsTab('edit');}
+ else if(a==='groups'){switchPage('groups');}
+ else if(a==='settings'){switchPage('settings');settingsTab('player');}
+ else switchPage(a);
+});
+$('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
+
+function settingsTab(tab){
+ const body=$('#settingsBody');
+ if(tab==='player'){
+  const cur=playerEngine();
+  const opts=[
+   ['exo','ExoPlayer','پلەیەری ناوەکی Media3 — باشترین کوالێتی (بنەڕەت)'],
+   ['android','Android Player','پلەیەری ناوەکی ئەندرۆید (Android MediaPlayer) لەناو ئەپ — پێشخستن و دواخستنی ئەڵقەکان'],
+   ['vlc','VLC Player','دەیکاتەوە بە ئەپی VLC (پێویستە VLC دامەزرابێت)']
+  ];
+  body.innerHTML='<div class="panel-head">پلەیەری ڤیدیۆ</div><div class="notice">هەڵبژاردنەکەت پاشەکەوت دەکرێت و هەموو ڤیدیۆکان (کەناڵ، فیلم، دراما) بەو پلەیەرە دەکرێنەوە.</div><div class="form-grid" id="playerOptions">'
+   +opts.map(o=>'<button type="button" class="btn field full player-opt'+(o[0]===cur?' primary':'')+'" data-engine="'+o[0]+'" aria-pressed="'+(o[0]===cur)+'"><strong>'+(o[0]===cur?'✓ ':'')+o[1]+'</strong><br><small>'+o[2]+'</small></button>').join('')
+   +'</div><div class="notice" id="playerStatus">پلەیەری ئێستا: '+opts.find(o=>o[0]===cur)[1]+'</div>';
+  body.querySelectorAll('.player-opt').forEach(b=>b.onclick=()=>{
+   setPlayerEngine(b.dataset.engine);
+   toast('پلەیەر گۆڕدرا بۆ '+b.querySelector('strong').textContent.replace('✓ ',''));
+   settingsTab('player');
+   const again=body.querySelector('.player-opt[data-engine="'+b.dataset.engine+'"]');if(again)again.focus();
+  });
+ }else if(tab==='radio'){
+  body.innerHTML='<div class="panel-head">بەڕێوەبردنی ڕادیۆکان</div><div id="radioAuthPanel"></div>';
+  renderRadioAuth();
+ }else if(tab==='edit'){
+  body.innerHTML='<div class="panel-head">گۆڕینی ناوی کەناڵ</div><div class="form-grid"><label class="field full">گروپی کەناڵ<select id="renameGroupSelect"></select></label><label class="field full">کەناڵ<select id="renameChannelSelect"></select></label><label class="field full">ناوی نوێی کەناڵ<input id="renameChannelInput" type="text" placeholder="ناوی نوێ بنووسە"></label><button class="btn primary field full" id="saveChannelName" type="button">✓ پاشەکەوتکردنی ناو</button></div><div class="notice" id="renameChannelStatus">سەرەتا گروپ و کەناڵ دیاری بکە.</div>';
+  const groupSelect=$('#renameGroupSelect'),channelSelect=$('#renameChannelSelect'),nameInput=$('#renameChannelInput'),status=$('#renameChannelStatus');
+  groupSelect.innerHTML=groups.map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
+  const fillRenameChannels=()=>{const rows=groupChannels(groupSelect.value);channelSelect.innerHTML=rows.map(c=>'<option value="'+safe(c.id)+'">'+safe(c.name)+'</option>').join('');if(!rows.length){channelSelect.innerHTML='<option value="">ئەم گرووپە کەناڵی نییە</option>';nameInput.value='';return;}nameInput.value=rows[0].name;};
+  groupSelect.onchange=fillRenameChannels;
+  channelSelect.onchange=()=>{const c=channels.find(x=>x.id===channelSelect.value);nameInput.value=c?c.name:'';};
+  fillRenameChannels();
+  $('#saveChannelName').onclick=()=>{const c=channels.find(x=>x.id===channelSelect.value),newName=nameInput.value.trim();if(!c||!newName){status.textContent='گروپ و کەناڵ دیاری بکە و ناوی نوێ بنووسە.';return;}if(!persistChannelName(c,newName))return;renderAll();fillRenameChannels();channelSelect.value=c.id;nameInput.value=newName;status.textContent='ناوی کەناڵ گۆڕدرا و لە گروپی خۆیدا پاشەکەوت کرا.';toast('ناوی کەناڵ نوێکرایەوە.');};
+ }else if(tab==='delete'){
+  body.innerHTML='<div class="panel-head">سڕینەوەی کەناڵ</div><div class="notice">سەرەتا گرووپی کەناڵەکە هەڵبژێرە، پاشان کەناڵەکە دیاری بکە و دوگمەی سڕینەوە دابگرە.</div><div class="form-grid"><label class="field full">گرووپی کەناڵ<select id="deleteGroupSelect"></select></label><label class="field full">کەناڵی بۆ سڕینەوە<select id="deleteChannelSelect"></select></label><button class="btn danger field full" id="confirmDeleteChannel" type="button">✖ سڕینەوەی کەناڵی دیاریکراو</button></div><div class="notice" id="deleteChannelStatus">هیچ کەناڵێک نەسڕاوەتەوە.</div>';
+  const groupSelect=$('#deleteGroupSelect'),channelSelect=$('#deleteChannelSelect'),status=$('#deleteChannelStatus');
+  groupSelect.innerHTML=groups.map(g=>'<option value="'+safe(g.id)+'">'+safe(g.name)+'</option>').join('');
+  const fillDeleteChannels=()=>{const rows=groupChannels(groupSelect.value);channelSelect.innerHTML=rows.map(c=>'<option value="'+safe(c.id)+'">'+safe(c.name)+'</option>').join('');if(!rows.length)channelSelect.innerHTML='<option value="">ئەم گرووپە کەناڵی نییە</option>';};
+  groupSelect.onchange=fillDeleteChannels;fillDeleteChannels();
+  $('#confirmDeleteChannel').onclick=()=>{
+   const id=channelSelect.value,c=channels.find(x=>x.id===id);
+   if(!c){status.textContent='تکایە کەناڵێک دیاری بکە.';return;}
+   if(!window.confirm('دڵنیایت لە سڕینەوەی "'+c.name+'"؟'))return;
+   const deletingCurrent=!!currentChannel&&currentChannel.id===id;
+   rememberChannelDeletion(c);channels=channels.filter(x=>x.id!==id);persistManualChannels();
+   if(deletingCurrent){cleanPlayer();currentChannel=null;$('#nowTitle').textContent='هیچ کەناڵێک هەڵنەبژێردراوە';$('#programTitle').textContent='';$('#programSub').textContent='';idle.style.display='flex';}
+   renderAll();fillDeleteChannels();status.textContent='کەناڵەکە بە سەرکەوتوویی سڕایەوە.';toast('کەناڵەکە سڕایەوە.');
+  };
+ }else if(tab==='groups'){
+  body.innerHTML='<div class="panel-head">گرووپەکان</div>'+   groups.map(g=>`<div class="group-btn"><span>${g.icon}</span><span>${safe(g.name)}</span><span class="count">${groupChannels(g.id).length}</span></div>`).join('')+   '<div class="notice">گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.</div>';
+ }else{
+  body.innerHTML=`<div class="panel-head">زیادکردنی کەناڵ بە دەستی</div>
+   <form id="manualChannelForm" class="form-grid">
+    <label class="field full">ناوی کەناڵ
+     <input id="manualChannelName" name="channelName" placeholder="ناوی کەناڵ بنووسە" required>
+    </label>
+    <label class="field full">لینکی لۆگۆی کەناڵ (URL)
+     <input id="manualChannelLogo" name="channelLogo" type="url" placeholder="https://..." autocomplete="url">
+    </label>
+    <label class="field full">لینکی پەخش (URL)
+     <input id="manualChannelUrl" name="channelUrl" type="text" inputmode="url" placeholder="https://..." required>
+    </label>
+    <label class="field full">گرووپی کەناڵ
+     <select id="manualChannelGroup" name="channelGroup" required>
+      ${groups.map(g=>`<option value="${g.id}" ${g.id===currentGroup?'selected':''}>${safe(g.name)}</option>`).join('')}
+     </select>
+    </label>
+    <div class="field full"><button class="btn primary" type="submit">＋ زیادکردنی کەناڵ</button></div>
+   </form>
+   <div class="notice" style="margin-top:12px">ناوی کەناڵ و لینکی پەخش بنووسە، پاشان گرووپەکە هەڵبژێرە و زیادکردن دابگرە.</div>`;
+  $('#manualChannelForm').addEventListener('submit',e=>{
+   e.preventDefault();
+   const name=$('#manualChannelName').value.trim();
+   const logo=$('#manualChannelLogo').value.trim();
+   const url=$('#manualChannelUrl').value.trim();
+   const groupId=$('#manualChannelGroup').value;
+   if(!name||!url||!groups.some(g=>g.id===groupId)|| (logo&&!/^https?:\/\//i.test(logo))){toast('تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.');return;}
+   channels.push({id:'manual-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name,logo,url,group:groupId});
+   persistManualChannels();
+   currentGroup=groupId;
+   renderAll();
+   $('#manualChannelName').value='';
+   $('#manualChannelLogo').value='';
+   $('#manualChannelUrl').value='';
+   $('#manualChannelGroup').value=groupId;
+   toast('کەناڵەکە بە سەرکەوتوویی زیاد کرا.');
+  });
+ }
+}
+
+$$('[data-tab]').forEach(b=>b.onclick=()=>settingsTab(b.dataset.tab));
+function tick(){
+ const d=new Date();
+ $('#clock').textContent=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+ const weekdays=['یەکشەممە','دووشەممە','سێشەممە','چوارشەممە','پێنجشەممە','هەینی','شەممە'];
+ $('#weekday').textContent=weekdays[d.getDay()];
+}
+tick();setInterval(tick,30000);
+
+// ناسنامەیەکی نەناسراوی تایبەت بە هەر ئامێر؛ بۆ ژماردنی بینەری چالاک.
+const PRESENCE_API=JIVARA_API+'/api/presence';
+function getPresenceDeviceId(){
+ const key='jivara_tv_presence_device_id_v1';
+ let id='';
+ try{id=localStorage.getItem(key)||'';}catch{}
+ if(!/^[a-zA-Z0-9-]{20,80}$/.test(id)){
+  id=(globalThis.crypto?.randomUUID?.()||('jivara-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)));
+  try{localStorage.setItem(key,id);}catch{}
+ }
+ return id;
+}
+const presenceDeviceId=getPresenceDeviceId();
+async function updateLiveViewerCount(){
+ try{
+  const response=await fetch(PRESENCE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:presenceDeviceId}),cache:'no-store'});
+  if(!response.ok)throw new Error('presence unavailable');
+  const data=await response.json();
+  if(Number.isFinite(data.active))$('#liveViewerCount').textContent=String(data.active);
+ }catch{}
+}
+updateLiveViewerCount();
+setInterval(()=>{if(!document.hidden)updateLiveViewerCount();},120000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLiveViewerCount();});
+document.addEventListener('keydown',e=>{
+ const keyMap={37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',13:'Enter',23:'Enter',66:'Enter'};
+ const key=keyMap[e.keyCode]||e.key;
+ const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+ const current=document.activeElement;
+ if(key==='Enter' || key===' '){
+  if(current && current!==document.body && current!==document.documentElement){
+   const tag=(current.tagName||'').toLowerCase();
+   if(['button','a','input','select','textarea'].includes(tag) || current.matches('[role="button"],.channel,.group-card,.group-btn,.category')){
+    if(tag==='input' || tag==='textarea' || tag==='select')return;
+    e.preventDefault();e.stopPropagation();
+    current.click();
+   }
+  }
+  return;
+ }
+ if(!arrows.includes(key))return;
+ if((key==='ArrowUp'||key==='ArrowDown') && current?.closest('.channel.hold-selected'))return;
+ const tag=(e.target.tagName||'').toLowerCase();
+ if(['input','textarea','select'].includes(tag))return;
+ if(document.fullscreenElement===playerScreen || playerScreen.classList.contains('is-fullscreen')){
+  if(key==='ArrowUp'||key==='ArrowDown'){
+   const now=Date.now();if(now-(window.__jivaraFullscreenSwitchAt||0)<320){e.preventDefault();return;}
+   window.__jivaraFullscreenSwitchAt=now;
+   const rows=groupChannels(currentGroup),at=rows.findIndex(c=>c.id===currentChannel?.id),next=rows[at+(key==='ArrowUp'?-1:1)];
+   if(next)playChannel(next.id);
+  }
+  e.preventDefault();return;
+ }
+ if(e.repeat){e.preventDefault();return;}
+ const selector='.sidebar button,.topbar button,.page.active button:not(:disabled),.page.active input:not(:disabled),.page.active select:not(:disabled),.page.active textarea:not(:disabled),.page.active [tabindex]:not([tabindex="-1"]),.page.active .channel,.page.active .group-card,.page.active .category,.page.active .group-btn';
+ const items=[...new Set(document.querySelectorAll(selector))].filter(el=>{
+  const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
+  return r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&el.getAttribute('aria-hidden')!=='true';
+ });
+ if(!items.length)return;
+ if(!items.includes(current)){
+  const first=items.find(el=>el.classList.contains('nav'))||items[0];
+  first.focus({preventScroll:true});e.preventDefault();return;
+ }
+ let dx=0,dy=0;
+ if(key==='ArrowUp')dy=-1;
+ if(key==='ArrowDown')dy=1;
+ if(key==='ArrowLeft')dx=-1;
+ if(key==='ArrowRight')dx=1;
+ const a=current.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;
+ let best=null,bestScore=Infinity;
+ for(const el of items){
+  if(el===current)continue;
+  const r=el.getBoundingClientRect(),vx=r.left+r.width/2-ax,vy=r.top+r.height/2-ay;
+  const primary=vx*dx+vy*dy;
+  if(primary<=0)continue;
+  const cross=Math.abs(vx*dy-vy*dx);
+  const score=primary+cross*2.2+(cross*cross)/(Math.max(primary,1))*0.025;
+  if(score<bestScore){best=el;bestScore=score;}
+ }
+ if(best){
+  best.focus({preventScroll:true});
+  best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+ }
+ e.preventDefault();
+},true);
+const ADMIN_EMAIL='jivarakamal8@gmail.com';
+let radioInitialized=false,radioStations=[],radioAuth=null,radioDb=null,radioCurrentUser=null,radioEditingId=null;
+let radioFirebaseReady=false;
+function radioIsAdmin(){return !!(radioCurrentUser&&radioCurrentUser.email&&radioCurrentUser.email.toLowerCase()===ADMIN_EMAIL);}
+function renderRadioList(targetId='radioSavedList'){
+ const box=$('#'+targetId);if(!box)return;
+ box.innerHTML=radioStations.length?radioStations.map((r,i)=>'<button class="channel" data-radio-id="'+safe(r.id)+'"><span class="ch-number">'+(i+1)+'</span><span class="ch-name">'+safe(r.name)+'</span><span class="muted">▶</span></button>').join(''):'<div class="empty">هیچ ڕادیۆیەک نییە.</div>';
+ box.querySelectorAll('[data-radio-id]').forEach(btn=>btn.onclick=()=>{const r=radioStations.find(x=>x.id===btn.dataset.radioId);if(r)playRadio(r);});
+}
+function renderRadioAdminList(){
+ const box=$('#radioAdminStations');if(!box)return;
+ if(!radioIsAdmin()){box.innerHTML='';return;}
+ box.innerHTML=radioStations.length?radioStations.map(r=>'<div style="display:flex;gap:7px;align-items:center;margin:5px 0"><span style="flex:1">'+safe(r.name)+'</span><button class="btn" data-radio-edit="'+safe(r.id)+'">دەستکاری</button><button class="btn" data-radio-delete="'+safe(r.id)+'">سڕینەوە</button></div>').join(''):'<div class="empty">هیچ ڕادیۆیەک نییە.</div>';
+ box.querySelectorAll('[data-radio-edit]').forEach(b=>b.onclick=()=>{const r=radioStations.find(x=>x.id===b.dataset.radioEdit);if(!r)return;radioEditingId=r.id;$('#radioName').value=r.name;$('#radioUrl').value=r.url;$('#radioUrl').type='text';$('#radioSave').textContent='نوێکردنەوە';});
+ box.querySelectorAll('[data-radio-delete]').forEach(b=>b.onclick=async()=>{if(!radioIsAdmin())return;try{await radioDb.collection('radioStations').doc(b.dataset.radioDelete).delete();toast('ڕادیۆکە سڕایەوە.');}catch(e){toast('سڕینەوە سەرکەوتوو نەبوو.');}});
+}
+function renderRadioAuth(){
+ const box=$('#radioAuthPanel');if(!box)return;
+ if(radioIsAdmin()){
+  box.innerHTML='<div class="notice">بەڕێوەبەری ڕادیۆ: '+safe(radioCurrentUser.email)+'</div><div class="radio-admin-toolbar"><div class="panel-head">زیادکردن / دەستکاری ڕادیۆ</div><button class="btn" id="radioLogout" type="button">چوونەدەرەوە</button></div><label class="field">ناوی ڕادیۆ<input id="radioName" type="text" placeholder="ناوی ڕادیۆ بنووسە"></label><label class="field">لینکی پەخش<input id="radioUrl" type="password" inputmode="url" placeholder="لینکی نهێنی ڕادیۆ" autocomplete="off"></label><div class="radio-actions"><button class="btn primary" id="radioSave" type="button">＋ پاشەکەوتکردن</button></div><div class="panel-head">لیستی بەڕێوەبردن</div><div id="radioAdminStations"></div>';
+  $('#radioLogout').onclick=()=>radioAuth.signOut();
+  const radioUrlInput=$('#radioUrl');
+  radioUrlInput.addEventListener('focus',e=>{e.target.type='text';if(window.AndroidPlayer&&AndroidPlayer.setKeyboardMode)AndroidPlayer.setKeyboardMode(true);setTimeout(()=>{const field=e.target.closest('.field');if(field)field.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});},250);});
+  radioUrlInput.addEventListener('blur',e=>{e.target.type='password';setTimeout(()=>{if(!document.activeElement||!document.activeElement.matches('input,textarea,select')){if(window.AndroidPlayer&&AndroidPlayer.setKeyboardMode)AndroidPlayer.setKeyboardMode(false);}},500);});
+  $('#radioSave').onclick=saveRadioStation;renderRadioAdminList();
+ }else{
+  box.innerHTML='<div class="radio-login-form"><div class="panel-head">چوونەژوورەوەی بەڕێوەبەر</div><label class="field">ئیمەیڵ<input id="radioAdminEmail" type="email" autocomplete="username" placeholder="ئیمەیڵ"></label><label class="field">وشەی نهێنی<input id="radioAdminPassword" type="password" autocomplete="current-password" placeholder="وشەی نهێنی"></label><button class="btn primary" id="radioLogin" type="button">چوونەژوورەوە</button><div class="notice" style="margin-top:10px">تەنها بەڕێوەبەری ڕێگەپێدراو دەتوانێت ڕادیۆ زیاد بکات یان دەستکاری و بسڕێتەوە.</div></div>';
+  $('#radioLogin').onclick=async()=>{const email=$('#radioAdminEmail').value.trim(),password=$('#radioAdminPassword').value;if(!email||!password)return toast('ئیمەیڵ و وشەی نهێنی بنووسە.');try{await radioAuth.signInWithEmailAndPassword(email,password);$('#radioAdminPassword').value='';}catch(e){console.error('JIVARA radio admin login error:',e);const code=(e&&e.code)?String(e.code):'unknown-error';toast('هەڵەی چوونەژوورەوە: '+code);}};
+ }
+}
+async function saveRadioStation(){
+ if(!radioIsAdmin())return toast('تەنها بەڕێوەبەر دەتوانێت ڕادیۆ زیاد بکات.');
+ const name=$('#radioName').value.trim(),url=$('#radioUrl').value.trim();
+ if(!name||!/^https?:\/\//i.test(url)){setRadioState(false,'ناوی ڕادیۆ و لینکی دروست بنووسە.');return;}
+ try{
+  const data={name,url,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+  if(radioEditingId){await radioDb.collection('radioStations').doc(radioEditingId).update(data);}
+  else{data.createdAt=firebase.firestore.FieldValue.serverTimestamp();await radioDb.collection('radioStations').add(data);}
+  radioEditingId=null;$('#radioName').value='';$('#radioUrl').value='';$('#radioUrl').type='password';$('#radioUrl').blur();$('#radioSave').textContent='＋ پاشەکەوتکردن';toast('ڕادیۆ پاشەکەوت کرا.');
+ }catch(e){toast('پاشەکەوتکردن سەرکەوتوو نەبوو؛ ڕێکخستنەکان بپشکنە.');}
+}
+function setRadioState(playing,message){$('#radioVisual').classList.toggle('playing',playing);$('#radioVisualStatus').textContent=playing?'لە پەخشدایە':'ئامادەی پەخشە';$('#radioStatus').textContent=message;}
+async function playRadio(r){const audio=$('#radioAudio');try{audio.pause();audio.src=r.url;audio.load();await audio.play();setRadioState(true,r.name+' لە پەخشدایە.');}catch(e){setRadioState(false,'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.');}}
+function stopRadioPlayback(message='پەخش وەستێنرا.'){
+ const a=$('#radioAudio');if(a){a.pause();a.removeAttribute('src');a.load();}
+ setRadioState(false,message);
+}
+function initRadio(){
+ if(radioInitialized)return;radioInitialized=true;
+ $('#radioStop').onclick=()=>stopRadioPlayback('پەخش وەستێنرا.');
+ $('#radioAudio').addEventListener('playing',()=>setRadioState(true,'ڕادیۆ لە پەخشدایە.'));
+ $('#radioAudio').addEventListener('error',()=>setRadioState(false,'هەڵە لە لینک یان فۆرماتی پەخش.'));
+ try{
+  if(!window.firebase)throw new Error('Firebase SDK unavailable');
+  const firebaseConfig={apiKey:"AIzaSyCUSZkhmBvjuev0BGjF_XBWEHc_HBDZ-bk",authDomain:"jivara-tv.firebaseapp.com",projectId:"jivara-tv",storageBucket:"jivara-tv.firebasestorage.app",messagingSenderId:"926151932523",appId:"1:926151932:web:01d96465abf6f865c98f2e",measurementId:"G-BK1BTZ1V2J"};
+  if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+  radioAuth=firebase.auth();radioDb=firebase.firestore();radioFirebaseReady=true;
+  radioDb.collection('radioStations').onSnapshot(snap=>{radioStations=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.name&&r.url);renderRadioList();renderRadioAdminList();},()=>{$('#radioStatus').textContent='نەتوانرا لیستی ڕادیۆکان باربکرێت.';});
+  radioAuth.onAuthStateChanged(user=>{radioCurrentUser=user;renderRadioAuth();});
+ }catch(e){$('#radioStatus').textContent='پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.';}
+ renderRadioList();
+}
+initRadio();
+$('#dramaBack').onclick=()=>{selectedDramaId=null;renderDramaPage();const first=$('#dramaCatalog .drama-card');if(first)first.focus({preventScroll:true});};
+renderAll();
+// لە هەر کردنەوەی ئەپەکەدا کەناڵەکانی داشبۆرد وەردەگرە؛ پاشان هەر ٦٠ چرکە نوێیان بکەرەوە.
+{const cachedStart=readDashboardCache();if(cachedStart){try{applyDashboardPayload(cachedStart);}catch(e){}}}
+refreshRemoteChannels(false);
+setInterval(()=>refreshRemoteChannels(false),60000);
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden) refreshRemoteChannels(false);
+});
+settingsTab('player');
+})();
+</script>
+
+<script>
+(function(){
+ const dictionaries={
+  ar:{
+   'سەرەکی':'الرئيسية','کەناڵەکان':'القنوات','گرووپەکان':'المجموعات','ڕادیۆ':'الراديو','ڕێکخستنەکان':'الإعدادات','زانیاری':'معلومات',
+   'پلەیەری Smart TV':'مشغل Smart TV','بوخوردان و دوکەڵی بۆنخۆش':'مبخرة ودخان عطري','بۆ پەیوەندیکردن':'للتواصل',
+   'ئایەتی قورئان':'آية قرآنية','ئەم ئەپە بەردەوام نوێ دەکرێتەوە':'يتم تحديث هذا التطبيق باستمرار','بینەری ئێستا':'المشاهدون الآن',
+   'بەخێربێیت بۆ جیهانی کەناڵەکان':'مرحباً بك في عالم القنوات','گرووپێک هەڵبژێرە یان لینکەکانی خۆت زیاد بکە.':'اختر مجموعة أو أضف روابطك.',
+   'کلیک بکە بۆ کردنەوە':'اضغط للفتح','گرووپەکانی کەناڵەکان':'مجموعات القنوات','گرووپێک هەڵبژێرە':'اختر مجموعة',
+   'وڵاتەکان':'الدول','پەخشی ڕاستەوخۆی دەنگ':'بث صوتي مباشر','ئامادەی پەخشە':'جاهز للبث','ڕادیۆکان':'محطات الراديو',
+   '■ وەستاندن':'■ إيقاف','وەستاندن':'إيقاف','ڕادیۆیەک هەڵبژێرە بۆ دەستپێکردنی پەخش.':'اختر محطة راديو لبدء البث.',
+   'لیستی کەناڵەکان':'قائمة القنوات','پلەیەری ڤیدیۆ':'مشغل الفيديو','کەناڵێک هەڵبژێرە':'اختر قناة',
+   'کەناڵێک هەڵبژێرە بۆ بینین':'اختر قناة للمشاهدة','ئامادەی پەخشکردن':'جاهز للبث','لینکی کەناڵێک نییە.':'لا يوجد رابط قناة.',
+   '🔊 دەنگ':'🔊 الصوت','دەنگ':'الصوت','⚙ لینکەکان':'⚙ الروابط','گەڕان لە کەناڵەکان':'البحث في القنوات',
+   'ناوی کەناڵ بنووسە':'أدخل اسم القناة','گەڕان...':'بحث...','شوێنی گروپی لینکەکان':'موضع مجموعة الروابط',
+   '＋ زیادکردنی کەناڵ بە دەستی':'＋ إضافة قناة يدوياً','✎ گۆڕینی ناوی کەناڵ':'✎ تغيير اسم القناة',
+   '📻 بەڕێوەبردنی ڕادیۆ':'📻 إدارة الراديو','✖ سڕینەوەی کەناڵ':'✖ حذف قناة',
+   'ڕووکارێکی ئامادە بۆ گروپی کەناڵەکان و لینکەکانی IPTV.':'واجهة جاهزة لمجموعات القنوات وروابط IPTV.',
+   'ئەمە پڕۆژەیەکی نموونەییە و پڕۆژەیەکی تایبەتی JIVARA TV ـە.':'هذا مشروع تجريبي وخاص بـ JIVARA TV.',
+   'ناوخۆ':'محلي','کوردی':'كردي','عەرەبی':'عربي','بیانی':'أجنبي','هەواڵ':'أخبار','قورئان':'القرآن','منداڵان':'الأطفال',
+   'وەرزش':'الرياضة','موزیک':'الموسيقى','دۆکۆمێنتاری':'وثائقي','عێراق':'العراق','ئێران':'إيران','تورکیا':'تركيا','ئیسرائیل':'إسرائيل',
+   'کەناڵێک هەڵبژێرە بۆ بینین':'اختر قناة للمشاهدة','کەناڵەکان':'القنوات',
+   'نەتوانرا لیستی ڕادیۆکان باربکرێت.':'تعذر تحميل قائمة محطات الراديو.',
+   'هیچ کەناڵێک ئامادە نییە.':'لا توجد قناة جاهزة.','هیچ کەناڵێک هەڵنەبژێردراوە':'لم يتم اختيار قناة',
+   'کۆتایی لیست':'نهاية القائمة','کەناڵێکی لینکدار هەڵبژێرە.':'اختر قناة تحتوي على رابط.',
+   'کەناڵەکانی Cloudflare نوێکرانەوە.':'تم تحديث قنوات Cloudflare.',
+   'پەیوەندی بە سێرڤەری کەناڵەکان نەکرا؛ کەناڵە ناوخۆییەکان بەردەوامن.':'تعذر الاتصال بخادم القنوات؛ القنوات المحلية ما زالت متاحة.',
+   'ڕیزبەندی کەناڵەکان گۆڕدرا.':'تم تغيير ترتيب القنوات.',
+   'سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.':'أضف رابط بث لهذه القناة أولاً.',
+   'ناوی کەناڵ':'اسم القناة','ناوی کەناڵ بنووسە':'أدخل اسم القناة','لینکی لۆگۆی کەناڵ (URL)':'رابط شعار القناة (URL)',
+   'لینکی پەخش (URL)':'رابط البث (URL)','گرووپی کەناڵ':'مجموعة القناة','＋ زیادکردنی کەناڵ':'＋ إضافة قناة',
+   'دەستکاری':'تعديل','سڕینەوە':'حذف','نوێکردنەوە':'تحديث','پاشەکەوتکردن':'حفظ','وشەی نهێنی':'كلمة المرور','ئیمەیڵ':'البريد الإلكتروني'
+  },
+  en:{
+   'سەرەکی':'Home','کەناڵەکان':'Channels','گرووپەکان':'Groups','ڕادیۆ':'Radio','ڕێکخستنەکان':'Settings','زانیاری':'About',
+   'پلەیەری Smart TV':'Smart TV Player','بوخوردان و دوکەڵی بۆنخۆش':'Incense burner and fragrant smoke','بۆ پەیوەندیکردن':'Contact',
+   'ئایەتی قورئان':'Quran verse','ئەم ئەپە بەردەوام نوێ دەکرێتەوە':'This app is regularly updated','بینەری ئێستا':'Viewers now',
+   'بەخێربێیت بۆ جیهانی کەناڵەکان':'Welcome to the world of channels','گرووپێک هەڵبژێرە یان لینکەکانی خۆت زیاد بکە.':'Choose a group or add your own links.',
+   'کلیک بکە بۆ کردنەوە':'Click to open','گرووپەکانی کەناڵەکان':'Channel groups','گرووپێک هەڵبژێرە':'Choose a group',
+   'وڵاتەکان':'Countries','پەخشی ڕاستەوخۆی دەنگ':'Live audio broadcast','ئامادەی پەخشە':'Ready to play','ڕادیۆکان':'Radio stations',
+   '■ وەستاندن':'■ Stop','وەستاندن':'Stop','ڕادیۆیەک هەڵبژێرە بۆ دەستپێکردنی پەخش.':'Select a radio station to start playback.',
+   'لیستی کەناڵەکان':'Channel list','پلەیەری ڤیدیۆ':'Video player','کەناڵێک هەڵبژێرە':'Select a channel',
+   'کەناڵێک هەڵبژێرە بۆ بینین':'Select a channel to watch','ئامادەی پەخشکردن':'Ready to play','لینکی کەناڵێک نییە.':'No channel link.',
+   '🔊 دەنگ':'🔊 Sound','دەنگ':'Sound','⚙ لینکەکان':'⚙ Links','گەڕان لە کەناڵەکان':'Search channels',
+   'ناوی کەناڵ بنووسە':'Enter channel name','گەڕان...':'Search...','شوێنی گروپی لینکەکان':'Link group location',
+   '＋ زیادکردنی کەناڵ بە دەستی':'＋ Add channel manually','✎ گۆڕینی ناوی کەناڵ':'✎ Rename channel',
+   '📻 بەڕێوەبردنی ڕادیۆ':'📻 Manage radio','✖ سڕینەوەی کەناڵ':'✖ Delete channel',
+   'ڕووکارێکی ئامادە بۆ گروپی کەناڵەکان و لینکەکانی IPTV.':'A ready interface for channel groups and IPTV links.',
+   'ئەمە پڕۆژەیەکی نموونەییە و پڕۆژەیەکی تایبەتی JIVARA TV ـە.':'This is a sample project created specifically for JIVARA TV.',
+   'ناوخۆ':'Local','کوردی':'Kurdish','عەرەبی':'Arabic','بیانی':'Foreign','هەواڵ':'News','قورئان':'Quran','منداڵان':'Kids',
+   'وەرزش':'Sports','موزیک':'Music','دۆکۆمێنتاری':'Documentary','عێراق':'Iraq','ئێران':'Iran','تورکیا':'Turkey','ئیسرائیل':'Israel',
+   'نەتوانرا لیستی ڕادیۆکان باربکرێت.':'Could not load the radio list.',
+   'هیچ کەناڵێک ئامادە نییە.':'No channel is ready.','هیچ کەناڵێک هەڵنەبژێردراوە':'No channel selected',
+   'کۆتایی لیست':'End of list','کەناڵێکی لینکدار هەڵبژێرە.':'Select a channel with a link.',
+   'کەناڵەکانی Cloudflare نوێکرانەوە.':'Cloudflare channels updated.',
+   'پەیوەندی بە سێرڤەری کەناڵەکان نەکرا؛ کەناڵە ناوخۆییەکان بەردەوامن.':'Could not connect to the channel server; local channels remain available.',
+   'ڕیزبەندی کەناڵەکان گۆڕدرا.':'Channel order updated.',
+   'سەرەتا لینکێکی پەخش بۆ ئەم کەناڵە زیاد بکە.':'Add a stream link for this channel first.',
+   'ناوی کەناڵ':'Channel name','لینکی لۆگۆی کەناڵ (URL)':'Channel logo URL',
+   'لینکی پەخش (URL)':'Stream URL','گرووپی کەناڵ':'Channel group','＋ زیادکردنی کەناڵ':'＋ Add channel',
+   'دەستکاری':'Edit','سڕینەوە':'Delete','نوێکردنەوە':'Update','پاشەکەوتکردن':'Save','وشەی نهێنی':'Password','ئیمەیڵ':'Email'
+  }
+ };
+ Object.assign(dictionaries.ar,{
+  'لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.':'يجب أن يبدأ الرابط بـ http:// أو https://.',
+  'فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.':'تعذرت قراءة ملف M3U. استخدم رابط M3U8 أو TS مباشراً؛ قد يمنع CORS أو الخادم ذلك.',
+  'پەخش نەکرا: لینکەکە، سێرڤەر، CORS/HTTPS یان فۆرماتی ڤیدیۆ پشکنە.':'تعذر التشغيل: تحقق من الرابط أو الخادم أو CORS/HTTPS أو تنسيق الفيديو.',
+  'هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.':'خطأ في البث: تحقق من التنسيق أو الرابط أو أذونات الخادم.',
+  'بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.':'تم إيقاف البث عند مغادرة صفحة الراديو.',
+  'کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.':'أصبحت القناة صفراء؛ اسحبها إلى موضع جديد.',
+  'ڕادیۆ لە پەخشدایە.':'الراديو قيد التشغيل.','پەخش وەستێنرا.':'تم إيقاف البث.','هەڵە لە لینک یان فۆرماتی پەخش.':'خطأ في رابط البث أو تنسيقه.',
+  'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.':'تعذر التشغيل؛ تحقق من رابط الراديو وتنسيقه.',
+  'ئیمەیڵ و وشەی نهێنی بنووسە.':'أدخل البريد الإلكتروني وكلمة المرور.','تەنها بەڕێوەبەر دەتوانێت ڕادیۆ زیاد بکات.':'يمكن للمسؤول فقط إضافة محطات الراديو.',
+  'ناوی ڕادیۆ و لینکی دروست بنووسە.':'أدخل اسم محطة الراديو ورابطاً صحيحاً.','ڕادیۆ پاشەکەوت کرا.':'تم حفظ محطة الراديو.',
+  'پاشەکەوتکردن سەرکەوتوو نەبوو؛ ڕێکخستنەکان بپشکنە.':'فشل الحفظ؛ تحقق من الإعدادات.',
+  'سڕینەوە سەرکەوتوو نەبوو.':'فشل الحذف.','ڕادیۆکە سڕایەوە.':'تم حذف محطة الراديو.',
+  'هیچ ڕادیۆیەک نییە.':'لا توجد محطات راديو.','ئەم گرووپە بەتاڵە.':'هذه المجموعة فارغة.',
+  'لە ڕێکخستنەکان کەناڵ زیاد بکە.':'أضف قناة من الإعدادات.','هیچ کەناڵێک نییە. لینکەکان زیاد بکە.':'لا توجد قنوات. أضف الروابط.',
+  'گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.':'اختر مجموعة وأضف قنواتك إليها.',
+  'تکایە کەناڵێک دیاری بکە.':'يرجى اختيار قناة.','ناوی کەناڵ گۆڕدرا و لە گروپی خۆیدا پاشەکەوت کرا.':'تم تغيير اسم القناة وحفظه ضمن مجموعته.',
+  'ناوی کەناڵ نوێکرایەوە.':'تم تحديث اسم القناة.','کەناڵەکە بە سەرکەوتوویی سڕایەوە.':'تم حذف القناة بنجاح.',
+  'کەناڵەکە بە سەرکەوتوویی زیاد کرا.':'تمت إضافة القناة بنجاح.','تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.':'يرجى إدخال الاسم ورابط البث؛ يجب أن يكون رابط الشعار صالحاً.',
+  'دڵنیایت لە سڕینەوەی':'هل أنت متأكد من حذف','لینکی کەناڵ':'رابط القناة'
+ });
+ Object.assign(dictionaries.en,{
+  'لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.':'The link must start with http:// or https://.',
+  'فایلی M3U نەخوێندرایەوە. لینکی ڕاستەوخۆی M3U8 یان TS بەکاربهێنە؛ CORS یان سێرڤەر لەوانەیە ڕێگری بکات.':'Could not read the M3U file. Use a direct M3U8 or TS link; CORS or the server may block it.',
+  'پەخش نەکرا: لینکەکە، سێرڤەر، CORS/HTTPS یان فۆرماتی ڤیدیۆ پشکنە.':'Playback failed: check the link, server, CORS/HTTPS, or video format.',
+  'هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.':'Stream error: check the format, link, or server permissions.',
+  'بەهۆی دەرچوون لە پەڕەی ڕادیۆ، پەخشەکە وەستێنرا.':'Playback stopped because you left the radio page.',
+  'کەناڵەکە زەرد بوو؛ بە ڕاکێشان بیگوازەوە بۆ شوێنی نوێ.':'The channel is highlighted; drag it to a new position.',
+  'ڕادیۆ لە پەخشدایە.':'Radio is playing.','پەخش وەستێنرا.':'Playback stopped.','هەڵە لە لینک یان فۆرماتی پەخش.':'Error in the stream link or format.',
+  'پەخش نەکرا؛ فۆرمات و لینکی ڕادیۆ بپشکنە.':'Playback failed; check the radio link and format.',
+  'ئیمەیڵ و وشەی نهێنی بنووسە.':'Enter your email and password.','تەنها بەڕێوەبەر دەتوانێت ڕادیۆ زیاد بکات.':'Only an administrator can add radio stations.',
+  'ناوی ڕادیۆ و لینکی دروست بنووسە.':'Enter a radio station name and a valid link.','ڕادیۆ پاشەکەوت کرا.':'Radio station saved.',
+  'پاشەکەوتکردن سەرکەوتوو نەبوو؛ ڕێکخستنەکان بپشکنە.':'Save failed; check the settings.',
+  'سڕینەوە سەرکەوتوو نەبوو.':'Delete failed.','ڕادیۆکە سڕایەوە.':'Radio station deleted.',
+  'هیچ ڕادیۆیەک نییە.':'No radio stations.','ئەم گرووپە بەتاڵە.':'This group is empty.',
+  'لە ڕێکخستنەکان کەناڵ زیاد بکە.':'Add a channel in Settings.','هیچ کەناڵێک نییە. لینکەکان زیاد بکە.':'No channels found. Add links.',
+  'گرووپێک هەڵبژێرە و کەناڵەکانت لێ زیاد بکە.':'Choose a group and add your channels.',
+  'تکایە کەناڵێک دیاری بکە.':'Please select a channel.','ناوی کەناڵ گۆڕدرا و لە گروپی خۆیدا پاشەکەوت کرا.':'Channel name changed and saved in its group.',
+  'ناوی کەناڵ نوێکرایەوە.':'Channel name updated.','کەناڵەکە بە سەرکەوتوویی سڕایەوە.':'Channel deleted successfully.',
+  'کەناڵەکە بە سەرکەوتوویی زیاد کرا.':'Channel added successfully.','تکایە ناو و لینکی پەخش بنووسە؛ لینکی لۆگۆش دەبێت URL ـی دروست بێت.':'Enter a name and stream link; the logo link must be a valid URL.',
+  'دڵنیایت لە سڕینەوەی':'Are you sure you want to delete','لینکی کەناڵ':'Channel link'
+ });
+
+ ['ناوخۆ','کوردی','عەرەبی','بیانی','هەواڵ','قورئان','منداڵان','وەرزش','موزیک','دۆکۆمێنتاری','عێراق','ئێران','تورکیا','ئیسرائیل'].forEach(k=>{delete dictionaries.ar[k];delete dictionaries.en[k];});
+ Object.assign(dictionaries.ar,{
+  'لینکی نهێنی ڕادیۆ':'رابط الراديو السري','ناوی نوێ بنووسە':'أدخل الاسم الجديد','ناوی ڕادیۆ بنووسە':'أدخل اسم محطة الراديو',
+  'نەتوانرا سڕینەوە هەڵبگیرێت؛ بیرگەی ئامێر پڕە.':'تعذر حفظ الحذف؛ مساحة تخزين الجهاز ممتلئة.',
+  'نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.':'تعذر حفظ اسم القناة.',
+  'نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.':'تعذر حفظ تغييرات القنوات؛ مساحة تخزين المتصفح ممتلئة أو معطلة.',
+  'شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.':'تم تثبيت موضع القناة؛ اضغط OK الآن لتشغيلها.',
+  'پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.':'تعذر الاتصال بخدمة الراديو؛ تحقق من إعدادات Firebase.',
+  'بەڕێوەبردنی ڕادیۆکان':'إدارة محطات الراديو','ئەم گرووپە کەناڵی نییە':'لا توجد قنوات في هذه المجموعة',
+  'هەڵەی چوونەژوورەوە: ':'خطأ في تسجيل الدخول: '
+ });
+ Object.assign(dictionaries.en,{
+  'لینکی نهێنی ڕادیۆ':'Radio stream URL','ناوی نوێ بنووسە':'Enter new name','ناوی ڕادیۆ بنووسە':'Enter radio station name',
+  'نەتوانرا سڕینەوە هەڵبگیرێت؛ بیرگەی ئامێر پڕە.':'Could not save deletion; device storage is full.',
+  'نەتوانرا ناوی کەناڵ پاشەکەوت بکرێت.':'Could not save the channel name.',
+  'نەتوانرا گۆڕانکارییەکانی کەناڵەکان هەڵبگیرێن؛ بیرگەی وێبگەڕ پڕە یان داخراوە.':'Could not save channel changes; browser storage is full or unavailable.',
+  'شوێنی کەناڵ جێگیر کرا؛ ئێستا OK دابگرە بۆ پخشکردنی کەناڵ.':'Channel position saved; press OK now to play it.',
+  'پەیوەندی بە خزمەتگوزاری ڕادیۆ نەکرا؛ ڕێکخستنی Firebase بپشکنە.':'Could not connect to the radio service; check Firebase settings.',
+  'بەڕێوەبردنی ڕادیۆکان':'Manage radio stations','ئەم گرووپە کەناڵی نییە':'There are no channels in this group',
+  'هەڵەی چوونەژوورەوە: ':'Login error: '
+ });
+
+ Object.assign(dictionaries.ar,{
+  'کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە':'اضغط للتكبير أو للعودة إلى حجم الشاشة',
+  'پەخشی کەناڵ':'بث القناة',
+  'بۆ گۆڕینی شوێنی کەناڵ و ڕێکخستنی لیستەکە بە دڵی خۆت، نیو چرکە دوگمەی ناوەڕاست (OK / Enter)ی ڕیمۆتەکەت لەسەر کەناڵەکە ڕابگرە؛ کاتێک ڕەنگەکەی زەرد بوو، بە تیرەکانی سەرەوە و خوارەوە بیگوازەرەوە، پاشان OK دووبارە دابگرە بۆ دانانی لە شوێنی نوێ؛ دوای ئەوە بە OK کەناڵەکە پخش بکە.':'لتغيير موضع القناة وترتيب القائمة، اضغط مطولاً نصف ثانية على زر OK / Enter في جهاز التحكم؛ عندما يتحول لون القناة إلى الأصفر، انقلها بالسهمين للأعلى أو للأسفل، ثم اضغط OK لتثبيتها في الموضع الجديد، وبعدها اضغط OK لتشغيلها.',
+  'بینەری بەڕێز، ئەم پرۆژەیە بۆ خزمەتی تۆیە. تکایە بەهەڵە بەکاری مەهێنە و دەتوانیت لینکی کەناڵی تیڤی دڵخوازی خۆت لە گروپەکان زیاد بکەیت، دڵنیابە کە ئێمە ئاگاداری ئەو لینکانەین کە داخڵیان دەکەیت و لینکی نەشیاو ڕێگەپێدراو نییە.':'عزيزي المشاهد، هذا المشروع لخدمتك. يرجى استخدامه بشكل صحيح. يمكنك إضافة روابط قنواتك المفضلة إلى المجموعات، مع التأكد من أن الروابط التي تضيفها مناسبة ومسموح بها.'
+ });
+ Object.assign(dictionaries.en,{
+  'کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە':'Click to enlarge or restore the screen',
+  'پەخشی کەناڵ':'Channel stream',
+  'بۆ گۆڕینی شوێنی کەناڵ و ڕێکخستنی لیستەکە بە دڵی خۆت، نیو چرکە دوگمەی ناوەڕاست (OK / Enter)ی ڕیمۆتەکەت لەسەر کەناڵەکە ڕابگرە؛ کاتێک ڕەنگەکەی زەرد بوو، بە تیرەکانی سەرەوە و خوارەوە بیگوازەرەوە، پاشان OK دووبارە دابگرە بۆ دانانی لە شوێنی نوێ؛ دوای ئەوە بە OK کەناڵەکە پخش بکە.':'To reorder channels, hold the remote OK / Enter button on a channel for half a second. When it turns yellow, move it with the up or down arrows, press OK to place it, then press OK again to play it.',
+  'بینەری بەڕێز، ئەم پرۆژەیە بۆ خزمەتی تۆیە. تکایە بەهەڵە بەکاری مەهێنە و دەتوانیت لینکی کەناڵی تیڤی دڵخوازی خۆت لە گروپەکان زیاد بکەیت، دڵنیابە کە ئێمە ئاگاداری ئەو لینکانەین کە داخڵیان دەکەیت و لینکی نەشیاو ڕێگەپێدراو نییە.':'Dear viewer, this project is here to serve you. Please use it responsibly. You can add your favorite TV channel links to groups, making sure the links you add are appropriate and permitted.'
+ });
+
+ const groupNames={
+  'ناوخۆ':{ar:'محلي',en:'Local'},'کوردی':{ar:'كردي',en:'Kurdish'},'عەرەبی':{ar:'عربي',en:'Arabic'},
+  'بیانی':{ar:'أجنبي',en:'Foreign'},'هەواڵ':{ar:'أخبار',en:'News'},'قورئان':{ar:'القرآن',en:'Quran'},
+  'منداڵان':{ar:'الأطفال',en:'Kids'},'وەرزش':{ar:'الرياضة',en:'Sports'},'موزیک':{ar:'الموسيقى',en:'Music'},
+  'دۆکۆمێنتاری':{ar:'وثائقي',en:'Documentary'},'عێراق':{ar:'العراق',en:'Iraq'},'ئێران':{ar:'إيران',en:'Iran'},
+  'تورکیا':{ar:'تركيا',en:'Turkey'},'ئیسرائیل':{ar:'إسرائيل',en:'Israel'}
+ };
+ const languageKeys=['ku','ar','en'];
+ const reverse={ar:{},en:{}},reverseGroups={};
+ Object.keys(dictionaries.ar).forEach(k=>reverse.ar[dictionaries.ar[k]]=k);
+ Object.keys(dictionaries.en).forEach(k=>reverse.en[dictionaries.en[k]]=k);
+ Object.keys(groupNames).forEach(k=>{reverseGroups[groupNames[k].ar]=k;reverseGroups[groupNames[k].en]=k;});
+ const normalize=value=>String(value).replace(/\s+/g,' ').trim();
+ function translateValue(value,lang,isGroup){
+  const original=normalize(value);
+  if(isGroup){
+   const key=groupNames[original]?original:(reverseGroups[original]||original);
+   return lang==='ku'?key:(groupNames[key]&&groupNames[key][lang]||key);
+  }
+  const key=dictionaries[lang]&&dictionaries[lang][original]?original:(reverse.ar[original]||reverse.en[original]||original);
+  return lang==='ku'?key:(dictionaries[lang][key]||key);
+ }
+ function translateTree(root,lang){
+  if(!root)return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+  nodes.forEach(node=>{
+   const parent=node.parentElement;
+   if(!parent||parent.closest('[data-no-translate="true"],script,style,.channel,.ch-name,.channel-name,.channel-item,.channel-row'))return;
+   const raw=node.nodeValue,trimmed=normalize(raw);
+   if(!trimmed)return;
+   const translated=translateValue(trimmed,lang,!!parent.closest('.category,.group-card,.group-btn') || !!parent.closest('select#manualChannelGroup,select#deleteGroupSelect,select#renameGroupSelect'));
+   if(translated!==trimmed){
+    const lead=(raw.match(/^\s*/)||[''])[0],tail=(raw.match(/\s*$/)||[''])[0];
+    node.nodeValue=lead+translated+tail;
+   }
+  });
+  if(root.nodeType===1){
+   root.querySelectorAll('*').forEach(el=>{
+    if(el.closest('[data-no-translate="true"]'))return;
+    ['placeholder','title','aria-label','alt'].forEach(attr=>{
+     if(el.hasAttribute(attr)){
+      const old=el.getAttribute(attr),next=translateValue(old,lang,false);
+      if(next!==normalize(old))el.setAttribute(attr,next);
+     }
+    });
+   });
+  }
+ }
+ function applyLanguage(lang){
+  if(!languageKeys.includes(lang))lang='ku';
+  const dir=lang==='en'?'ltr':'rtl';
+  document.documentElement.lang=lang==='ku'?'ckb':lang;
+  document.documentElement.dir=dir;
+  document.body.dir=dir;
+  translateTree(document.body,lang);
+  document.querySelectorAll('#jivaraLanguageSwitch [data-language]').forEach(btn=>{
+   btn.classList.toggle('active',btn.dataset.language===lang);
+   btn.setAttribute('aria-pressed',btn.dataset.language===lang?'true':'false');
+  });
+  try{localStorage.setItem('jivara-tv-language',lang);}catch(e){}
+  window.jivaraLanguage=lang;
+ }
+ let saved='ku';try{saved=localStorage.getItem('jivara-tv-language')||'ku';}catch(e){}
+ document.querySelectorAll('#jivaraLanguageSwitch [data-language]').forEach(btn=>{
+  btn.addEventListener('click',()=>applyLanguage(btn.dataset.language));
+ });
+ const observer=new MutationObserver(records=>{
+  const lang=window.jivaraLanguage||saved;
+  records.forEach(record=>{
+   if(record.type==='characterData')translateTree(record.target.parentElement,lang);
+   else record.addedNodes.forEach(node=>{if(node.nodeType===1)translateTree(node,lang);});
+   if(record.type==='attributes'&&record.target&&record.target.nodeType===1)translateTree(record.target,lang);
+  });
+ });
+ observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','title','aria-label','alt']});
+ applyLanguage(saved);
+})();
+</script>
+
+</body>
+</html>
+
+<!-- JIVARA drama episode-number-only page; playback controls are handled by the player overlay. -->
+
+<!-- JIVARA TV drama episode build validation: 2026-11-09 -->
