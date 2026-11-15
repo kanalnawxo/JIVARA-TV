@@ -1386,8 +1386,9 @@ function renderGroups(){
  <small>${g.id==='drama'?'بینینی دراماکان':g.id==='movies'?'بینینی فیلمەکان':groupChannels(g.id).length+' کەناڵ'}</small></button>`).join('');
  
 
- $('#page-groups').querySelectorAll('[data-group]').forEach(b=>
- b.onclick=()=>{const id=b.dataset.group;if(id==='drama')openDramaPage();else if(id==='movies')openMediaPage(id);else openGroup(id);};
+ $('#page-groups').querySelectorAll('[data-group]').forEach(b=>{
+  b.onclick=()=>{const id=b.dataset.group;if(id==='drama')openDramaPage();else if(id==='movies')openMediaPage(id);else openGroup(id);};
+ });
 }
 function formatViews(n){
  n=Math.max(0,Number(n)||0);
