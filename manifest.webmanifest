@@ -1,0 +1,28 @@
+{
+  "id": "./iphone.html",
+  "name": "JIVARA TV",
+  "short_name": "JIVARA TV",
+  "description": "JIVARA TV - Live channels, movies and dramas",
+  "lang": "ckb",
+  "dir": "rtl",
+  "start_url": "./iphone.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020b16",
+  "theme_color": "#020b16",
+  "icons": [
+    {
+      "src": "./APK%20LOGO.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./APK%20LOGO.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
