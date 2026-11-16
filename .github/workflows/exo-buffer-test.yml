@@ -98,15 +98,15 @@ jobs:
           "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
           PASS="$(openssl rand -hex 24)"
           keytool -genkeypair -v -keystore test-signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV Test, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
-          "$BT/apksigner" sign --ks test-signing.jks --ks-key-alias jivara-test --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_exoplayer_buffer_test.apk aligned.apk
-          "$BT/apksigner" verify --verbose JIVARA_TV_exoplayer_buffer_test.apk
-          sha256sum JIVARA_TV_exoplayer_buffer_test.apk
-          test -s JIVARA_TV_exoplayer_buffer_test.apk
+          "$BT/apksigner" sign --ks test-signing.jks --ks-key-alias jivara-test --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_updated.1.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_updated.1.apk
+          sha256sum JIVARA_TV_updated.1.apk
+          test -s JIVARA_TV_updated.1.apk
 
       - name: Upload test APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JIVARA-TV-ExoPlayer-Buffer-Test
-          path: JIVARA_TV_exoplayer_buffer_test.apk
+          name: JIVARA-TV-Release-Ready
+          path: JIVARA_TV_updated.1.apk
           if-no-files-found: error
           retention-days: 14
