@@ -1,0 +1,112 @@
+name: Test JIVARA TV ExoPlayer buffer tuning
+
+on:
+  push:
+    branches: [ exo-buffer-test ]
+    paths:
+      - ".github/workflows/exo-buffer-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  patch-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+
+      - name: Install APK build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
+
+      - name: Decode current official APK
+        run: |
+          test -s "JIVARA_TV_updated.1.apk"
+          apktool d -f "JIVARA_TV_updated.1.apk" -o decoded
+          test -f decoded/smali_classes3/com/jivara/tv/MainActivity.smali
+
+      - name: Apply conservative ExoPlayer buffer settings only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("decoded/smali_classes3/com/jivara/tv/MainActivity.smali")
+          s = p.read_text(encoding="utf-8")
+          start = s.index(".method protected onCreate(Landroid/os/Bundle;)V")
+          end = s.index(".end method", start)
+          method = s[start:end]
+          old_locals = "    .locals 7\n"
+          if old_locals not in method:
+              raise SystemExit("Unexpected onCreate register layout; refusing to patch")
+          method = method.replace(old_locals, "    .locals 12\n", 1)
+          anchor = """    .line 84
+              invoke-virtual {v3, v4}, Landroidx/media3/exoplayer/ExoPlayer$Builder;->setMediaSourceFactory(Landroidx/media3/exoplayer/source/MediaSource$Factory;)Landroidx/media3/exoplayer/ExoPlayer$Builder;
+          """
+          # The decoded source's indentation and line annotations are checked explicitly below.
+          if anchor not in method:
+              anchor = """    invoke-virtual {v3, v4}, Landroidx/media3/exoplayer/ExoPlayer$Builder;->setMediaSourceFactory(Landroidx/media3/exoplayer/source/MediaSource$Factory;)Landroidx/media3/exoplayer/ExoPlayer$Builder;
+          """
+          if anchor not in method:
+              raise SystemExit("Expected ExoPlayer builder call not found; refusing to patch")
+          patch = """    new-instance v7, Landroidx/media3/exoplayer/DefaultLoadControl$Builder;
+
+              invoke-direct {v7}, Landroidx/media3/exoplayer/DefaultLoadControl$Builder;-><init>()V
+
+              const/16 v8, 0x3a98
+
+              const/16 v9, 0x7530
+
+              const/16 v10, 0x3e8
+
+              const/16 v11, 0x7d0
+
+              invoke-virtual/range {v7 .. v11}, Landroidx/media3/exoplayer/DefaultLoadControl$Builder;->setBufferDurationsMs(IIII)Landroidx/media3/exoplayer/DefaultLoadControl$Builder;
+
+              move-result-object v7
+
+              const/4 v8, 0x1
+
+              invoke-virtual {v7, v8}, Landroidx/media3/exoplayer/DefaultLoadControl$Builder;->setPrioritizeTimeOverSizeThresholds(Z)Landroidx/media3/exoplayer/DefaultLoadControl$Builder;
+
+              move-result-object v7
+
+              invoke-virtual {v7}, Landroidx/media3/exoplayer/DefaultLoadControl$Builder;->build()Landroidx/media3/exoplayer/DefaultLoadControl;
+
+              move-result-object v7
+
+              invoke-virtual {v3, v7}, Landroidx/media3/exoplayer/ExoPlayer$Builder;->setLoadControl(Landroidx/media3/exoplayer/LoadControl;)Landroidx/media3/exoplayer/ExoPlayer$Builder;
+
+              move-result-object v3
+
+          """
+          method = method.replace(anchor, patch + anchor, 1)
+          s = s[:start] + method + s[end:]
+          p.write_text(s, encoding="utf-8")
+          if "0x3a98" not in method or "0x7530" not in method:
+              raise SystemExit("Buffer patch verification failed")
+          print("Applied 15000/30000/1000/2000 ms ExoPlayer buffer configuration.")
+          PY
+          grep -n -A25 -B3 "DefaultLoadControl\$Builder" decoded/smali_classes3/com/jivara/tv/MainActivity.smali
+
+      - name: Rebuild and verify APK
+        run: |
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
+          "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
+          PASS="$(openssl rand -hex 24)"
+          keytool -genkeypair -v -keystore test-signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV Test, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
+          "$BT/apksigner" sign --ks test-signing.jks --ks-key-alias jivara-test --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_exoplayer_buffer_test.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_exoplayer_buffer_test.apk
+          sha256sum JIVARA_TV_exoplayer_buffer_test.apk
+          test -s JIVARA_TV_exoplayer_buffer_test.apk
+
+      - name: Upload test APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-ExoPlayer-Buffer-Test
+          path: JIVARA_TV_exoplayer_buffer_test.apk
+          if-no-files-found: error
+          retention-days: 14
