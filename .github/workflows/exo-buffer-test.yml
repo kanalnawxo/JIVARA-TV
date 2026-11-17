@@ -29,6 +29,14 @@ jobs:
           apktool d -f "JIVARA_TV_updated.1.apk" -o decoded
           test -f decoded/smali_classes3/com/jivara/tv/MainActivity.smali
 
+      - name: Upload original player smali for safe reconnect analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-Player-Diagnostics
+          path: decoded/smali_classes3/com/jivara/tv/**
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Apply conservative ExoPlayer buffer settings only
         run: |
           python3 - <<'PY'
