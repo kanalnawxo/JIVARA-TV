@@ -479,7 +479,7 @@ html.pointer-active .channel:focus:not(:hover){outline:1px solid #2b8cf1;outline
      <div class="panel">
       <div class="panel-head"><span id="nowTitle">پلەیەری ڤیدیۆ</span></div>
       <div class="player-screen" id="playerScreen" tabindex="0" role="button" aria-label="کلیک بکە بۆ گەورەکردن یان گەڕاندنەوەی شاشە">
-       <div id="jvDebug" style="position:absolute;top:4px;left:4px;right:4px;z-index:99;background:#000c;color:#0f0;font:10px monospace;padding:4px;word-break:break-all">JIVARA iOS v2</div>
+       <!-- JIVARA iOS CLEAN -->
        <video id="video" playsinline preload="auto" fetchpriority="high" disablepictureinpicture disableremoteplayback></video>
        <video id="episodeVideo" playsinline preload="auto" disablepictureinpicture style="display:none"></video>
        <div class="episode-player-controls" id="episodePlayerControls" aria-label="کۆنترۆڵی پەخشکردنی ئەڵقە">
@@ -2165,9 +2165,7 @@ http://195.128.27.253/548607065148/955372318450/931923
     function playIosCandidates(list, session) {
         let index = 0, settled = false, timer = null;
         const events = ['playing', 'loadeddata', 'loadedmetadata', 'error'];
-        const onMeta = () => {
-            try { const d = document.getElementById('jvDebug'); if (d) d.textContent += ' | META dur=' + videoA.duration; } catch (e) { }
-        };
+        const onMeta = () => { };
         const clear = () => {
             if (timer) { clearTimeout(timer); timer = null; }
             events.forEach(n => { try { videoA.removeEventListener(n, n === 'loadedmetadata' ? onMeta : handlers[n]); } catch (e) { } });
@@ -2176,7 +2174,6 @@ http://195.128.27.253/548607065148/955372318450/931923
         // «playing» واتە وێنە بە ڕاستی دەردەکەوێت — تەنها ئەوکاتە بێدەنگی لا دەدەین.
         const handlers = {
             playing: () => {
-                try { const d = document.getElementById('jvDebug'); if (d) d.textContent += ' | PLAYING OK'; } catch (e) { }
                 if (settled || session !== streamSession) return;
                 settled = true;
                 clear();
@@ -2189,7 +2186,6 @@ http://195.128.27.253/548607065148/955372318450/931923
             },
             loadeddata: () => { /* چاوەڕوانی «playing» دەبین */ },
             error: () => {
-                try { const d = document.getElementById('jvDebug'); if (d) { d.style.display = 'block'; d.textContent += ' | videoERR code=' + (videoA.error && videoA.error.code) + ' msg=' + (videoA.error && videoA.error.message); } } catch (e) { }
                 if (settled) return;
                 if (session !== streamSession) { clear(); return; }
                 next();
@@ -2212,11 +2208,6 @@ http://195.128.27.253/548607065148/955372318450/931923
             }
             const candidate = list[index++];
             if (timer) { clearTimeout(timer); timer = null; }
-            // پشکنینی بینراو: نیشانی دەدات چی ڕوودەدات لەسەر ئامێرەکە
-            try {
-                const dbg = document.getElementById('jvDebug');
-                if (dbg) dbg.textContent = 'هەوڵی ' + index + ': ' + candidate + ' | readyState=' + videoA.readyState;
-            } catch (e) { }
             try {
                 videoA.muted = true; // بۆ ئەوەی iOS ڕێگە بە autoplay بدات
                 videoA.playsInline = true;
@@ -2224,9 +2215,7 @@ http://195.128.27.253/548607065148/955372318450/931923
                 videoA.src = candidate;
                 videoA.load();
                 const pr = videoA.play();
-                if (pr && pr.catch) pr.catch(err => {
-                    try { const d = document.getElementById('jvDebug'); if (d) d.textContent += ' | playERR=' + (err && err.name || '?'); } catch (e) { }
-                });
+                if (pr && pr.catch) pr.catch(() => { });
                 timer = setTimeout(() => { if (!settled) next(); }, 6000);
             }
             catch (e) { next(); }
@@ -2531,14 +2520,6 @@ http://195.128.27.253/548607065148/955372318450/931923
     for (const playerVideo of [videoA]) {
         playerVideo.addEventListener('playing', () => idle.style.display = 'none');
         playerVideo.addEventListener('error', () => {
-            try {
-                const d = document.getElementById('jvDebug');
-                if (d) {
-                    d.style.display = 'block';
-                    d.textContent = 'IOS=' + IS_IOS + ' | nativeHls=' + _nativeHls + ' | src=' + playerVideo.currentSrc +
-                        ' | code=' + (playerVideo.error && playerVideo.error.code) + ' | msg=' + (playerVideo.error && playerVideo.error.message);
-                }
-            } catch (e) { }
             if (playerVideo.currentSrc)
                 toast('هەڵەی پەخش: فۆرمات، لینک یان ڕێگەپێدانی سێرڤەر پشکنە.'); });
     }
