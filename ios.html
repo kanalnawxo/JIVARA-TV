@@ -2207,7 +2207,9 @@ http://195.128.27.253/548607065148/955372318450/931923
                 videoA.load();
                 const pr = videoA.play();
                 if (pr && pr.catch) pr.catch(() => { });
-                timer = setTimeout(() => { if (!settled) next(); }, 4000);
+                // یەکەم هەوڵ دەرفەتی زیاتری پێ دەدەین (HLS بە سێگمەنتی ١٠ چرکە دەست پێ دەکات)
+                const wait = index === 1 ? 12000 : 6000;
+                timer = setTimeout(() => { if (!settled) next(); }, wait);
             }
             catch (e) { next(); }
         };
@@ -2266,7 +2268,7 @@ http://195.128.27.253/548607065148/955372318450/931923
         });
     }
     // ===== دووبارە بەستنەوەی خۆکاری پەخش (کاتێک لینکی کەناڵ دەوەستێت یان پەیوەندی دەپچڕێت) =====
-    const streamWatch = { active: false, url: '', everPlayed: false, retries: 0, timer: null, startedAt: 0, lastOk: 0, playingSince: 0, lastToast: 0 };
+    const streamWatch = { active: false, url: '', everPlayed: false, retries: 0, timer: null, startedAt: 0, lastOk: 0, lastProgress: 0, lastTime: 0, playingSince: 0, lastToast: 0 };
     function watchStart(url) {
         clearTimeout(streamWatch.timer);
         streamWatch.timer = null;
@@ -2276,6 +2278,8 @@ http://195.128.27.253/548607065148/955372318450/931923
         streamWatch.retries = 0;
         streamWatch.startedAt = Date.now();
         streamWatch.lastOk = 0;
+        streamWatch.lastProgress = 0;
+        streamWatch.lastTime = 0;
         streamWatch.playingSince = 0;
     }
     function watchStop() { streamWatch.active = false; clearTimeout(streamWatch.timer); streamWatch.timer = null; }
@@ -2288,6 +2292,7 @@ http://195.128.27.253/548607065148/955372318450/931923
             hideConnecting();
             streamWatch.everPlayed = true;
             streamWatch.lastOk = Date.now();
+            streamWatch.lastProgress = Date.now();
             streamWatch.retries = 0;
             if (mode && window.console)
                 console.log('JIVARA player: ' + mode);
@@ -2320,6 +2325,20 @@ http://195.128.27.253/548607065148/955372318450/931923
         }
         catch (e) { }
     }
+    // iOSـدا AndroidPlayer بوونی نییە؛ پلەیەری ناوەکی <video> بەکاردەهێنین.
+    function playerIsActive() {
+        try {
+            if (window.AndroidPlayer && typeof AndroidPlayer.isPlaying === 'function')
+                return !!AndroidPlayer.isPlaying();
+        }
+        catch (e) { }
+        try {
+            if (videoA && !videoA.paused && !videoA.ended && videoA.readyState >= 2 && !videoA.error)
+                return true;
+        }
+        catch (e) { }
+        return false;
+    }
     function watchSchedule() {
         if (!streamWatch.active || streamWatch.timer || window.__userPaused)
             return;
@@ -2343,7 +2362,25 @@ http://195.128.27.253/548607065148/955372318450/931923
             startStream(streamWatch.url, true);
         }, d);
     }
-    videoA.addEventListener('playing', () => { streamWatch.everPlayed = true; streamWatch.lastOk = Date.now(); });
+    videoA.addEventListener('playing', () => {
+        streamWatch.everPlayed = true;
+        streamWatch.lastOk = Date.now();
+        streamWatch.lastProgress = Date.now();
+    });
+    // کاتێک پەخش بەردەوامە currentTime هەڵدەکشێت؛ بەمە دەزانین پەخش زیندووە،
+    // نەک تەنها بە ڕووداوی «playing» کە تەنها جارێک لە دەستپێکدا دێت.
+    videoA.addEventListener('timeupdate', () => {
+        try {
+            const t = videoA.currentTime;
+            if (isFinite(t) && Math.abs(t - streamWatch.lastTime) > 0.15) {
+                streamWatch.lastTime = t;
+                streamWatch.lastProgress = Date.now();
+                streamWatch.lastOk = Date.now();
+                streamWatch.everPlayed = true;
+            }
+        }
+        catch (e) { }
+    });
     try {
         // کاتێک ExoPlayer هەڵە دەدات، پەڕەی «idle» نیشان دەدرێت: دەستبەجێ دووبارە دەبەستینەوە
         new MutationObserver(() => { if (streamWatch.active && idle.style.display === 'flex')
@@ -2354,16 +2391,10 @@ http://195.128.27.253/548607065148/955372318450/931923
         wrapNativeVideo();
         if (!streamWatch.active || inEpisode() || activePage !== 'browse')
             return;
-        let playing = false;
-        try {
-            playing = !!(window.AndroidPlayer && AndroidPlayer.isPlaying());
-        }
-        catch (e) {
-            return;
-        }
         const now = Date.now();
-        if (playing) {
+        if (playerIsActive()) {
             streamWatch.lastOk = now;
+            streamWatch.lastProgress = now;
             streamWatch.everPlayed = true;
             if (!streamWatch.playingSince)
                 streamWatch.playingSince = now;
@@ -2374,9 +2405,11 @@ http://195.128.27.253/548607065148/955372318450/931923
         streamWatch.playingSince = 0;
         if (window.__userPaused)
             return;
-        // وەستانی بێ هەڵە (بافەر/کۆتایی هاتنی لینک): ١٥ چرکە دوای پەخشکردن، یان ٤٠ چرکە لە دەستپێکدا
-        const ref = streamWatch.lastOk || streamWatch.startedAt;
-        if (now - ref > (streamWatch.everPlayed ? 15000 : 40000))
+        // تەنها کاتێک دووبارە دەبەستینەوە کە پەخش بە ڕاستی وەستابێت ( هیچ currentTime نوێ نەبێت ).
+        // iOS لە ماوەی ١٥ چرکەدا «playing» دووبارە نانێرێت، بۆیە پێشتر بە هەڵە هەر ١٥ چرکە
+        // پەخشەکەی ڕیست دەکردەوە و وەک فریز دەردەکەوت.
+        const ref = Math.max(streamWatch.lastProgress || 0, streamWatch.lastOk || 0, streamWatch.startedAt || 0);
+        if (now - ref > (streamWatch.everPlayed ? 20000 : 45000))
             watchSchedule();
     }, 3000);
     function startStream(rawUrl, isRetry) {
@@ -2412,6 +2445,8 @@ http://195.128.27.253/548607065148/955372318450/931923
                 if (isRetry) {
                     streamWatch.startedAt = Date.now();
                     streamWatch.lastOk = 0;
+                    streamWatch.lastProgress = 0;
+                    streamWatch.lastTime = 0;
                     streamWatch.playingSince = 0;
                 }
                 else
@@ -2419,12 +2454,8 @@ http://195.128.27.253/548607065148/955372318450/931923
             }
             // لە iOSـدا لینکی ژمارەیی / .ts ناخوێنرێتەوە؛ هەوڵی HLS دەدەین پێش لینکی ڕەسەن.
             if (!inEpisode()) {
-                const baseCandidates = iosHlsCandidates(url);
-                if (baseCandidates.length > 1) {
-                    // 407/409ـی کاتیی سێرڤەر بە دووبارە هەوڵدانهەوە چارەسەر دەبێت.
-                    const candidates = [];
-                    for (let round = 0; round < 3; round++)
-                        baseCandidates.forEach(x => candidates.push(x));
+                const candidates = iosHlsCandidates(url);
+                if (candidates.length > 1) {
                     playIosCandidates(candidates, session);
                     return;
                 }
