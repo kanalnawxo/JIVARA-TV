@@ -38,7 +38,7 @@
  }
 })();
 </script>
-<meta name="jivara-bundle" content="1794752499">
+<meta name="jivara-bundle" content="1794811925">
 <!--OTA-LOADER-START--><script>"use strict";
 (function () {
     try {
@@ -1293,13 +1293,25 @@ http://195.128.27.253/548607065148/955372318450/931923
         h = (h * 31 + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
     function fetchDashboardPayload() {
         return __awaiter(this, void 0, void 0, function* () {
-            // یەک داواکاری بۆ هەموو شتێک: داتا + ژمارەی بینەری ئێستا (کەمترین بەکارهێنانی Cloudflare)
+            // یەک داواکاری بۆ هەموو شتێک. ئەگەر لیستەکان نەگۆڕدرابن، تەنها وەڵامێکی بچووک دێت (بۆ ئینتەرنێتی سست)
             try {
-                const r = yield fetch(JIVARA_API + '/api/app-data?d=' + encodeURIComponent(presenceDeviceId), { method: 'GET', cache: 'no-store' });
+                const cached = readDashboardCache();
+                const have = cached && cached.dataVersion ? String(cached.dataVersion) : '';
+                const r = yield fetch(JIVARA_API + '/api/app-data?d=' + encodeURIComponent(presenceDeviceId) + (have ? '&v=' + encodeURIComponent(have) : ''), { method: 'GET', cache: 'no-store' });
                 if (r.ok) {
                     const d = yield r.json();
+                    if (d.unchanged && cached && Array.isArray(cached.channels)) {
+                        try {
+                            const vm = d.views || {}, gl = cached.dramas && cached.dramas.groups;
+                            if (Array.isArray(gl))
+                                gl.forEach(g => (g.dramas || []).forEach(x => { if (x && vm[x.id] !== undefined)
+                                    x.views = vm[x.id]; }));
+                        }
+                        catch (e) { }
+                        return { sections: cached.sections, groups: cached.groups, channels: cached.channels, dramas: cached.dramas, config: d.config || cached.config, ad: d.ad, bundle: d.bundle, active: d.active, dataVersion: have };
+                    }
                     if (Array.isArray(d.sections) && Array.isArray(d.groups) && Array.isArray(d.channels))
-                        return { sections: d.sections, groups: d.groups, channels: d.channels, dramas: d.dramas || null, config: d.config || null, ad: d.ad, bundle: d.bundle, active: d.active };
+                        return { sections: d.sections, groups: d.groups, channels: d.channels, dramas: d.dramas || null, config: d.config || null, ad: d.ad, bundle: d.bundle, active: d.active, dataVersion: d.dataVersion };
                 }
             }
             catch (e) { }
@@ -2070,6 +2082,7 @@ http://195.128.27.253/548607065148/955372318450/931923
         catch (e) { }
     }
     function cleanPlayer() {
+        watchStop();
         stopAndroidPlayer();
         ++streamSession;
         try {
@@ -2135,12 +2148,99 @@ http://195.128.27.253/548607065148/955372318450/931923
             fallback();
         }
     }
-    function startStream(rawUrl) {
+    // ===== دووبارە بەستنەوەی خۆکاری پەخش (کاتێک لینکی کەناڵ دەوەستێت یان پەیوەندی دەپچڕێت) =====
+    const streamWatch = { active: false, url: '', everPlayed: false, retries: 0, timer: null, startedAt: 0, lastOk: 0, playingSince: 0, lastToast: 0 };
+    function watchStart(url) {
+        clearTimeout(streamWatch.timer);
+        streamWatch.timer = null;
+        streamWatch.active = true;
+        streamWatch.url = url;
+        streamWatch.everPlayed = false;
+        streamWatch.retries = 0;
+        streamWatch.startedAt = Date.now();
+        streamWatch.lastOk = 0;
+        streamWatch.playingSince = 0;
+    }
+    function watchStop() { streamWatch.active = false; clearTimeout(streamWatch.timer); streamWatch.timer = null; }
+    // وەستاندنی ڕاستەوخۆی بەکارهێنەر (دوگمەی وەستاندن) نابێت ببێتە هۆی دووبارە بەستنەوە
+    function wrapNativeVideo() {
+        try {
+            if (!videoA || !videoA.dataset || !videoA.dataset.nativeBridgeReady || videoA.__jvWrapped)
+                return;
+            const op = videoA.pause, ol = videoA.play;
+            videoA.pause = function () { window.__userPaused = true; return op.apply(this, arguments); };
+            videoA.play = function () { window.__userPaused = false; return ol.apply(this, arguments); };
+            videoA.__jvWrapped = true;
+        }
+        catch (e) { }
+    }
+    function watchSchedule() {
+        if (!streamWatch.active || streamWatch.timer || window.__userPaused)
+            return;
+        if (!streamWatch.everPlayed && streamWatch.retries >= 3)
+            return; // لینکی نادروست: بێ کۆتایی هەوڵ نادرێت
+        const delays = [1500, 3000, 5000, 8000, 10000];
+        const d = delays[Math.min(streamWatch.retries, delays.length - 1)];
+        streamWatch.retries++;
+        const now = Date.now();
+        if (now - streamWatch.lastToast > 15000) {
+            streamWatch.lastToast = now;
+            try {
+                toast('پەیوەندی پچڕا؛ دووبارە دەبەستمەوە...');
+            }
+            catch (e) { }
+        }
+        streamWatch.timer = setTimeout(() => {
+            streamWatch.timer = null;
+            if (!streamWatch.active || window.__userPaused || inEpisode() || activePage !== 'browse')
+                return;
+            startStream(streamWatch.url, true);
+        }, d);
+    }
+    videoA.addEventListener('playing', () => { streamWatch.everPlayed = true; streamWatch.lastOk = Date.now(); });
+    try {
+        // کاتێک ExoPlayer هەڵە دەدات، پەڕەی «idle» نیشان دەدرێت: دەستبەجێ دووبارە دەبەستینەوە
+        new MutationObserver(() => { if (streamWatch.active && idle.style.display === 'flex')
+            watchSchedule(); }).observe(idle, { attributes: true, attributeFilter: ['style'] });
+    }
+    catch (e) { }
+    setInterval(() => {
+        wrapNativeVideo();
+        if (!streamWatch.active || inEpisode() || activePage !== 'browse')
+            return;
+        let playing = false;
+        try {
+            playing = !!(window.AndroidPlayer && AndroidPlayer.isPlaying());
+        }
+        catch (e) {
+            return;
+        }
+        const now = Date.now();
+        if (playing) {
+            streamWatch.lastOk = now;
+            streamWatch.everPlayed = true;
+            if (!streamWatch.playingSince)
+                streamWatch.playingSince = now;
+            if (now - streamWatch.playingSince > 30000)
+                streamWatch.retries = 0;
+            return;
+        }
+        streamWatch.playingSince = 0;
+        if (window.__userPaused)
+            return;
+        // وەستانی بێ هەڵە (بافەر/کۆتایی هاتنی لینک): ١٥ چرکە دوای پەخشکردن، یان ٤٠ چرکە لە دەستپێکدا
+        const ref = streamWatch.lastOk || streamWatch.startedAt;
+        if (now - ref > (streamWatch.everPlayed ? 15000 : 40000))
+            watchSchedule();
+    }, 3000);
+    function startStream(rawUrl, isRetry) {
         return __awaiter(this, void 0, void 0, function* () {
             let url = (rawUrl || '').trim();
             if (!url)
                 return;
             const session = ++streamSession;
+            if (!isRetry)
+                watchStop();
             if (!/^https?:\/\//i.test(url)) {
                 toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');
                 return;
@@ -2179,6 +2279,16 @@ http://195.128.27.253/548607065148/955372318450/931923
             videoA.style.visibility = 'visible';
             videoA.style.zIndex = '1';
             idle.style.display = 'none';
+            wrapNativeVideo();
+            if (!inEpisode()) {
+                if (isRetry) {
+                    streamWatch.startedAt = Date.now();
+                    streamWatch.lastOk = 0;
+                    streamWatch.playingSince = 0;
+                }
+                else
+                    watchStart(url);
+            }
             try {
                 // Every stream is sent directly to the native Android Media3 ExoPlayer bridge.
                 videoA.src = url;
@@ -2193,7 +2303,7 @@ http://195.128.27.253/548607065148/955372318450/931923
                         }
                     }
                     catch (e) { }
-                }, 18000);
+                }, 45000);
             }
             catch (e) {
                 if (session === streamSession) {
@@ -3460,8 +3570,20 @@ http://195.128.27.253/548607065148/955372318450/931923
         }
     }
     refreshRemoteChannels(false);
-    setInterval(() => { if (!document.hidden)
-        refreshRemoteChannels(false); }, 180000);
+    let __pollTick = 0;
+    setInterval(() => {
+        if (document.hidden)
+            return;
+        let slow = false;
+        try {
+            const c = navigator.connection;
+            slow = !!(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || '')));
+        }
+        catch (e) { }
+        if (slow && (++__pollTick % 3))
+            return; // هێڵی سست: هەر ٩ خولەک جارێک
+        refreshRemoteChannels(false);
+    }, 180000);
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden)
             refreshRemoteChannels(false);
