@@ -2134,31 +2134,22 @@ http://195.128.27.253/548607065148/955372318450/931923
         const u = String(raw || '').trim();
         if (!IS_IOS || !u)
             return [u];
-        const base = u.replace(/\.ts(?=$|[?#])/i, '');
-        const pathOnly = base.split(/[?#]/)[0];
-        const isNumericPath = /\/(\d{1,12})\/?$/.test(pathOnly);
-        const isNumericQuery = /[?&](?:stream|id|channel)=\d{1,12}(?:&|$)/i.test(base);
-        if (!isNumericPath && !isNumericQuery)
-            return [u];
         const out = [];
         const add = x => { if (x && out.indexOf(x) < 0) out.push(x); };
-        // یەکەم هەوڵ: لینکی ڕاستەوخۆی HLS لەسەر پۆرتی 443 (بێ 302 و بێ 8089)
-        // کە بە ڕاستی 200 دەداتەوە بە application/x-mpegURL لە هەموو ئامێرێکدا.
-        const id443 = pathOnly.match(/\/(\d{1,12})\/?$/)[1];
-        add('https://212.95.38.185/live/' + USER443 + '/' + PASS443 + '/' + id443 + '.m3u8');
+        const pathOnly = u.split(/[?#]/)[0];
+        const idPath = pathOnly.match(/\/(\d{1,12})\/?$/);
+        const idQuery = u.match(/[?&](?:stream|id|channel)=(\d{1,12})(?:&|$)/i);
+        const id = idPath ? idPath[1] : (idQuery ? idQuery[1] : '');
+        if (id) {
+            // دوو سێرڤەری HLS تاقی دەکرێنەوە؛ هەندێک کەناڵ لە یەکێکیان 407/409 دەدات.
+            add('https://212.95.38.185/live/' + USER443 + '/' + PASS443 + '/' + id + '.m3u8');
+            add('https://195.128.27.97:8089/live/' + USER443 + '/' + PASS443 + '/' + id + '.m3u8');
+        }
         // ئەپەکە HTTPSـیە؛ iOS لینکی HTTP ڕێگری دەکات، بۆیە HTTPS پێش HTTP دێت.
-        const secureBase = base.replace(/^http:\/\//i, 'https://');
-        const bases = secureBase === base ? [base] : [secureBase, base];
-        bases.forEach(v => {
-            try {
-                const p = new URL(v);
-                const parts = p.pathname.split('/').filter(Boolean);
-                // تەنها ئەم شێوەیە تاقی کراوەتەوە کە HLSـی ڕاست دەگەڕێنێتەوە (x-mpegURL)
-                if (!/\/live\//i.test(p.pathname) && parts.length >= 2)
-                    add(p.origin + '/live/' + parts.join('/') + '.m3u8');
-            }
-            catch (e) { }
-        });
+        if (/^http:\/\//i.test(u))
+            add(u.replace(/^http:\/\//i, 'https://'));
+        if (/\.ts(?=$|[?#])/i.test(u))
+            add(u.replace(/\.ts(?=$|[?#])/i, '.m3u8'));
         add(u); // دواین هەوڵ: لینکی ڕەسەن
         return out;
     }
@@ -2216,7 +2207,7 @@ http://195.128.27.253/548607065148/955372318450/931923
                 videoA.load();
                 const pr = videoA.play();
                 if (pr && pr.catch) pr.catch(() => { });
-                timer = setTimeout(() => { if (!settled) next(); }, 6000);
+                timer = setTimeout(() => { if (!settled) next(); }, 4000);
             }
             catch (e) { next(); }
         };
@@ -2428,8 +2419,12 @@ http://195.128.27.253/548607065148/955372318450/931923
             }
             // لە iOSـدا لینکی ژمارەیی / .ts ناخوێنرێتەوە؛ هەوڵی HLS دەدەین پێش لینکی ڕەسەن.
             if (!inEpisode()) {
-                const candidates = iosHlsCandidates(url);
-                if (candidates.length > 1) {
+                const baseCandidates = iosHlsCandidates(url);
+                if (baseCandidates.length > 1) {
+                    // 407/409ـی کاتیی سێرڤەر بە دووبارە هەوڵدانهەوە چارەسەر دەبێت.
+                    const candidates = [];
+                    for (let round = 0; round < 3; round++)
+                        baseCandidates.forEach(x => candidates.push(x));
                     playIosCandidates(candidates, session);
                     return;
                 }
