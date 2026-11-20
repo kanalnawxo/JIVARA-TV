@@ -38,6 +38,25 @@
  }
 })();
 </script>
+<script>
+// iPhone Safari blocks http:// resources inside an https page.
+// Send every legacy http link through the Worker's HTTPS proxy.
+window.iosProxy = function (u) {
+  try {
+    u = String(u == null ? '' : u).trim();
+    if (/^http:\/\//i.test(u)) return '/p?u=' + encodeURIComponent(u);
+    return u;
+  } catch (e) { return u; }
+};
+// fetchPlaylist() needs the original absolute URLs back, not player proxy URLs.
+window.iosFetchUrl = function (u) {
+  try {
+    u = String(u == null ? '' : u).trim();
+    if (/^http:\/\//i.test(u)) return '/p?u=' + encodeURIComponent(u) + '&raw=1';
+    return u;
+  } catch (e) { return u; }
+};
+</script>
 <meta name="jivara-bundle" content="9999999999">
 <meta name="jivara-apk-version" content="9">
 <!-- OTA loader removed: it used document.write() during parsing and could duplicate the whole UI. -->
@@ -45,7 +64,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>JIVARA TV+ | Smart TV</title>
 <style>
-@font-face{font-family:'Rabar 043';src:url('https://pub-308a8f64471b4557b3566e6ca09f2b95.r2.dev/fonts/rabar-043/Rabar_043.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:'Rabar 043';src:url('/p?u=https%3A%2F%2Fpub-308a8f64471b4557b3566e6ca09f2b95.r2.dev%2Ffonts%2Frabar-043%2FRabar_043.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
 :root{
  --bg:#020b16;--panel:#06192b;--panel2:#0a2239;
  --line:#163650;--blue:#0878f9;--text:#f4f8ff;
@@ -53,7 +72,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:100%;height:100%;min-height:100%;overflow:hidden}
-body{background:linear-gradient(180deg,rgba(2,8,14,.58) 0%,rgba(2,8,14,.30) 55%,rgba(2,8,14,.40) 100%),url('bg_autumn.jpg') center bottom/cover no-repeat,#020b16;color:var(--text);font-family:"Rabar 043",Tahoma,Arial,sans-serif}
+body{background:linear-gradient(180deg,rgba(2,8,14,.58) 0%,rgba(2,8,14,.30) 55%,rgba(2,8,14,.40) 100%),url('https://kanalnawxo.github.io/JIVARA-TV/bg_autumn.jpg') center bottom/cover no-repeat,#020b16;color:var(--text);font-family:"Rabar 043",Tahoma,Arial,sans-serif}
 button,input,textarea,select{font:inherit}
 button{color:inherit;cursor:pointer}
 html,body,.app,.main,.content,.page,.panel,.player-screen{cursor:default}
@@ -1726,7 +1745,7 @@ http://195.128.27.253/548607065148/955372318450/931923
         return '<div class="drama-stats"><span>📺 ' + d.episodes.length + ' ئەڵقە</span><span>👁 ' + formatViews(d.views) + ' بینین</span></div>';
     }
     function dramaPosterHtml(d, cls) {
-        return d.logo ? '<img src="' + safe(d.logo) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '🎭';
+        return d.logo ? '<img src="' + safe(iosProxy(d.logo)) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '🎭';
     }
     // یەک بینین بۆ هەر دراماکە لە هەر ٣٠ خولەکێک لەسەر ئەم ئامێرە
     function recordDramaView(dramaId) {
@@ -1813,7 +1832,7 @@ http://195.128.27.253/548607065148/955372318450/931923
     // بەشی فیلم: وەک دراما پەڕەی تایبەتی خۆی هەیە؛ لیستی کەناڵ پیشان نادرێت.
     // هەر فیلمێک وەک کارتی پۆستەر دەردەکەوێت و بە کلیک پەخش دەکرێت.
     function moviePosterHtml(c) {
-        return c.logo ? '<img src="' + safe(c.logo) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '🎬';
+        return c.logo ? '<img src="' + safe(iosProxy(c.logo)) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '🎬';
     }
     function renderMoviePage() {
         const catalog = $('#movieCatalog'), hero = $('#movieHero'), back = $('#movieBack');
@@ -1868,7 +1887,7 @@ http://195.128.27.253/548607065148/955372318450/931923
         $('#browseCount').textContent = list.length + ' کەناڵ';
         $('#channelList').innerHTML = list.length ? list.map((c, i) => `<button class="channel ${(currentChannel === null || currentChannel === void 0 ? void 0 : currentChannel.id) === c.id ? 'active' : ''}" data-id="${c.id}" tabindex="0">
  <span class="ch-number">${String(i + 1).padStart(2, '0')}</span>
- <span class="ch-logo">${c.logo ? `<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">` : safe(c.name.slice(0, 3))}</span>
+ <span class="ch-logo">${c.logo ? `<img src="${safe(iosProxy(c.logo))}" alt="" loading="lazy" onerror="this.style.display='none'">` : safe(c.name.slice(0, 3))}</span>
  <span class="ch-name">${safe(c.name)}</span></button>`).join('') :
             '<div class="empty">ئەم گرووپە بەتاڵە.<br>لە ڕێکخستنەکان کەناڵ زیاد بکە.</div>';
         // Channel activation is delegated below so double-click can be detected reliably.
@@ -1878,7 +1897,7 @@ http://195.128.27.253/548607065148/955372318450/931923
         q = q.trim().toLowerCase();
         const found = channels.filter(c => !q || c.name.toLowerCase().includes(q));
         $('#searchResults').innerHTML = found.length ? found.map(c => `<button class="channel" data-id="${c.id}">
- <span class="ch-logo">${c.logo ? `<img src="${safe(c.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">` : safe(c.name.slice(0, 3))}</span>
+ <span class="ch-logo">${c.logo ? `<img src="${safe(iosProxy(c.logo))}" alt="" loading="lazy" onerror="this.style.display='none'">` : safe(c.name.slice(0, 3))}</span>
  <span class="ch-name">${safe(c.name)}</span>
  <span>${safe(group(c.group).name)}</span></button>`).join('') :
             '<div class="empty">هیچ کەناڵێک نییە. لینکەکان زیاد بکە.</div>';
@@ -1949,7 +1968,7 @@ http://195.128.27.253/548607065148/955372318450/931923
             changed = true;
             adRetry = 0;
             v.setAttribute('data-src', info.videoUrl);
-            v.src = info.videoUrl;
+            v.src = iosProxy(info.videoUrl);
             v.load();
         }
         if (autoplay || (changed && activePage === 'ad'))
@@ -2033,7 +2052,7 @@ http://195.128.27.253/548607065148/955372318450/931923
                 yield refreshAdNow();
                 if (adInfo && adInfo.active && adInfo.videoUrl) {
                     v.setAttribute('data-src', adInfo.videoUrl);
-                    v.src = adInfo.videoUrl;
+                    v.src = iosProxy(adInfo.videoUrl);
                     v.load();
                     playAdVideo();
                 }
@@ -2231,7 +2250,7 @@ http://195.128.27.253/548607065148/955372318450/931923
     }
     // پلەی‌لیست دەخوێنرێتەوە و لیستی کەناڵەکان دەگەڕێنرێتەوە (بۆ پەخش و بۆ هاوردەکردن).
     function fetchPlaylist(url) {
-        return fetch(url, { cache: 'no-store' }).then(r => {
+        return fetch(iosFetchUrl(url), { cache: 'no-store' }).then(r => {
             if (!r.ok)
                 throw new Error('HTTP ' + r.status);
             return r.text();
@@ -2417,7 +2436,7 @@ http://195.128.27.253/548607065148/955372318450/931923
             }
             try {
                 // هەموو لینکەکان ڕاستەوخۆ بۆ پلەیەری ناوەکی Media3 دەنێردرێن.
-                videoA.src = url;
+                videoA.src = iosProxy(url);
                 setTimeout(() => {
                     if (session !== streamSession)
                         return;
@@ -2639,7 +2658,7 @@ http://195.128.27.253/548607065148/955372318450/931923
         episodeVideo.style.display = 'block';
         idle.style.display = 'none';
         try {
-            episodeVideo.src = channel.url;
+            episodeVideo.src = iosProxy(channel.url);
             episodeVideo.load();
             episodeVideo.play().catch(() => { });
         }
@@ -3766,7 +3785,7 @@ http://195.128.27.253/548607065148/955372318450/931923
     function playRadio(r) {
         return __awaiter(this, void 0, void 0, function* () { const audio = $('#radioAudio'); try {
             audio.pause();
-            audio.src = r.url;
+            audio.src = iosProxy(r.url);
             audio.load();
             yield audio.play();
             setRadioState(true, r.name + ' لە پەخشدایە.');
