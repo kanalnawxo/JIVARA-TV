@@ -2421,6 +2421,16 @@ http://195.128.27.253/548607065148/955372318450/931923
             toast('لینکەکە دەبێت بە http:// یان https:// دەست پێ بکات.');
             return;
         }
+        // Safari blocks http:// media inside an https:// page, and the film
+        // origin rejects Cloudflare's proxy. Open direct MP4/MKV files in a
+        // new tab instead - a top-level http navigation is always allowed.
+        if (location.protocol === 'https:' && /^http:\/\//i.test(url0) &&
+            /\.(mp4|mkv|mov|webm)(?:[?#]|$)/i.test(url0)) {
+            try {
+                const opened = window.open(url0, '_blank');
+                if (opened) return;
+            } catch (e) { }
+        }
         // پەخشکردنی لینکێکی پلەی‌لیست (m3u / m3u_plus / get.php)
         const begin = (url) => {
             if (session !== streamSession)
