@@ -2437,6 +2437,8 @@ http://195.128.27.253/548607065148/955372318450/931923
             try {
                 // هەموو لینکەکان ڕاستەوخۆ بۆ پلەیەری ناوەکی Media3 دەنێردرێن.
                 videoA.src = iosProxy(url);
+                // Safari does not auto-start when src changes; call play() inside the tap gesture.
+                try { videoA.play().catch(function () { }); } catch (e) { }
                 setTimeout(() => {
                     if (session !== streamSession)
                         return;
