@@ -2422,12 +2422,19 @@ http://195.128.27.253/548607065148/955372318450/931923
             return;
         }
         // Safari blocks http:// media inside an https:// page, and most
-        // stream origins reject Cloudflare's proxy. Open the original http
-        // link in a new tab - a top-level http navigation is always allowed.
+        // stream origins reject Cloudflare's proxy. Safari also cannot play
+        // raw TS or MKV. Send those links to the VLC app; keep MP4/HLS in a
+        // new Safari tab where they play natively.
         if (location.protocol === 'https:' && /^http:\/\//i.test(url0)) {
+            const safariPlays = /\.(mp4|mov|webm|m3u8)(?:[?#]|$)/i.test(url0);
             try {
-                const opened = window.open(url0, '_blank');
-                if (opened) return;
+                if (safariPlays) {
+                    const opened = window.open(url0, '_blank');
+                    if (opened) return;
+                } else {
+                    window.location.href = 'vlc://' + url0;
+                    return;
+                }
             } catch (e) { }
         }
         // پەخشکردنی لینکێکی پلەی‌لیست (m3u / m3u_plus / get.php)
