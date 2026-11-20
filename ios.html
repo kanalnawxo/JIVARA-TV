@@ -2364,7 +2364,11 @@ http://195.128.27.253/548607065148/955372318450/931923
         streamWatch.lastOk = Date.now();
     });
     videoA.addEventListener('waiting', () => { if (streamWatch.active) showConnecting(500); });
-    videoA.addEventListener('error', () => { hideConnecting(); });
+    videoA.addEventListener('error', () => {
+        hideConnecting();
+        const code = videoA.error ? videoA.error.code : '?';
+        toast('هەڵەی پەخش لە ئایفۆن: ' + code + ' — کەناڵێکی تر تاقی بکەرەوە.');
+    });
     try {
         // کاتێک ExoPlayer هەڵە دەدات، پەڕەی «idle» نیشان دەدرێت: دەستبەجێ دووبارە دەبەستینەوە
         new MutationObserver(() => { if (streamWatch.active && idle.style.display === 'flex')
@@ -2445,7 +2449,17 @@ http://195.128.27.253/548607065148/955372318450/931923
                 // هەموو لینکەکان ڕاستەوخۆ بۆ پلەیەری ناوەکی Media3 دەنێردرێن.
                 videoA.src = iosProxy(url);
                 // Safari does not auto-start when src changes; call play() inside the tap gesture.
-                try { videoA.play().catch(function () { }); } catch (e) { }
+                try {
+                    videoA.play().catch(function () {
+                        // iOS can reject audible autoplay; retry muted then restore sound.
+                        try {
+                            videoA.muted = true;
+                            videoA.play().then(function () {
+                                setTimeout(function () { videoA.muted = false; }, 500);
+                            }).catch(function () { });
+                        } catch (e2) { }
+                    });
+                } catch (e) { }
                 setTimeout(() => {
                     if (session !== streamSession)
                         return;
