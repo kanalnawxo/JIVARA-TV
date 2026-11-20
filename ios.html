@@ -44,6 +44,9 @@
 window.iosProxy = function (u) {
   try {
     u = String(u == null ? '' : u).trim();
+    // On an http:// page there is no mixed-content restriction, and many
+    // origins block Cloudflare's proxy. Use the original link directly.
+    if (location.protocol === 'http:') return u;
     if (/^http:\/\//i.test(u)) return '/p?u=' + encodeURIComponent(u);
     return u;
   } catch (e) { return u; }
@@ -52,6 +55,7 @@ window.iosProxy = function (u) {
 window.iosFetchUrl = function (u) {
   try {
     u = String(u == null ? '' : u).trim();
+    if (location.protocol === 'http:') return u;
     if (/^http:\/\//i.test(u)) return '/p?u=' + encodeURIComponent(u) + '&raw=1';
     return u;
   } catch (e) { return u; }
