@@ -2357,7 +2357,14 @@ http://195.128.27.253/548607065148/955372318450/931923
             startStream(streamWatch.url, true);
         }, d);
     }
-    videoA.addEventListener('playing', () => { streamWatch.everPlayed = true; streamWatch.lastOk = Date.now(); });
+    videoA.addEventListener('playing', () => {
+        // On iOS there is no AndroidPlayer bridge, so hide the connecting overlay here.
+        hideConnecting();
+        streamWatch.everPlayed = true;
+        streamWatch.lastOk = Date.now();
+    });
+    videoA.addEventListener('waiting', () => { if (streamWatch.active) showConnecting(500); });
+    videoA.addEventListener('error', () => { hideConnecting(); });
     try {
         // کاتێک ExoPlayer هەڵە دەدات، پەڕەی «idle» نیشان دەدرێت: دەستبەجێ دووبارە دەبەستینەوە
         new MutationObserver(() => { if (streamWatch.active && idle.style.display === 'flex')
