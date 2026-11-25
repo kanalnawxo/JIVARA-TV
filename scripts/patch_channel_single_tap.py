@@ -8,14 +8,22 @@ anchor = "    function exitFullscreenFromTap(e) {"
 if s.count(anchor) != 1:
     raise SystemExit(f"Channel fullscreen handler anchor must occur once; got {s.count(anchor)}")
 
-handler = """    // A native PlayerView tap can be observed again by WebView listeners.
-    // Block that duplicate event briefly so one physical tap only exits fullscreen.
+handler = """    // The native PlayerView click and WebView touch listeners can see the same
+    // physical tap. Exit fullscreen once, then suppress every duplicate event.
     let nativePlayerTapGuardUntil = 0;
     window.handleNativePlayerTap = function() {
         if (episodeMode || !isPlayerFullscreen() || fullscreenBusy)
             return;
-        nativePlayerTapGuardUntil = Date.now() + 500;
-        fullscreen();
+        nativePlayerTapGuardUntil = Date.now() + 700;
+        fullscreenBusy = true;
+        playerScreen.classList.remove('is-fullscreen');
+        document.body.classList.remove('jivara-player-fullscreen');
+        requestAnimationFrame(() => {
+            if (currentChannel)
+                focusSelectedChannel(currentChannel.id);
+            fullscreenBusy = false;
+        });
+        setTimeout(() => { fullscreenBusy = false; }, 250);
     };
 
 """
