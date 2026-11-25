@@ -1,0 +1,51 @@
+name: Inspect JIVARA TV v1.0.5 player bridge
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/inspect-v105-player.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install apktool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool
+
+      - name: Decode the exact v1.0.5 APK
+        run: |
+          set -euo pipefail
+          test -s "JIVARA_TV_fixed_v1.0.5.apk"
+          sha256sum "JIVARA_TV_fixed_v1.0.5.apk"
+          unzip -t "JIVARA_TV_fixed_v1.0.5.apk"
+          apktool d -f "JIVARA_TV_fixed_v1.0.5.apk" -o decoded
+          find decoded/assets -maxdepth 3 -type f -print | sort
+          test -f decoded/assets/index.html
+          mkdir -p inspection
+          cp decoded/assets/index.html inspection/index.html
+          cp decoded/AndroidManifest.xml inspection/AndroidManifest.xml
+          if [ -d decoded/smali ]; then cp -a decoded/smali inspection/; fi
+          if [ -d decoded/smali_classes2 ]; then cp -a decoded/smali_classes2 inspection/; fi
+          if [ -d decoded/smali_classes3 ]; then cp -a decoded/smali_classes3 inspection/; fi
+          grep -RniE "AndroidPlayer|isPlaying|fastForward|rewind|seekTo|pause|play" decoded/smali* > inspection/player-bridge-search.txt || true
+          echo "Decoded asset SHA256:"
+          sha256sum inspection/index.html
+          echo "Player bridge matches:"
+          head -n 250 inspection/player-bridge-search.txt || true
+
+      - name: Upload decoded player source and bridge
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-v1.0.5-player-inspection
+          path: inspection/
+          if-no-files-found: error
+          retention-days: 7
