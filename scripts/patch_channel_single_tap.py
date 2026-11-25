@@ -9,25 +9,12 @@ if s.count(anchor) != 1:
     raise SystemExit(f"Channel fullscreen handler anchor must occur once; got {s.count(anchor)}")
 
 handler = """    // Native PlayerView receives the click before the WebView.
-    // Keep this action limited to live channels; movie/drama playback is untouched.
+    // Use the app's existing fullscreen toggle so its normal channel-list
+    // restoration runs; keep movie/drama playback untouched.
     window.handleNativePlayerTap = function() {
-        if (episodeMode)
+        if (episodeMode || !isPlayerFullscreen() || fullscreenBusy)
             return;
-        if (!isPlayerFullscreen()) {
-            fullscreen();
-            return;
-        }
-        if (fullscreenBusy)
-            return;
-        fullscreenBusy = true;
-        playerScreen.classList.remove('is-fullscreen');
-        document.body.classList.remove('jivara-player-fullscreen');
-        requestAnimationFrame(() => {
-            fullscreenBusy = false;
-            if (currentChannel)
-                focusSelectedChannel(currentChannel.id);
-        });
-        setTimeout(() => { fullscreenBusy = false; }, 180);
+        fullscreen();
     };
 
 """
