@@ -7,6 +7,7 @@ on:
       - ".github/workflows/patch-v105-player-controls.yml"
       - "scripts/patch_v105_player.py"
       - "scripts/patch_v105_player_overlay.py"
+      - "scripts/patch_v107_player_fix.py"
   workflow_dispatch:
 
 permissions:
@@ -38,12 +39,15 @@ jobs:
           test -f 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
           python3 scripts/patch_v105_player.py
           python3 scripts/patch_v105_player_overlay.py
+          python3 scripts/patch_v107_player_fix.py
           grep -q 'AndroidPlayer.seekBy' decoded/assets/index.html
           grep -q 'window.handleNativePlayerTap' decoded/assets/index.html
           grep -q 'AndroidPlayer.setMovieControls(true)' decoded/assets/index.html
           grep -q 'setMovieControls(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
           grep -q 'setUseController(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge$9.smali'
           grep -q 'handleNativePlayerTap' 'decoded/smali_classes3/com/jivara/tv/MainActivity$5.smali'
+          grep -A1 'setClickable(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity.smali' | grep -q 'const/4 v1, 0x1'
+          grep -q 'setEpisodeControls(true)' decoded/assets/index.html
 
       - name: Rebuild, align, sign, and verify APK
         run: |
