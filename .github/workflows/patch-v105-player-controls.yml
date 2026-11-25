@@ -1,4 +1,4 @@
-name: Patch JIVARA TV v1.0.5 fullscreen tap and movie controls
+name: Patch JIVARA TV v1.0.7 native fullscreen and movie controls
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/patch-v105-player-controls.yml"
       - "scripts/patch_v105_player.py"
+      - "scripts/patch_v105_player_overlay.py"
   workflow_dispatch:
 
 permissions:
@@ -25,7 +26,7 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
 
-      - name: Decode and patch only the requested player behavior
+      - name: Decode and patch only requested player behavior
         run: |
           set -euo pipefail
           APK="JIVARA_TV_fixed_v1.0.5.apk"
@@ -36,10 +37,13 @@ jobs:
           test -f decoded/assets/index.html
           test -f 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
           python3 scripts/patch_v105_player.py
+          python3 scripts/patch_v105_player_overlay.py
           grep -q 'AndroidPlayer.seekBy' decoded/assets/index.html
-          grep -q 'lastFullscreenEnterAt' decoded/assets/index.html && exit 1 || true
-          grep -q 'seekBy(J)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
-          test -s 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge$8.smali'
+          grep -q 'window.handleNativePlayerTap' decoded/assets/index.html
+          grep -q 'AndroidPlayer.setMovieControls(true)' decoded/assets/index.html
+          grep -q 'setMovieControls(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
+          grep -q 'setUseController(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge$9.smali'
+          grep -q 'handleNativePlayerTap' 'decoded/smali_classes3/com/jivara/tv/MainActivity$5.smali'
 
       - name: Rebuild, align, sign, and verify APK
         run: |
@@ -49,14 +53,14 @@ jobs:
           "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
           PASS="$(openssl rand -hex 24)"
           keytool -genkeypair -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
-          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_v1.0.6_player_controls.apk aligned.apk
-          "$BT/apksigner" verify --verbose JIVARA_TV_v1.0.6_player_controls.apk
-          unzip -t JIVARA_TV_v1.0.6_player_controls.apk
-          test -s JIVARA_TV_v1.0.6_player_controls.apk
+          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_v1.0.7_player_controls.apk aligned.apk
+          "$BT/apksigner" verify --verbose JIVARA_TV_v1.0.7_player_controls.apk
+          unzip -t JIVARA_TV_v1.0.7_player_controls.apk
+          test -s JIVARA_TV_v1.0.7_player_controls.apk
 
       - name: Upload patched APK
         uses: actions/upload-artifact@v4
         with:
-          name: JIVARA-TV-v1.0.6-player-controls
-          path: JIVARA_TV_v1.0.6_player_controls.apk
+          name: JIVARA-TV-v1.0.7-player-controls
+          path: JIVARA_TV_v1.0.7_player_controls.apk
           retention-days: 30
