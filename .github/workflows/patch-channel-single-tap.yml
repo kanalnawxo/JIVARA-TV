@@ -1,0 +1,53 @@
+name: JIVARA TV live-channel single-tap return
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "scripts/patch_channel_single_tap.py"
+      - ".github/workflows/patch-channel-single-tap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install APK tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool android-sdk-build-tools
+
+      - name: Decode original v1.0.5 and apply only live-channel tap change
+        run: |
+          set -euo pipefail
+          test -s JIVARA_TV_fixed_v1.0.5.apk
+          sha256sum JIVARA_TV_fixed_v1.0.5.apk
+          unzip -t JIVARA_TV_fixed_v1.0.5.apk
+          apktool d -f JIVARA_TV_fixed_v1.0.5.apk -o decoded
+          python3 scripts/patch_channel_single_tap.py
+          grep -n -A2 -B2 'PlayerView;->setClickable' decoded/smali_classes3/com/jivara/tv/MainActivity.smali
+          grep -n 'handleNativePlayerTap' decoded/assets/index.html decoded/smali_classes3/com/jivara/tv/MainActivity\$5.smali
+
+      - name: Rebuild and sign APK
+        run: |
+          set -euo pipefail
+          apktool b decoded -o JIVARA_TV_v1.0.5_channel_single_tap_unsigned.apk
+          zipalign -p -f 4 JIVARA_TV_v1.0.5_channel_single_tap_unsigned.apk JIVARA_TV_v1.0.5_channel_single_tap_aligned.apk
+          keytool -genkeypair -v -keystore jivara-debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, ST=Kurdistan, C=IQ"
+          apksigner sign --ks jivara-debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out JIVARA_TV_v1.0.5_channel_single_tap.apk JIVARA_TV_v1.0.5_channel_single_tap_aligned.apk
+          apksigner verify --verbose JIVARA_TV_v1.0.5_channel_single_tap.apk
+          unzip -t JIVARA_TV_v1.0.5_channel_single_tap.apk
+          sha256sum JIVARA_TV_v1.0.5_channel_single_tap.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIVARA-TV-v1.0.5-live-channel-single-tap
+          path: JIVARA_TV_v1.0.5_channel_single_tap.apk
+          retention-days: 30
