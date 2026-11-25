@@ -8,17 +8,53 @@ anchor = "    function exitFullscreenFromTap(e) {"
 if s.count(anchor) != 1:
     raise SystemExit(f"Channel fullscreen handler anchor must occur once; got {s.count(anchor)}")
 
-handler = """    // Native PlayerView receives the click before the WebView.
-    // Use the app's existing fullscreen toggle so its normal channel-list
-    // restoration runs; keep movie/drama playback untouched.
+handler = """    // A native PlayerView tap can be observed again by WebView listeners.
+    // Block that duplicate event briefly so one physical tap only exits fullscreen.
+    let nativePlayerTapGuardUntil = 0;
     window.handleNativePlayerTap = function() {
         if (episodeMode || !isPlayerFullscreen() || fullscreenBusy)
             return;
+        nativePlayerTapGuardUntil = Date.now() + 500;
         fullscreen();
     };
 
 """
 s = s.replace(anchor, handler + anchor)
+
+old_exit = """    function exitFullscreenFromTap(e) {
+        var _a, _b, _c;
+        if (!isPlayerFullscreen() || fullscreenBusy)
+"""
+new_exit = """    function exitFullscreenFromTap(e) {
+        var _a, _b, _c;
+        if (Date.now() < nativePlayerTapGuardUntil) {
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            return;
+        }
+        if (!isPlayerFullscreen() || fullscreenBusy)
+"""
+if s.count(old_exit) != 1:
+    raise SystemExit(f"exitFullscreenFromTap body anchor must occur once; got {s.count(old_exit)}")
+s = s.replace(old_exit, new_exit)
+
+old_enter = """    function enterFullscreenFromPlayer(e) {
+        if (episodeMode || isPlayerFullscreen() || fullscreenBusy || !currentChannel)
+"""
+new_enter = """    function enterFullscreenFromPlayer(e) {
+        if (Date.now() < nativePlayerTapGuardUntil) {
+            if (e && e.cancelable) e.preventDefault();
+            if (e) e.stopPropagation();
+            if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+            return;
+        }
+        if (episodeMode || isPlayerFullscreen() || fullscreenBusy || !currentChannel)
+"""
+if s.count(old_enter) != 1:
+    raise SystemExit(f"enterFullscreenFromPlayer body anchor must occur once; got {s.count(old_enter)}")
+s = s.replace(old_enter, new_enter)
+
 html.write_text(s, encoding="utf-8")
 
 base = root / "smali_classes3/com/jivara/tv"
@@ -74,4 +110,4 @@ listener.write_text(r""".class Lcom/jivara/tv/MainActivity$5;
 .end method
 """, encoding="utf-8")
 
-print("Applied channel-only fullscreen single-tap patch. Movie/drama code paths were not modified.")
+print("Applied channel-only fullscreen duplicate-tap guard. Movie/drama code paths were not modified.")
