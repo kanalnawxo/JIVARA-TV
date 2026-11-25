@@ -18,10 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install APK tools
+      - name: Install current APK tools
         run: |
+          set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y apktool android-sdk-build-tools
+          sudo apt-get install -y android-sdk-build-tools curl
+          curl -fsSL https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar -o /usr/local/bin/apktool.jar
+          printf '#!/bin/sh\nexec java -jar /usr/local/bin/apktool.jar "$@"\n' | sudo tee /usr/local/bin/apktool >/dev/null
+          sudo chmod +x /usr/local/bin/apktool
+          apktool --version
+          command -v aapt2
+          command -v zipalign
+          command -v apksigner
 
       - name: Decode original v1.0.5 and apply only live-channel tap change
         run: |
@@ -37,7 +45,7 @@ jobs:
       - name: Rebuild and sign APK
         run: |
           set -euo pipefail
-          apktool b decoded -o JIVARA_TV_v1.0.5_channel_single_tap_unsigned.apk
+          apktool b --use-aapt2 decoded -o JIVARA_TV_v1.0.5_channel_single_tap_unsigned.apk
           zipalign -p -f 4 JIVARA_TV_v1.0.5_channel_single_tap_unsigned.apk JIVARA_TV_v1.0.5_channel_single_tap_aligned.apk
           keytool -genkeypair -v -keystore jivara-debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, ST=Kurdistan, C=IQ"
           apksigner sign --ks jivara-debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out JIVARA_TV_v1.0.5_channel_single_tap.apk JIVARA_TV_v1.0.5_channel_single_tap_aligned.apk
