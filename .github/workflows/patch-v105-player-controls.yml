@@ -1,70 +1,33 @@
-name: Patch JIVARA TV v1.0.7 native fullscreen and movie controls
+name: Restore JIVARA TV original movie and drama playback
 
 on:
   push:
     branches: [ main ]
     paths:
       - ".github/workflows/patch-v105-player-controls.yml"
-      - "scripts/patch_v105_player.py"
-      - "scripts/patch_v105_player_overlay.py"
-      - "scripts/patch_v107_player_fix.py"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  restore:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout exact source APK
+      - name: Checkout original APK
         uses: actions/checkout@v4
 
-      - name: Install APK tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y apktool
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"
-
-      - name: Decode and patch only requested player behavior
+      - name: Verify untouched original APK
         run: |
           set -euo pipefail
-          APK="JIVARA_TV_fixed_v1.0.5.apk"
-          test -s "$APK"
-          sha256sum "$APK"
-          unzip -t "$APK"
-          apktool d -f "$APK" -o decoded
-          test -f decoded/assets/index.html
-          test -f 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
-          python3 scripts/patch_v105_player.py
-          python3 scripts/patch_v105_player_overlay.py
-          python3 scripts/patch_v107_player_fix.py
-          grep -q 'AndroidPlayer.seekBy' decoded/assets/index.html
-          grep -q 'window.handleNativePlayerTap' decoded/assets/index.html
-          grep -q 'AndroidPlayer.setMovieControls(true)' decoded/assets/index.html
-          grep -q 'setMovieControls(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
-          grep -q 'setUseController(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge$9.smali'
-          grep -q 'handleNativePlayerTap' 'decoded/smali_classes3/com/jivara/tv/MainActivity$5.smali'
-          grep -B1 'setClickable(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity.smali' | grep -q 'const/4 v1, 0x1'
-          grep -q 'setEpisodeControls(true)' decoded/assets/index.html
+          test -s JIVARA_TV_fixed_v1.0.5.apk
+          unzip -t JIVARA_TV_fixed_v1.0.5.apk
+          sha256sum JIVARA_TV_fixed_v1.0.5.apk
+          cp JIVARA_TV_fixed_v1.0.5.apk JIVARA_TV_original_playback_restored.apk
 
-      - name: Rebuild, align, sign, and verify APK
-        run: |
-          set -euo pipefail
-          BT="$ANDROID_HOME/build-tools/36.0.0"
-          apktool b --use-aapt2 --aapt "$BT/aapt2" decoded -o unsigned.apk
-          "$BT/zipalign" -f -v 4 unsigned.apk aligned.apk
-          PASS="$(openssl rand -hex 24)"
-          keytool -genkeypair -keystore signing.jks -storepass "$PASS" -keypass "$PASS" -alias jivara -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JIVARA TV, OU=Android, O=JIVARA, L=Sulaymaniyah, C=IQ"
-          "$BT/apksigner" sign --ks signing.jks --ks-key-alias jivara --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out JIVARA_TV_v1.0.7_player_controls.apk aligned.apk
-          "$BT/apksigner" verify --verbose JIVARA_TV_v1.0.7_player_controls.apk
-          unzip -t JIVARA_TV_v1.0.7_player_controls.apk
-          test -s JIVARA_TV_v1.0.7_player_controls.apk
-
-      - name: Upload patched APK
+      - name: Upload restored original APK
         uses: actions/upload-artifact@v4
         with:
-          name: JIVARA-TV-v1.0.7-player-controls
-          path: JIVARA_TV_v1.0.7_player_controls.apk
+          name: JIVARA-TV-original-movie-drama-playback
+          path: JIVARA_TV_original_playback_restored.apk
           retention-days: 30
