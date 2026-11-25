@@ -46,7 +46,7 @@ jobs:
           grep -q 'setMovieControls(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali'
           grep -q 'setUseController(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity$NativeBridge$9.smali'
           grep -q 'handleNativePlayerTap' 'decoded/smali_classes3/com/jivara/tv/MainActivity$5.smali'
-          grep -A1 'setClickable(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity.smali' | grep -q 'const/4 v1, 0x1'
+          grep -B1 'setClickable(Z)V' 'decoded/smali_classes3/com/jivara/tv/MainActivity.smali' | grep -q 'const/4 v1, 0x1'
           grep -q 'setEpisodeControls(true)' decoded/assets/index.html
 
       - name: Rebuild, align, sign, and verify APK
