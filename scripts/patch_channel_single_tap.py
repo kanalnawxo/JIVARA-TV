@@ -75,6 +75,73 @@ if s.count(old_enter) != 1:
     raise SystemExit(f"enterFullscreenFromPlayer body anchor must occur once; got {s.count(old_enter)}")
 s = s.replace(old_enter, new_enter)
 
+
+key_anchor = """    document.addEventListener('keydown', e => {
+        var _a, _b, _c, _d, _e;
+"""
+key_replacement = """    let channelFullscreenExitKeyPending = false;
+    let channelFullscreenExitKeyTimer = null;
+    const isChannelFullscreenOkKey = e =>
+        e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 ||
+        e.keyCode === 23 || e.keyCode === 66;
+    function armChannelFullscreenExitKeyGuard() {
+        channelFullscreenExitKeyPending = true;
+        clearTimeout(channelFullscreenExitKeyTimer);
+        channelFullscreenExitKeyTimer = setTimeout(() => {
+            channelFullscreenExitKeyPending = false;
+            channelFullscreenExitKeyTimer = null;
+        }, 1500);
+    }
+    document.addEventListener('keydown', e => {
+        if (channelFullscreenExitKeyPending && isChannelFullscreenOkKey(e)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
+        var _a, _b, _c, _d, _e;
+"""
+if s.count(key_anchor) != 1:
+    raise SystemExit(f"Global keydown anchor must occur once; got {s.count(key_anchor)}")
+s = s.replace(key_anchor, key_replacement)
+old_fullscreen = """        if (!episodeMode && isPlayerFullscreen() && !((_c = (_b = e.target) === null || _b === void 0 ? void 0 : _b.closest) === null || _c === void 0 ? void 0 : _c.call(_b, '.episode-player-controls')) && (e.key === 'Enter' || e.key === ' ' || e.keyCode === 23 || e.keyCode === 66)) {
+            e.preventDefault();
+            e.stopPropagation();
+            fullscreen();
+            return;
+        }
+"""
+new_fullscreen = """        if (!episodeMode && isPlayerFullscreen() && !((_c = (_b = e.target) === null || _b === void 0 ? void 0 : _b.closest) === null || _c === void 0 ? void 0 : _c.call(_b, '.episode-player-controls')) && isChannelFullscreenOkKey(e)) {
+            armChannelFullscreenExitKeyGuard();
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            fullscreen();
+            return;
+        }
+"""
+if s.count(old_fullscreen) != 1:
+    raise SystemExit(f"Live fullscreen OK handler must occur once; got {s.count(old_fullscreen)}")
+s = s.replace(old_fullscreen, new_fullscreen)
+listener_anchor = """    }, true);
+    // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
+"""
+listener_replacement = """    }, true);
+    // Consume the matching OK keyup too; otherwise the channel-list keyup handler
+    // calls handleRemoteChannelTap() and reopens fullscreen immediately.
+    document.addEventListener('keyup', e => {
+        if (!channelFullscreenExitKeyPending || !isChannelFullscreenOkKey(e))
+            return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        channelFullscreenExitKeyPending = false;
+        clearTimeout(channelFullscreenExitKeyTimer);
+        channelFullscreenExitKeyTimer = null;
+    }, true);
+    // Hold a channel briefly to highlight it yellow, then drag it above/below another channel to reorder within the same group.
+"""
+if s.count(listener_anchor) != 1:
+    raise SystemExit("Keyup insertion point not unique")
+s = s.replace(listener_anchor, listener_replacement)
+
 html.write_text(s, encoding="utf-8")
 
 base = root / "smali_classes3/com/jivara/tv"
