@@ -8,15 +8,16 @@ anchor = "    function playChannel(id) {"
 if s.count(anchor) != 1:
     raise SystemExit(f"playChannel anchor must occur once; got {s.count(anchor)}")
 
-call = """    function playChannel(id) {
-        // Disable ExoPlayer playback controls in both Live TV and Film.
-        // This does not change channel navigation or the separate Drama flow.
+insert = """    function playChannel(id) {
+        // Disable ExoPlayer controls for Live TV and Film only.
+        // Drama playback follows a separate path.
         try {
-            if (window.AndroidPlayer && typeof AndroidPlayer.setMovieControls === 'function')
+            if (window.AndroidPlayer && typeof AndroidPlayer.setMovieControls === 'function') {
                 AndroidPlayer.setMovieControls(false);
+            }
         } catch (_) {}
-
-s = s.replace(anchor, call)
+"""
+s = s.replace(anchor, insert)
 
 bridge = root / "smali_classes3/com/jivara/tv/MainActivity$NativeBridge.smali"
 b = bridge.read_text(encoding="utf-8")
@@ -80,4 +81,4 @@ if not runnable.exists():
 """, encoding="utf-8")
 
 html.write_text(s, encoding="utf-8")
-print("Disabled native ExoPlayer playback controls for live channels and films.")
+print("Disabled native ExoPlayer controls for Live TV and Film.")
