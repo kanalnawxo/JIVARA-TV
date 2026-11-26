@@ -9,12 +9,11 @@ if s.count(anchor) != 1:
     raise SystemExit(f"playChannel anchor must occur once; got {s.count(anchor)}")
 
 call = """    function playChannel(id) {
-        // Hide every native ExoPlayer controller only for the Film group.
-        // Re-enable it for all other live-channel groups; drama playback has its own flow.
+        // Disable native ExoPlayer playback controls for live channels and films.
+        // Drama playback uses a separate flow and is not changed by this patch.
         try {
-            const movieGroup = normalizeRemoteGroup((channels.find(x => x.id === id) || {}).group) === 'movies';
             if (window.AndroidPlayer && typeof AndroidPlayer.setMovieControls === 'function')
-                AndroidPlayer.setMovieControls(!movieGroup);
+                AndroidPlayer.setMovieControls(false);
         } catch (_) {}
 """
 s = s.replace(anchor, call)
@@ -81,4 +80,4 @@ if not runnable.exists():
 """, encoding="utf-8")
 
 html.write_text(s, encoding="utf-8")
-print("Patched Film-only native controller visibility; live channels and drama code paths remain unchanged.")
+print("Disabled native ExoPlayer playback controls for live channels and films.")
